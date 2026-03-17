@@ -1,0 +1,239 @@
+{
+  "common": {
+    "appName": "OpenCondo",
+    "loading": "A carregar...",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "create": "Criar",
+    "search": "Pesquisar",
+    "filter": "Filtrar",
+    "actions": "Ações",
+    "confirm": "Confirmar",
+    "back": "Voltar",
+    "next": "Seguinte",
+    "yes": "Sim",
+    "no": "Não",
+    "noResults": "Sem resultados",
+    "error": "Erro",
+    "success": "Sucesso"
+  },
+  "auth": {
+    "login": "Iniciar sessão",
+    "logout": "Terminar sessão",
+    "register": "Criar conta",
+    "email": "Email",
+    "password": "Palavra-passe",
+    "confirmPassword": "Confirmar palavra-passe",
+    "name": "Nome completo",
+    "forgotPassword": "Esqueceu a palavra-passe?",
+    "resetPassword": "Repor palavra-passe",
+    "noAccount": "Não tem conta?",
+    "hasAccount": "Já tem conta?",
+    "loginTitle": "Bem-vindo ao OpenCondo",
+    "loginSubtitle": "Inicie sessão para gerir o seu condomínio",
+    "registerTitle": "Criar conta",
+    "registerSubtitle": "Comece a gerir o seu condomínio"
+  },
+  "nav": {
+    "dashboard": "Painel",
+    "finances": "Finanças",
+    "quotas": "Quotas",
+    "expenses": "Despesas",
+    "budget": "Orçamento",
+    "communication": "Comunicação",
+    "announcements": "Avisos",
+    "maintenance": "Manutenção",
+    "documents": "Documentos",
+    "meetings": "Assembleias",
+    "meetingsList": "Reuniões",
+    "minutes": "Atas",
+    "contracts": "Contratos",
+    "settings": "Definições"
+  },
+  "dashboard": {
+    "title": "Painel",
+    "welcome": "Bem-vindo, {name}",
+    "pendingQuotas": "Quotas pendentes",
+    "overdueQuotas": "Quotas em atraso",
+    "openRequests": "Pedidos em aberto",
+    "nextMeeting": "Próxima assembleia",
+    "recentAnnouncements": "Avisos recentes",
+    "financialSummary": "Resumo financeiro",
+    "balance": "Saldo",
+    "income": "Receitas",
+    "expenditure": "Despesas"
+  },
+  "condominium": {
+    "create": "Criar condomínio",
+    "name": "Nome do condomínio",
+    "address": "Morada",
+    "postalCode": "Código postal",
+    "city": "Cidade",
+    "nif": "NIF",
+    "quotaModel": "Modelo de quotas",
+    "permilagem": "Permilagem",
+    "equalSplit": "Divisão igual",
+    "units": "Frações",
+    "unit": "Fração",
+    "addUnit": "Adicionar fração",
+    "identifier": "Identificação",
+    "floor": "Piso",
+    "typology": "Tipologia",
+    "owner": "Proprietário",
+    "tenant": "Inquilino"
+  },
+  "quotas": {
+    "title": "Quotas",
+    "generate": "Gerar quotas",
+    "period": "Período",
+    "amount": "Valor",
+    "dueDate": "Data de vencimento",
+    "status": "Estado",
+    "pending": "Pendente",
+    "paid": "Pago",
+    "overdue": "Em atraso",
+    "markAsPaid": "Marcar como pago",
+    "paymentDate": "Data de pagamento",
+    "paymentMethod": "Método de pagamento",
+    "receipt": "Recibo",
+    "generateReceipt": "Gerar recibo"
+  },
+  "expenses": {
+    "title": "Despesas",
+    "add": "Registar despesa",
+    "date": "Data",
+    "description": "Descrição",
+    "amount": "Valor",
+    "category": "Categoria",
+    "supplier": "Fornecedor",
+    "invoice": "Fatura",
+    "categories": {
+      "limpeza": "Limpeza",
+      "elevador": "Elevador",
+      "eletricidade": "Eletricidade",
+      "agua": "Água",
+      "seguro": "Seguro",
+      "manutencao": "Manutenção",
+      "obras": "Obras",
+      "juridico": "Jurídico",
+      "outros": "Outros"
+    }
+  },
+  "budget": {
+    "title": "Orçamento",
+    "year": "Ano",
+    "totalAmount": "Valor total",
+    "reserveFund": "Fundo de reserva",
+    "status": "Estado",
+    "draft": "Rascunho",
+    "approved": "Aprovado",
+    "planned": "Previsto",
+    "actual": "Real",
+    "variance": "Desvio",
+    "annualReport": "Conta de gerência"
+  },
+  "announcements": {
+    "title": "Avisos",
+    "create": "Novo aviso",
+    "category": "Categoria",
+    "pinned": "Fixado",
+    "categories": {
+      "geral": "Geral",
+      "obras": "Obras",
+      "manutencao": "Manutenção",
+      "assembleia": "Assembleia",
+      "urgente": "Urgente"
+    }
+  },
+  "maintenance": {
+    "title": "Manutenção",
+    "create": "Novo pedido",
+    "location": "Localização",
+    "priority": "Prioridade",
+    "status": "Estado",
+    "priorities": {
+      "baixa": "Baixa",
+      "media": "Média",
+      "alta": "Alta",
+      "urgente": "Urgente"
+    },
+    "statuses": {
+      "submetido": "Submetido",
+      "em_analise": "Em análise",
+      "em_curso": "Em curso",
+      "concluido": "Concluído"
+    }
+  },
+  "documents": {
+    "title": "Documentos",
+    "upload": "Carregar documento",
+    "category": "Categoria",
+    "categories": {
+      "atas": "Atas",
+      "orcamentos": "Orçamentos",
+      "seguros": "Seguros",
+      "contratos": "Contratos",
+      "regulamentos": "Regulamentos",
+      "outros": "Outros"
+    }
+  },
+  "meetings": {
+    "title": "Assembleias",
+    "schedule": "Agendar assembleia",
+    "date": "Data",
+    "location": "Local",
+    "type": "Tipo",
+    "ordinary": "Ordinária",
+    "extraordinary": "Extraordinária",
+    "agenda": "Ordem de trabalhos",
+    "attendees": "Presenças",
+    "quorum": "Quórum",
+    "convocatoria": "Convocatória",
+    "statuses": {
+      "agendada": "Agendada",
+      "realizada": "Realizada",
+      "cancelada": "Cancelada"
+    }
+  },
+  "atas": {
+    "title": "Atas",
+    "create": "Redigir ata",
+    "number": "Ata n.º",
+    "status": "Estado",
+    "draft": "Rascunho",
+    "final": "Final",
+    "approve": "Aprovar",
+    "contest": "Contestar",
+    "export": "Exportar PDF"
+  },
+  "contracts": {
+    "title": "Contratos",
+    "add": "Novo contrato",
+    "supplier": "Fornecedor",
+    "type": "Tipo",
+    "startDate": "Data de início",
+    "endDate": "Data de fim",
+    "renewalType": "Tipo de renovação",
+    "automatic": "Automática",
+    "manual": "Manual",
+    "annualCost": "Custo anual",
+    "status": "Estado",
+    "statuses": {
+      "ativo": "Ativo",
+      "expirado": "Expirado",
+      "renovado": "Renovado",
+      "cancelado": "Cancelado"
+    },
+    "renewalAlert": "Renovação em {days} dias"
+  },
+  "settings": {
+    "title": "Definições",
+    "general": "Geral",
+    "members": "Membros",
+    "inviteMember": "Convidar membro",
+    "profile": "Perfil",
+    "notifications": "Notificações"
+  }
+}
