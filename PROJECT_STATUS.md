@@ -278,12 +278,39 @@ A budget is the annual spending plan for the building — "we expect to spend �
 
 ## What's next — upcoming phases
 
+#### Financial Dashboard (complete)
+
+**What:** The dashboard (`/painel`) now shows real financial data instead of hardcoded zeros.
+
+- **Stat cards**: Pending quotas amount, overdue quotas (count + amount), open maintenance requests, next assembleia
+- **Recent payments**: Last 5 recorded quota payments with unit, period, amount, and date
+- **Financial summary**: Receitas (paid quotas), despesas (expenses), pending + overdue balance, net balance
+- **Links**: Stat cards link to relevant pages (e.g., quotas card links to `/financas/quotas`)
+- Auto-marks overdue quotas on page load
+
+#### Expense Tracking (complete)
+
+**What:** Administrators can record, edit, and delete building expenses with categories.
+
+**How it works:**
+
+1. **Creating an expense**: Admin clicks "Registar despesa" and enters: date, category (from 12 Portuguese condo categories), description, amount, and optional notes.
+2. **Category summary**: The page shows a visual breakdown by category with progress bars and percentage of total spending.
+3. **Expense table**: All expenses listed chronologically with date, description, category badge, amount, and inline edit/delete actions.
+4. **Dashboard integration**: Expense totals feed into the dashboard's financial summary (despesas line and balance calculation).
+
+**New files created:**
+- `src/lib/validators/expense.ts` — Zod schema and category list
+- `src/app/(dashboard)/financas/despesas/actions.ts` — Server actions (create, update, delete)
+- `src/app/(dashboard)/financas/despesas/page.tsx` — Server component
+- `src/app/(dashboard)/financas/despesas/expense-page-client.tsx` — Client wrapper
+- `src/app/(dashboard)/financas/despesas/expense-form.tsx` — Modal form
+- `src/app/(dashboard)/financas/despesas/expense-list.tsx` — Category summary + table
+
 ### Phase 2: Financial Management (continued)
 
 Remaining items:
 
-- **Expense tracking**: Record building expenses with categories and receipts
-- **Financial dashboard**: Wire up real data to the dashboard stat cards (total collected, total owed, overdue amounts)
 - **Reserve fund balance tracking**: Separate tracking of the reserve fund (currently we store the percentage but not a running balance)
 
 ### Phase 3: Communication
@@ -347,7 +374,7 @@ and get back up to speed without needing the conversation history.
 - **Build status:** Passing (`next build` succeeds, all routes compile)
 - **Database:** Schema defined but no migrations run yet (using `db push` for dev)
 - **Test suite:** Vitest set up with tests for validators and server actions
-- **Latest feature:** Quota management (generate, pay, undo, delete, overdue detection)
+- **Latest feature:** Expense tracking (create, edit, delete with category summary) + Financial dashboard with real data
 
 ### Gotchas & quirks discovered during development
 1. **Prisma 7 breaking changes:** PrismaClient no longer auto-connects to the DB. You must pass a driver adapter (we use `@prisma/adapter-pg` with `PrismaPg`). `new PrismaClient()` without options throws an error.
@@ -369,7 +396,7 @@ and get back up to speed without needing the conversation history.
 - **`db` singleton** in `lib/db/index.ts` with global caching to prevent connection leaks in dev
 
 ### What still needs to be built (in order)
-1. **Phase 2 — Finances (continued):** Financial dashboard with real data, expense tracking
+1. **Phase 2 — Finances (continued):** Reserve fund balance tracking (optional)
 2. **Phase 3 — Communication:** Announcements CRUD, maintenance request workflow, document upload
 3. **Phase 4 — Meetings:** Assembleia scheduling, attendance/quorum, voting, ata creation
 4. **Phase 5 — Polish:** PDF generation, email notifications, CSV import, mobile polish
