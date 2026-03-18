@@ -31,6 +31,7 @@ model User {
   ataApprovals        AtaApproval[]
   accounts            Account[]
   sessions            Session[]
+  usedInvites         Invite[]
 }
 
 model Account {
@@ -100,6 +101,7 @@ model Condominium {
   meetings            Meeting[]
   contracts           Contract[]
   suppliers           Supplier[]
+  invites             Invite[]
 }
 
 // ─── Membership (User <-> Condominium) ───────────────────────────────────────
@@ -122,6 +124,23 @@ model Membership {
   condominium  Condominium  @relation(fields: [condominiumId], references: [id], onDelete: Cascade)
 
   @@unique([userId, condominiumId])
+}
+
+// ─── Invites ─────────────────────────────────────────────────────────────────
+
+model Invite {
+  id             String       @id @default(cuid())
+  condominiumId  String
+  email          String?      // optional — if set, only that email can use the invite
+  role           Role         @default(OWNER)
+  token          String       @unique @default(cuid())
+  usedAt         DateTime?
+  usedByUserId   String?
+  expiresAt      DateTime
+  createdAt      DateTime     @default(now())
+
+  condominium  Condominium  @relation(fields: [condominiumId], references: [id], onDelete: Cascade)
+  usedByUser   User?        @relation(fields: [usedByUserId], references: [id], onDelete: SetNull)
 }
 
 // ─── Units (Frações) ─────────────────────────────────────────────────────────

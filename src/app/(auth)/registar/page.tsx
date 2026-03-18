@@ -46,7 +46,7 @@ export default function RegisterPage() {
       return;
     }
 
-    router.push("/onboarding");
+    router.push("/iniciar");
   }
 
   return (
@@ -60,7 +60,7 @@ export default function RegisterPage() {
           </Link>
           <h1 className="text-2xl font-bold text-foreground">Criar conta</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Comece a gerir o seu condomínio
+            Crie a sua conta no OpenCondo
           </p>
         </div>
 

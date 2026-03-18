@@ -14,5 +14,7 @@ export const config = {
     "/contratos/:path*",
     "/definicoes/:path*",
     "/onboarding/:path*",
+    "/iniciar/:path*",
+    "/entrar/:path*",
   ],
 };
