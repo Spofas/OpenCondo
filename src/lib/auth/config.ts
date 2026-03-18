@@ -33,6 +33,7 @@ export const authConfig: NextAuthConfig = {
         "/contratos",
         "/definicoes",
         "/onboarding",
+        "/iniciar",
       ];
       const isProtected = protectedPaths.some((p) =>
         nextUrl.pathname.startsWith(p)
