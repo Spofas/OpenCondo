@@ -51,7 +51,7 @@ const navigation: NavGroup[] = [
     items: [
       { href: "/financas/quotas", labelKey: "nav.quotas", icon: Wallet },
       { href: "/financas/despesas", labelKey: "nav.expenses", icon: Receipt, roles: ["ADMIN"] },
-      { href: "/financas/orcamento", labelKey: "nav.budget", icon: PieChart, roles: ["ADMIN"] },
+      { href: "/financas/orcamento", labelKey: "nav.budget", icon: PieChart },
     ],
   },
   {
