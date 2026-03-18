@@ -14,6 +14,14 @@ function createPrismaClient() {
   return new PrismaClient({ adapter });
 }
 
+// In dev, clear stale cached client when schema changes (e.g. after prisma generate)
+if (process.env.NODE_ENV !== "production" && globalForPrisma.prisma) {
+  const cached = globalForPrisma.prisma as Record<string, unknown>;
+  if (!cached.invite) {
+    globalForPrisma.prisma = undefined;
+  }
+}
+
 export const db = globalForPrisma.prisma ?? createPrismaClient();
 
 if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = db;
