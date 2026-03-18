@@ -1,0 +1,75 @@
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
+import { auth } from "@/lib/auth";
+import { db } from "@/lib/db";
+import { buildDebtorSummary } from "@/lib/debtor-calculations";
+import { DebtorClient } from "./debtor-client";
+
+export default async function DebtorPage() {
+  const session = await auth();
+  if (!session?.user?.id) redirect("/login");
+
+  const cookieStore = await cookies();
+  const condominiumId = cookieStore.get("activeCondominiumId")?.value;
+
+  const membership = condominiumId
+    ? await db.membership.findUnique({
+        where: {
+          userId_condominiumId: {
+            userId: session.user.id,
+            condominiumId,
+          },
+        },
+      })
+    : await db.membership.findFirst({
+        where: { userId: session.user.id, isActive: true },
+      });
+
+  if (!membership) redirect("/iniciar");
+  if (membership.role !== "ADMIN") redirect("/painel");
+
+  const condoId = membership.condominiumId;
+  const now = new Date();
+
+  // Mark overdue quotas first
+  await db.quota.updateMany({
+    where: {
+      condominiumId: condoId,
+      status: "PENDING",
+      dueDate: { lt: now },
+    },
+    data: { status: "OVERDUE" },
+  });
+
+  // Fetch all unpaid quotas with unit and owner info
+  const unpaidQuotas = await db.quota.findMany({
+    where: {
+      condominiumId: condoId,
+      status: { in: ["PENDING", "OVERDUE"] },
+    },
+    include: {
+      unit: {
+        select: {
+          id: true,
+          identifier: true,
+          owner: { select: { name: true, email: true } },
+        },
+      },
+    },
+    orderBy: { dueDate: "asc" },
+  });
+
+  const quotasForCalc = unpaidQuotas.map((q) => ({
+    unitId: q.unit.id,
+    unitIdentifier: q.unit.identifier,
+    ownerName: q.unit.owner?.name ?? null,
+    ownerEmail: q.unit.owner?.email ?? null,
+    amount: Number(q.amount),
+    dueDate: q.dueDate.toISOString().slice(0, 10),
+    status: q.status as "PENDING" | "OVERDUE",
+  }));
+
+  const summary = buildDebtorSummary(quotasForCalc, now);
+
+  return <DebtorClient summary={summary} />;
+}

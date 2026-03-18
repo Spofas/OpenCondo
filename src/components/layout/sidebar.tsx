@@ -23,6 +23,9 @@ import {
   ChevronDown,
   Building2,
   Plus,
+  AlertTriangle,
+  RefreshCw,
+  CalendarDays,
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils/cn";
@@ -45,6 +48,7 @@ const navigation: NavGroup[] = [
     labelKey: "",
     items: [
       { href: "/painel", labelKey: "nav.dashboard", icon: LayoutDashboard },
+      { href: "/calendario", labelKey: "nav.calendar", icon: CalendarDays },
     ],
   },
   {
@@ -53,6 +57,8 @@ const navigation: NavGroup[] = [
       { href: "/financas/quotas", labelKey: "nav.quotas", icon: Wallet },
       { href: "/financas/despesas", labelKey: "nav.expenses", icon: Receipt, roles: ["ADMIN"] },
       { href: "/financas/orcamento", labelKey: "nav.budget", icon: PieChart },
+      { href: "/financas/devedores", labelKey: "nav.debtors", icon: AlertTriangle, roles: ["ADMIN"] },
+      { href: "/financas/despesas-recorrentes", labelKey: "nav.recurringExpenses", icon: RefreshCw, roles: ["ADMIN"] },
       { href: "/financas/conta-gerencia", labelKey: "nav.annualReport", icon: FileText, roles: ["ADMIN"] },
     ],
   },

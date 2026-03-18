@@ -102,6 +102,7 @@ model Condominium {
   contracts           Contract[]
   suppliers           Supplier[]
   invites             Invite[]
+  recurringExpenses   RecurringExpense[]
 }
 
 // ─── Membership (User <-> Condominium) ───────────────────────────────────────
@@ -259,6 +260,23 @@ model Expense {
   condominium  Condominium @relation(fields: [condominiumId], references: [id], onDelete: Cascade)
   supplier     Supplier?   @relation(fields: [supplierId], references: [id], onDelete: SetNull)
   budgetItem   BudgetItem? @relation(fields: [budgetItemId], references: [id], onDelete: SetNull)
+}
+
+// ─── Financial: Recurring Expenses ──────────────────────────────────────────
+
+model RecurringExpense {
+  id             String           @id @default(cuid())
+  condominiumId  String
+  description    String
+  amount         Decimal          @db.Decimal(12, 2)
+  category       String
+  frequency      PaymentFrequency @default(MENSAL)
+  isActive       Boolean          @default(true)
+  lastGenerated  String?          // period string e.g. "2026-03" (last generated month)
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  condominium Condominium @relation(fields: [condominiumId], references: [id], onDelete: Cascade)
 }
 
 // ─── Communication: Announcements ────────────────────────────────────────────
