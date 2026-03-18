@@ -8,6 +8,7 @@ export async function createCondominiumWithUnits(
   condominiumData: unknown,
   unitsData: unknown
 ) {
+  try {
   const session = await auth();
   if (!session?.user?.id) {
     return { error: "Não autenticado" };
@@ -76,7 +77,12 @@ export async function createCondominiumWithUnits(
     });
 
     return { success: true, condominiumId: result.id };
-  } catch {
+  } catch (err) {
+    console.error("createCondominiumWithUnits transaction error:", err);
     return { error: "Erro ao criar o condomínio. Tente novamente." };
+  }
+  } catch (err) {
+    console.error("createCondominiumWithUnits top-level error:", err);
+    return { error: "Erro inesperado no servidor." };
   }
 }

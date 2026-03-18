@@ -59,17 +59,22 @@ export default function OnboardingPage() {
     setServerError("");
     setIsSubmitting(true);
 
-    const { units: unitsList, ...condoData } = data;
-    const result = await createCondominiumWithUnits(condoData, unitsList);
+    try {
+      const { units: unitsList, ...condoData } = data;
+      const result = await createCondominiumWithUnits(condoData, unitsList);
 
-    if (result.error) {
-      setServerError(result.error);
+      if (result.error) {
+        setServerError(result.error);
+        setIsSubmitting(false);
+        return;
+      }
+
+      window.location.href = "/painel";
+    } catch (err) {
+      console.error("Onboarding error:", err);
+      setServerError("Erro inesperado. Verifique a consola do servidor.");
       setIsSubmitting(false);
-      return;
     }
-
-    router.push("/painel");
-    router.refresh();
   }
 
   return (
