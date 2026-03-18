@@ -106,6 +106,7 @@ export default async function DashboardPage() {
     openMaintenanceCount,
     nextMeeting,
     recentAnnouncements,
+    latestBudget,
   ] = await Promise.all([
       // Total pending amount
       db.quota.aggregate({
@@ -157,6 +158,12 @@ export default async function DashboardPage() {
         orderBy: { createdAt: "desc" },
         take: 3,
       }),
+      // Latest approved budget (for reserve fund %)
+      db.budget.findFirst({
+        where: { condominiumId: condoId, status: "APPROVED" },
+        orderBy: { year: "desc" },
+        select: { reserveFundPercentage: true },
+      }),
     ]);
 
   const pendingAmount = Number(pendingQuotas._sum.amount ?? 0);
@@ -164,6 +171,8 @@ export default async function DashboardPage() {
   const paidAmount = Number(paidQuotas._sum.amount ?? 0);
   const expenseAmount = Number(expenses._sum.amount ?? 0);
   const balance = paidAmount - expenseAmount;
+  const reservePercentage = latestBudget ? Number(latestBudget.reserveFundPercentage) : 10;
+  const reserveFundBalance = Math.round(paidAmount * (reservePercentage / 100) * 100) / 100;
 
   return (
     <div>
@@ -339,6 +348,12 @@ export default async function DashboardPage() {
               <span>Por receber (pendente + atraso)</span>
               <span className="font-medium text-amber-600">
                 {formatCurrency(pendingAmount + overdueAmount)}
+              </span>
+            </div>
+            <div className="flex items-center justify-between text-sm text-muted-foreground">
+              <span>Fundo de reserva ({reservePercentage}%)</span>
+              <span className="font-medium text-blue-600">
+                {formatCurrency(reserveFundBalance)}
               </span>
             </div>
             <div className="border-t border-border pt-3">

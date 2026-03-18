@@ -10,6 +10,7 @@ import {
   Undo2,
   Clock,
   AlertTriangle,
+  Download,
 } from "lucide-react";
 import { deleteQuotasByPeriod } from "./actions";
 import { PaymentModal } from "./payment-modal";
@@ -207,8 +208,8 @@ export function QuotaList({
 
               {/* Expanded: quota details per unit */}
               {isExpanded && (
-                <div className="border-t border-border px-6 py-4">
-                  <table className="w-full text-sm">
+                <div className="border-t border-border px-6 py-4 overflow-x-auto">
+                  <table className="w-full text-sm min-w-[600px]">
                     <thead>
                       <tr className="border-b border-border text-left text-muted-foreground">
                         <th className="pb-2 font-medium">Fração</th>
@@ -261,28 +262,41 @@ export function QuotaList({
                           </td>
                           {isAdmin && (
                             <td className="py-2.5 text-right">
-                              {quota.status !== "PAID" ? (
-                                <button
-                                  onClick={() => setPayingQuota(quota)}
-                                  className="inline-flex items-center gap-1 rounded-lg bg-green-600 px-2.5 py-1 text-xs font-medium text-white hover:bg-green-700"
-                                >
-                                  <CheckCircle size={12} />
-                                  Pagar
-                                </button>
-                              ) : (
-                                <button
-                                  onClick={() => {
-                                    // Inline import to avoid circular issues
-                                    import("./actions").then(({ undoPayment }) =>
-                                      undoPayment(quota.id)
-                                    );
-                                  }}
-                                  className="inline-flex items-center gap-1 rounded-lg border border-border px-2.5 py-1 text-xs font-medium text-muted-foreground hover:bg-muted"
-                                >
-                                  <Undo2 size={12} />
-                                  Anular
-                                </button>
-                              )}
+                              <div className="flex items-center justify-end gap-1">
+                                {quota.status !== "PAID" ? (
+                                  <button
+                                    onClick={() => setPayingQuota(quota)}
+                                    className="inline-flex items-center gap-1 rounded-lg bg-green-600 px-2.5 py-1 text-xs font-medium text-white hover:bg-green-700"
+                                  >
+                                    <CheckCircle size={12} />
+                                    Pagar
+                                  </button>
+                                ) : (
+                                  <>
+                                    <a
+                                      href={`/api/receipts/${quota.id}`}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="inline-flex items-center gap-1 rounded-lg border border-border px-2.5 py-1 text-xs font-medium text-primary hover:bg-primary/10"
+                                      title="Descarregar recibo"
+                                    >
+                                      <Download size={12} />
+                                      Recibo
+                                    </a>
+                                    <button
+                                      onClick={() => {
+                                        import("./actions").then(({ undoPayment }) =>
+                                          undoPayment(quota.id)
+                                        );
+                                      }}
+                                      className="inline-flex items-center gap-1 rounded-lg border border-border px-2.5 py-1 text-xs font-medium text-muted-foreground hover:bg-muted"
+                                    >
+                                      <Undo2 size={12} />
+                                      Anular
+                                    </button>
+                                  </>
+                                )}
+                              </div>
                             </td>
                           )}
                         </tr>

@@ -17,6 +17,7 @@ import {
   FileSignature,
   Settings,
   Menu,
+  UserCircle,
   X,
   LogOut,
   ChevronDown,
@@ -52,6 +53,7 @@ const navigation: NavGroup[] = [
       { href: "/financas/quotas", labelKey: "nav.quotas", icon: Wallet },
       { href: "/financas/despesas", labelKey: "nav.expenses", icon: Receipt, roles: ["ADMIN"] },
       { href: "/financas/orcamento", labelKey: "nav.budget", icon: PieChart },
+      { href: "/financas/conta-gerencia", labelKey: "nav.annualReport", icon: FileText, roles: ["ADMIN"] },
     ],
   },
   {
@@ -73,6 +75,7 @@ const navigation: NavGroup[] = [
     labelKey: "",
     items: [
       { href: "/contratos", labelKey: "nav.contracts", icon: FileSignature, roles: ["ADMIN"] },
+      { href: "/minha-conta", labelKey: "nav.myAccount", icon: UserCircle },
       { href: "/definicoes", labelKey: "nav.settings", icon: Settings, roles: ["ADMIN"] },
     ],
   },

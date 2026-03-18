@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { InviteManager } from "./invite-manager";
+import { UnitManager } from "./unit-manager";
 
 export default async function SettingsPage() {
   const session = await auth();
@@ -34,6 +35,16 @@ export default async function SettingsPage() {
     where: { condominiumId: membership.condominiumId, isActive: true },
     include: { user: { select: { id: true, name: true, email: true } } },
     orderBy: { joinedAt: "asc" },
+  });
+
+  // Get units for this condominium
+  const units = await db.unit.findMany({
+    where: { condominiumId: membership.condominiumId },
+    include: {
+      owner: { select: { name: true } },
+      tenant: { select: { name: true } },
+    },
+    orderBy: { identifier: "asc" },
   });
 
   // Get invites (only if admin)
@@ -122,6 +133,29 @@ export default async function SettingsPage() {
             ))}
           </div>
         </div>
+
+        {/* Unit management — admin only */}
+        {membership.role === "ADMIN" && (
+          <UnitManager
+            condominiumId={membership.condominiumId}
+            units={units.map((u) => ({
+              id: u.id,
+              identifier: u.identifier,
+              floor: u.floor,
+              typology: u.typology,
+              permilagem: u.permilagem,
+              ownerName: u.owner?.name || null,
+              ownerId: u.ownerId,
+              tenantName: u.tenant?.name || null,
+              tenantId: u.tenantId,
+            }))}
+            members={members.map((m) => ({
+              userId: m.user.id,
+              userName: m.user.name,
+              userEmail: m.user.email,
+            }))}
+          />
+        )}
 
         {/* Invite section — admin only */}
         {membership.role === "ADMIN" && (

@@ -97,8 +97,8 @@ export function DocumentList({
           </div>
         </div>
       ) : (
-        <div className="rounded-xl border border-border bg-card">
-          <table className="w-full text-sm">
+        <div className="rounded-xl border border-border bg-card overflow-x-auto">
+          <table className="w-full text-sm min-w-[600px]">
             <thead>
               <tr className="border-b border-border text-left text-muted-foreground">
                 <th className="px-6 py-3 font-medium">Nome</th>
