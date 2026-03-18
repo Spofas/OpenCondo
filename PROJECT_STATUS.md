@@ -160,8 +160,17 @@ src/
 │   │       └── layout.tsx        # Guards (redirect if already set up)
 │   ├── (dashboard)/              # All authenticated pages (with sidebar)
 │   │   ├── layout.tsx            # Checks login + condominium, shows sidebar
+│   │   ├── actions.ts            # Shared actions (condo switching, invites)
 │   │   ├── painel/               # Dashboard overview
-│   │   ├── financas/             # Quotas, expenses, budget
+│   │   ├── financas/
+│   │   │   ├── orcamento/        # Budget management (COMPLETE)
+│   │   │   │   ├── page.tsx      # Server component — fetches budgets from DB
+│   │   │   │   ├── actions.ts    # Server actions (create, update, approve, delete)
+│   │   │   │   ├── budget-form.tsx        # Modal form with dynamic line items
+│   │   │   │   ├── budget-list.tsx        # Expandable budget cards
+│   │   │   │   └── budget-page-client.tsx # Client wrapper (manages modal state)
+│   │   │   ├── quotas/           # Quota management (placeholder)
+│   │   │   └── despesas/         # Expense tracking (placeholder)
 │   │   ├── comunicacao/          # Announcements, maintenance, documents
 │   │   ├── assembleia/           # Meetings, minutes
 │   │   ├── contratos/            # Contract management
@@ -177,7 +186,8 @@ src/
 │   ├── auth/index.ts             # Auth logic (full, with database)
 │   ├── db/index.ts               # Database connection
 │   ├── validators/auth.ts        # Email/password validation rules
-│   └── validators/condominium.ts # Building/unit validation rules
+│   ├── validators/condominium.ts # Building/unit validation rules
+│   └── validators/budget.ts      # Budget validation + category list
 ├── i18n/messages/pt.json         # All Portuguese text strings
 └── middleware.ts                  # Route gatekeeper
 ```
@@ -185,21 +195,60 @@ src/
 **Why `(auth)` and `(dashboard)` in parentheses?**
 Next.js uses parentheses for "route groups" — they organize files without affecting the URL. Both `/login` and `/painel` are at the root level in the URL, but their code is in separate folders with different layouts (login has no sidebar; dashboard has the sidebar).
 
+### Phase 2: Financial Management (in progress)
+
+#### Budget Management (complete)
+
+**What:** Administrators can create, edit, approve, and delete annual budgets for their condominium.
+
+A budget is the annual spending plan for the building — "we expect to spend €X on cleaning, €Y on the elevator, €Z on insurance..." This is the foundation for everything else in finances, because quotas (what each owner pays monthly) are calculated from the budget.
+
+**How it works:**
+
+1. **Creating a budget**: The admin clicks "Novo orçamento" and fills in a form with:
+   - **Year** (e.g., 2026)
+   - **Reserve fund percentage** — Portuguese law requires at least 10% of the budget goes into a savings reserve (fundo de reserva). We default to 10% but allow adjustment.
+   - **Line items (rubricas)** — each is a spending category with an amount. For example: "Limpeza: €1.200", "Elevador: €800", "Seguro: €600". We provide 13 common Portuguese condo categories to choose from (cleaning, elevator, electricity, water, insurance, maintenance, gardening, security, administration, reserve fund, construction, legal, other).
+
+2. **Live calculation**: As you add items, the form shows a running total: subtotal of all line items + reserve fund amount + grand total. This updates instantly as you type — no need to submit to see the numbers.
+
+3. **Budget status workflow**: A new budget starts as **Rascunho** (Draft). The admin can edit or delete it freely. Once reviewed (typically at the annual assembleia/meeting), the admin clicks "Aprovar" to mark it as **Aprovado** (Approved). An approved budget is **locked** — it cannot be edited or deleted, because it's the official record of what was agreed.
+
+4. **Year uniqueness**: Each condominium can only have one budget per year. Trying to create a second budget for 2026 when one already exists will show an error message.
+
+5. **Role-based access**: Only administrators can create, edit, approve, or delete budgets. Owners and tenants can view them but can't change anything.
+
+**Technical choices:**
+
+- **Server Actions for mutations**: Creating/updating/deleting budgets uses Next.js Server Actions — functions that run on the server when the form is submitted. This keeps database logic out of the browser.
+- **Helper function `getAdminContext()`**: Every budget action first checks: (a) is the user logged in? (b) which condominium are they viewing? (c) are they an admin of that condominium? If any check fails, the action returns an error. This is the "bouncer at the door" pattern — check permissions before doing anything.
+- **Modal form**: The budget form opens as a modal (overlay on top of the page) rather than navigating to a separate page. This feels faster and keeps context — you can see the existing budgets behind the form.
+- **Field array (useFieldArray)**: The line items section uses React Hook Form's `useFieldArray`, which lets you dynamically add and remove rows. Each row is independently validated.
+- **Decimal handling**: Budget amounts come from the database as Prisma `Decimal` type (precise money values). We convert to JavaScript `number` when sending to the client, since the UI doesn't need accounting-level precision for display.
+- **`revalidatePath`**: After creating/updating/deleting a budget, we tell Next.js to refresh the budget page's data. Without this, the page would show stale data until you manually refreshed.
+
+**New files created:**
+- `src/lib/validators/budget.ts` — Zod validation schema and category list
+- `src/app/(dashboard)/financas/orcamento/actions.ts` — Server actions (create, update, approve, delete)
+- `src/app/(dashboard)/financas/orcamento/budget-form.tsx` — Modal form with dynamic line items
+- `src/app/(dashboard)/financas/orcamento/budget-list.tsx` — Expandable budget cards with actions
+- `src/app/(dashboard)/financas/orcamento/budget-page-client.tsx` — Client wrapper managing modal state
+- `src/app/(dashboard)/financas/orcamento/page.tsx` — Server component that fetches budget data
+
 ---
 
 ## What's next — upcoming phases
 
-### Phase 2: Financial Management (next up)
+### Phase 2: Financial Management (continued)
 
-This is the core of what makes OpenCondo useful:
+Remaining items:
 
-- **Quota generation**: Auto-calculate how much each unit owes per month, based on the budget and their permilagem
+- **Quota generation**: Auto-calculate how much each unit owes per month, based on the approved budget and their permilagem
 - **Payment recording**: Admin marks quotas as paid (date, method, notes)
 - **Overdue tracking**: Automatically flag unpaid quotas past their due date
 - **Expense tracking**: Record building expenses with categories and receipts
-- **Budget creation**: Plan annual spending by category
-- **Reserve fund**: Track the legally-required 10% reserve fund
-- **Financial dashboard**: Show balances, pending payments, overdue amounts at a glance
+- **Reserve fund balance tracking**: Separate tracking of the reserve fund (currently we store the percentage but not a running balance)
+- **Financial dashboard**: Wire up real data to the dashboard stat cards (currently showing hardcoded €0)
 
 ### Phase 3: Communication
 
@@ -241,6 +290,10 @@ This is the core of what makes OpenCondo useful:
 | 2026-03-18 | Database transactions for onboarding | All-or-nothing creation prevents orphaned/incomplete data |
 | 2026-03-18 | PrismaPg driver adapter | Prisma 7 requires explicit driver adapters instead of built-in database connections |
 | 2026-03-18 | Zod v4 for validation | Same schemas validate on both client (forms) and server (API/actions) |
+| 2026-03-18 | Modal forms over separate pages | Budget form opens as overlay — faster UX, keeps context of existing data |
+| 2026-03-18 | getAdminContext() helper pattern | Reusable permission check for all admin-only actions — DRY, consistent |
+| 2026-03-18 | Immutable approved budgets | Once approved, budgets can't be edited/deleted — preserves official record |
+| 2026-03-18 | Dynamic field arrays for line items | React Hook Form's useFieldArray lets admins add/remove budget rows freely |
 
 ---
 
@@ -251,9 +304,10 @@ and get back up to speed without needing the conversation history.
 
 ### Current state (2026-03-18)
 - **Branch:** `claude/condo-app-planning-AUjKO`
-- **Build status:** Passing (all 18 routes compile, zero TypeScript errors)
+- **Build status:** Passing (`next build` succeeds, all routes compile)
 - **Database:** Schema defined but no migrations run yet (using `db push` for dev)
-- **Test suite:** None set up yet (no vitest/jest)
+- **Test suite:** Vitest set up with tests for validators and server actions
+- **Latest feature:** Budget management (create/edit/approve/delete with line items)
 
 ### Gotchas & quirks discovered during development
 1. **Prisma 7 breaking changes:** PrismaClient no longer auto-connects to the DB. You must pass a driver adapter (we use `@prisma/adapter-pg` with `PrismaPg`). `new PrismaClient()` without options throws an error.
@@ -263,6 +317,8 @@ and get back up to speed without needing the conversation history.
 5. **NextAuth v5 edge/server split:** The middleware file CANNOT import Prisma or bcryptjs (edge runtime doesn't support them). Auth config is split into `config.ts` (edge-safe, no providers) and `index.ts` (server-only, with Credentials provider + DB).
 6. **Next.js 16 middleware deprecation:** Shows a warning about "middleware" being deprecated in favor of "proxy". Still works, but the warning is expected.
 7. **next.config.ts:** Uses `serverExternalPackages: ["@prisma/client", "bcryptjs"]` to prevent bundling issues.
+8. **Zod v4 `.default()` + React Hook Form:** Using `z.string().default("")` makes the Zod *input* type `string | undefined` but the *output* type `string`. Since `zodResolver` uses the input type and `useForm<T>` expects the output type, this causes a type mismatch. Fix: use `z.string()` (required) instead and provide default values in the form's `defaultValues`.
+9. **Prisma Decimal → JavaScript number:** Prisma's `Decimal` type (used for money) doesn't serialize to JSON automatically. Convert with `Number(value)` before passing to client components.
 
 ### Key patterns used
 - **Server Actions** (`"use server"`) for database mutations (e.g., `onboarding/actions.ts`)
@@ -273,7 +329,7 @@ and get back up to speed without needing the conversation history.
 - **`db` singleton** in `lib/db/index.ts` with global caching to prevent connection leaks in dev
 
 ### What still needs to be built (in order)
-1. **Phase 2 — Finances:** Budget CRUD, quota generation, payment recording, expense tracking, financial dashboard widgets
+1. **Phase 2 — Finances (continued):** Quota generation from approved budgets, manual payment recording, expense tracking, dashboard stat integration
 2. **Phase 3 — Communication:** Announcements CRUD, maintenance request workflow, document upload
 3. **Phase 4 — Meetings:** Assembleia scheduling, attendance/quorum, voting, ata creation
 4. **Phase 5 — Polish:** PDF generation, email notifications, CSV import, mobile polish
