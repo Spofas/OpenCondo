@@ -235,20 +235,83 @@ A budget is the annual spending plan for the building — "we expect to spend �
 - `src/app/(dashboard)/financas/orcamento/budget-page-client.tsx` — Client wrapper managing modal state
 - `src/app/(dashboard)/financas/orcamento/page.tsx` — Server component that fetches budget data
 
+#### Quota Management (complete)
+
+**What:** Administrators can set quota amounts, generate monthly quota records for all units, record payments, and track overdue quotas.
+
+**Key design decision:** In real Portuguese condominiums, quotas are typically set **independently** from the budget. The admin decides the monthly amount (at the assembleia or unilaterally), not derived from the budget. Our implementation reflects this — quotas and budgets are independent modules.
+
+**How it works:**
+
+1. **Generating quotas**: The admin clicks "Gerar quotas" and configures:
+   - **Period range** (e.g., January 2026 to December 2026) using month pickers
+   - **Total monthly amount** (e.g., €500/month for the whole building)
+   - **Split method**: by permilagem (proportional to unit size) or equal split
+   - **Due day**: which day of the month quotas are due (1–28)
+
+2. **Live preview**: Before generating, the form shows a table with each unit's calculated monthly amount. This updates instantly as you change the total or split method.
+
+3. **Quota records**: Each generated quota is a record per unit per month: "Unit 1.º Esq owes €75 for January 2026, due January 8th." Quotas that already exist for a unit+period are skipped (no duplicates).
+
+4. **Payment recording**: Admin clicks "Pagar" on any unpaid quota and enters: payment date, payment method (transferência, numerário, cheque, MB WAY, Multibanco, outro), and optional notes (e.g., "Ref. MB 123456789").
+
+5. **Undo payment**: If a payment was recorded in error, admin can click "Anular" to set it back to pending/overdue.
+
+6. **Overdue detection**: Every time the page loads, any PENDING quotas past their due date are automatically marked as OVERDUE. No manual action needed.
+
+7. **Delete by period**: Admin can delete all unpaid quotas for a given month (e.g., if quotas were generated with wrong amounts). Paid quotas are preserved.
+
+8. **Summary cards**: The page shows three cards at the top: total pending, total overdue, and total received — giving a quick financial snapshot.
+
+**Role-based access**: Only administrators can generate quotas, record payments, undo payments, and delete quotas. All roles can view quotas.
+
+**New files created:**
+- `src/lib/validators/quota.ts` — Zod schemas for generation, payment, and config
+- `src/app/(dashboard)/financas/quotas/actions.ts` — Server actions (generate, pay, undo, delete)
+- `src/app/(dashboard)/financas/quotas/page.tsx` — Server component (fetch data, mark overdue)
+- `src/app/(dashboard)/financas/quotas/quota-page-client.tsx` — Client wrapper managing form state
+- `src/app/(dashboard)/financas/quotas/quota-generate-form.tsx` — Modal form for generating quotas
+- `src/app/(dashboard)/financas/quotas/quota-list.tsx` — Grouped list view with period expansion
+- `src/app/(dashboard)/financas/quotas/payment-modal.tsx` — Payment recording modal
+
 ---
 
 ## What's next — upcoming phases
+
+#### Financial Dashboard (complete)
+
+**What:** The dashboard (`/painel`) now shows real financial data instead of hardcoded zeros.
+
+- **Stat cards**: Pending quotas amount, overdue quotas (count + amount), open maintenance requests, next assembleia
+- **Recent payments**: Last 5 recorded quota payments with unit, period, amount, and date
+- **Financial summary**: Receitas (paid quotas), despesas (expenses), pending + overdue balance, net balance
+- **Links**: Stat cards link to relevant pages (e.g., quotas card links to `/financas/quotas`)
+- Auto-marks overdue quotas on page load
+
+#### Expense Tracking (complete)
+
+**What:** Administrators can record, edit, and delete building expenses with categories.
+
+**How it works:**
+
+1. **Creating an expense**: Admin clicks "Registar despesa" and enters: date, category (from 12 Portuguese condo categories), description, amount, and optional notes.
+2. **Category summary**: The page shows a visual breakdown by category with progress bars and percentage of total spending.
+3. **Expense table**: All expenses listed chronologically with date, description, category badge, amount, and inline edit/delete actions.
+4. **Dashboard integration**: Expense totals feed into the dashboard's financial summary (despesas line and balance calculation).
+
+**New files created:**
+- `src/lib/validators/expense.ts` — Zod schema and category list
+- `src/app/(dashboard)/financas/despesas/actions.ts` — Server actions (create, update, delete)
+- `src/app/(dashboard)/financas/despesas/page.tsx` — Server component
+- `src/app/(dashboard)/financas/despesas/expense-page-client.tsx` — Client wrapper
+- `src/app/(dashboard)/financas/despesas/expense-form.tsx` — Modal form
+- `src/app/(dashboard)/financas/despesas/expense-list.tsx` — Category summary + table
 
 ### Phase 2: Financial Management (continued)
 
 Remaining items:
 
-- **Quota generation**: Auto-calculate how much each unit owes per month, based on the approved budget and their permilagem
-- **Payment recording**: Admin marks quotas as paid (date, method, notes)
-- **Overdue tracking**: Automatically flag unpaid quotas past their due date
-- **Expense tracking**: Record building expenses with categories and receipts
 - **Reserve fund balance tracking**: Separate tracking of the reserve fund (currently we store the percentage but not a running balance)
-- **Financial dashboard**: Wire up real data to the dashboard stat cards (currently showing hardcoded €0)
 
 ### Phase 3: Communication
 
@@ -306,11 +369,12 @@ This section exists so that if we start a fresh Claude Code session, I (Claude) 
 and get back up to speed without needing the conversation history.
 
 ### Current state (2026-03-18)
-- **Branch:** `claude/condo-app-planning-AUjKO`
+- **Branch:** `claude/condo-financial-modules-AUjKO` (financial modules development)
+- **Base branch:** `claude/condo-app-planning-AUjKO` (stable baseline with auth + onboarding + budgets)
 - **Build status:** Passing (`next build` succeeds, all routes compile)
 - **Database:** Schema defined but no migrations run yet (using `db push` for dev)
 - **Test suite:** Vitest set up with tests for validators and server actions
-- **Latest feature:** Budget management (create/edit/approve/delete with line items)
+- **Latest feature:** Expense tracking (create, edit, delete with category summary) + Financial dashboard with real data
 
 ### Gotchas & quirks discovered during development
 1. **Prisma 7 breaking changes:** PrismaClient no longer auto-connects to the DB. You must pass a driver adapter (we use `@prisma/adapter-pg` with `PrismaPg`). `new PrismaClient()` without options throws an error.
@@ -332,7 +396,7 @@ and get back up to speed without needing the conversation history.
 - **`db` singleton** in `lib/db/index.ts` with global caching to prevent connection leaks in dev
 
 ### What still needs to be built (in order)
-1. **Phase 2 — Finances (continued):** Quota generation from approved budgets, manual payment recording, expense tracking, dashboard stat integration
+1. **Phase 2 — Finances (continued):** Reserve fund balance tracking (optional)
 2. **Phase 3 — Communication:** Announcements CRUD, maintenance request workflow, document upload
 3. **Phase 4 — Meetings:** Assembleia scheduling, attendance/quorum, voting, ata creation
 4. **Phase 5 — Polish:** PDF generation, email notifications, CSV import, mobile polish

@@ -1,28 +1,82 @@
-import { Wallet, Plus } from "lucide-react";
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
+import { auth } from "@/lib/auth";
+import { db } from "@/lib/db";
+import { QuotaPageClient } from "./quota-page-client";
 
-export default function QuotasPage() {
+export default async function QuotasPage() {
+  const session = await auth();
+  if (!session?.user?.id) redirect("/login");
+
+  const cookieStore = await cookies();
+  const selectedCondoId = cookieStore.get("activeCondominiumId")?.value;
+
+  const membership = selectedCondoId
+    ? await db.membership.findUnique({
+        where: {
+          userId_condominiumId: {
+            userId: session.user.id,
+            condominiumId: selectedCondoId,
+          },
+        },
+      })
+    : await db.membership.findFirst({
+        where: { userId: session.user.id, isActive: true },
+      });
+
+  if (!membership) redirect("/iniciar");
+
+  // Mark overdue quotas before fetching
+  const now = new Date();
+  await db.quota.updateMany({
+    where: {
+      condominiumId: membership.condominiumId,
+      status: "PENDING",
+      dueDate: { lt: now },
+    },
+    data: { status: "OVERDUE" },
+  });
+
+  // Fetch all quotas with unit info
+  const quotas = await db.quota.findMany({
+    where: { condominiumId: membership.condominiumId },
+    include: { unit: { select: { id: true, identifier: true, permilagem: true } } },
+    orderBy: [{ period: "desc" }, { unit: { identifier: "asc" } }],
+  });
+
+  // Fetch units for the generation form
+  const units = await db.unit.findMany({
+    where: { condominiumId: membership.condominiumId },
+    orderBy: { identifier: "asc" },
+    select: { id: true, identifier: true, permilagem: true },
+  });
+
+  // Fetch condominium for quota model
+  const condominium = await db.condominium.findUnique({
+    where: { id: membership.condominiumId },
+    select: { quotaModel: true },
+  });
+
+  const serializedQuotas = quotas.map((q) => ({
+    id: q.id,
+    unitId: q.unitId,
+    unitIdentifier: q.unit.identifier,
+    unitPermilagem: q.unit.permilagem,
+    period: q.period,
+    amount: Number(q.amount),
+    dueDate: q.dueDate.toISOString(),
+    status: q.status as "PENDING" | "PAID" | "OVERDUE",
+    paymentDate: q.paymentDate?.toISOString() ?? null,
+    paymentMethod: q.paymentMethod,
+    paymentNotes: q.paymentNotes,
+  }));
+
   return (
-    <div>
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Quotas</h1>
-          <p className="text-sm text-muted-foreground">
-            Gestão de quotas de condomínio
-          </p>
-        </div>
-        <button className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors">
-          <Plus size={16} />
-          Gerar quotas
-        </button>
-      </div>
-
-      <div className="rounded-xl border border-border bg-card">
-        <div className="flex h-64 flex-col items-center justify-center gap-3 text-muted-foreground">
-          <Wallet size={40} strokeWidth={1.5} />
-          <p className="text-sm">Nenhuma quota registada</p>
-          <p className="text-xs">Comece por criar o orçamento anual e gerar as quotas</p>
-        </div>
-      </div>
-    </div>
+    <QuotaPageClient
+      quotas={serializedQuotas}
+      units={units}
+      defaultSplitMethod={condominium?.quotaModel ?? "PERMILAGEM"}
+      isAdmin={membership.role === "ADMIN"}
+    />
   );
 }
