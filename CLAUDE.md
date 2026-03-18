@@ -150,9 +150,60 @@ Admin checks use `getAdminContext()` in server actions. View-level access is con
 - **Date month indexing**: JavaScript `new Date(year, month, day)` uses 0-indexed months. When parsing "2026-01", month is `0`, not `1`.
 - **Rounding**: Money splits may not sum exactly to the total due to rounding. This is expected — the important thing is each unit's amount is individually correct to 2 decimal places.
 
-## Git conventions
+## Git Conventions
 
-- Feature branches: `claude/<feature>-<session-id>`
-- Commit messages: imperative mood, explain the "why" not just the "what"
-- One logical change per commit (don't mix features)
+### Branch strategy
+
+| Branch | Purpose | Merges into |
+|--------|---------|-------------|
+| `main` | Stable, deployable code. Always working. | — |
+| `develop` | Integration branch for the next release | `main` (when releasing) |
+| `claude/<feature>-<id>` | Individual feature work (AI sessions) | `develop` (via PR) |
+
+**Workflow:**
+1. Claude develops on `claude/<feature>-<id>` branches
+2. When a feature/phase is complete, Claude creates a **PR** → `develop`
+3. The maintainer reviews and merges the PR on GitHub
+4. When `develop` is stable and ready for release, the maintainer merges `develop` → `main`
+
+> Note: The remote only allows pushes to `claude/` branches. Merging into `main` or `develop` must be done by the maintainer (via GitHub PR merge or local `git merge` + `git push`).
+
+### Conventional Commits
+
+All commit messages follow the [Conventional Commits](https://www.conventionalcommits.org/) format:
+
+```
+<type>: <short description>
+
+<optional body — explain the "why", not the "what">
+```
+
+**Types:**
+
+| Type | When to use |
+|------|-------------|
+| `feat` | New feature or module (e.g., quota management, expense tracking) |
+| `fix` | Bug fix |
+| `test` | Adding or updating tests |
+| `refactor` | Code restructuring without changing behavior |
+| `docs` | Documentation changes (CLAUDE.md, PROJECT_STATUS.md, comments) |
+| `style` | Formatting, CSS changes, no logic change |
+| `chore` | Build config, dependencies, scripts, tooling |
+| `perf` | Performance improvement |
+
+**Examples:**
+```
+feat: add quota management with payment tracking
+fix: correct permilagem rounding for 3-unit split
+test: add validator and calculation tests for financial modules
+refactor: extract quota split logic into pure functions
+docs: add CLAUDE.md development guide
+chore: add pnpm verify script
+```
+
+**Rules:**
+- One logical change per commit (don't mix features with refactors)
+- Imperative mood in the description ("add", not "added" or "adds")
+- Keep the first line under 72 characters
+- Use the body for context when the change isn't obvious
 - Run `pnpm verify` before pushing
