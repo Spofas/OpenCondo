@@ -111,7 +111,7 @@ export function Sidebar({
   const [mobileOpen, setMobileOpen] = useState(false);
   const [switcherOpen, setSwitcherOpen] = useState(false);
 
-  const hasMultipleCondos = memberships.length > 1;
+
 
   async function handleSwitchCondo(condominiumId: string) {
     setSwitcherOpen(false);
@@ -159,27 +159,20 @@ export function Sidebar({
           {/* Condominium selector */}
           <div className="relative mt-3">
             <button
-              onClick={() => hasMultipleCondos && setSwitcherOpen(!switcherOpen)}
-              className={cn(
-                "flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-xs transition-colors",
-                hasMultipleCondos
-                  ? "hover:bg-secondary cursor-pointer"
-                  : "cursor-default"
-              )}
+              onClick={() => setSwitcherOpen(!switcherOpen)}
+              className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-xs transition-colors hover:bg-secondary cursor-pointer"
             >
               <Building2 size={14} className="shrink-0 text-muted-foreground" />
               <span className="min-w-0 flex-1 truncate text-muted-foreground">
                 {condominiumName}
               </span>
-              {hasMultipleCondos && (
-                <ChevronDown
-                  size={14}
-                  className={cn(
-                    "shrink-0 text-muted-foreground transition-transform",
-                    switcherOpen && "rotate-180"
-                  )}
-                />
-              )}
+              <ChevronDown
+                size={14}
+                className={cn(
+                  "shrink-0 text-muted-foreground transition-transform",
+                  switcherOpen && "rotate-180"
+                )}
+              />
             </button>
 
             {/* Dropdown */}

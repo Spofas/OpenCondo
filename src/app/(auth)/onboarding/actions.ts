@@ -1,5 +1,6 @@
 "use server";
 
+import { cookies } from "next/headers";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { condominiumSchema, unitsArraySchema } from "@/lib/validators/condominium";
@@ -74,6 +75,15 @@ export async function createCondominiumWithUnits(
       });
 
       return condominium;
+    });
+
+    // Set the new condominium as active so the dashboard shows it
+    const cookieStore = await cookies();
+    cookieStore.set("activeCondominiumId", result.id, {
+      path: "/",
+      httpOnly: true,
+      sameSite: "lax",
+      maxAge: 60 * 60 * 24 * 365,
     });
 
     return { success: true, condominiumId: result.id };
