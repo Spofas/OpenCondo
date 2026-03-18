@@ -6,6 +6,12 @@ vi.mock("@/lib/auth", () => ({
   auth: () => mockAuth(),
 }));
 
+// Mock cookies — Next.js headers
+const mockCookieSet = vi.fn();
+vi.mock("next/headers", () => ({
+  cookies: () => Promise.resolve({ set: mockCookieSet, get: vi.fn() }),
+}));
+
 // Mock db — tracks all Prisma calls
 const mockTransaction = vi.fn();
 const mockDb = {
