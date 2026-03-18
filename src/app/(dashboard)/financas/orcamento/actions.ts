@@ -12,20 +12,23 @@ async function getAdminContext() {
 
   const cookieStore = await cookies();
   const condominiumId = cookieStore.get("activeCondominiumId")?.value;
-  if (!condominiumId) return null;
 
-  const membership = await db.membership.findUnique({
-    where: {
-      userId_condominiumId: {
-        userId: session.user.id,
-        condominiumId,
-      },
-    },
-  });
+  const membership = condominiumId
+    ? await db.membership.findUnique({
+        where: {
+          userId_condominiumId: {
+            userId: session.user.id,
+            condominiumId,
+          },
+        },
+      })
+    : await db.membership.findFirst({
+        where: { userId: session.user.id, isActive: true },
+      });
 
   if (!membership || membership.role !== "ADMIN") return null;
 
-  return { userId: session.user.id, condominiumId };
+  return { userId: session.user.id, condominiumId: membership.condominiumId };
 }
 
 export async function createBudget(input: BudgetInput) {
