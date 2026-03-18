@@ -9,6 +9,12 @@ import {
   type QuotaGenerateInput,
   type QuotaPaymentInput,
 } from "@/lib/validators/quota";
+import {
+  splitByPermilagem,
+  splitEqually,
+  generateMonthRange,
+  statusAfterUndo,
+} from "@/lib/quota-calculations";
 import { revalidatePath } from "next/cache";
 
 async function getAdminContext() {
@@ -63,10 +69,11 @@ export async function generateQuotas(input: QuotaGenerateInput) {
   }
 
   // Calculate amount per unit
-  const unitAmounts = new Map<string, number>();
+  let unitAmounts: Map<string, number>;
 
   if (unitOverrides && unitOverrides.length > 0) {
     // Manual mode: use provided amounts
+    unitAmounts = new Map<string, number>();
     for (const override of unitOverrides) {
       unitAmounts.set(override.unitId, override.amount);
     }
@@ -77,39 +84,16 @@ export async function generateQuotas(input: QuotaGenerateInput) {
       }
     }
   } else if (splitMethod === "PERMILAGEM") {
-    const totalPermilagem = units.reduce((sum, u) => sum + u.permilagem, 0);
-    if (totalPermilagem === 0) {
+    unitAmounts = splitByPermilagem(totalMonthlyAmount, units);
+    if (unitAmounts.size === 0) {
       return { error: "Permilagem total é 0 — configure a permilagem das frações" };
     }
-    for (const unit of units) {
-      const amount =
-        Math.round((totalMonthlyAmount * unit.permilagem * 100) / totalPermilagem) / 100;
-      unitAmounts.set(unit.id, amount);
-    }
   } else {
-    // Equal split
-    const amount = Math.round((totalMonthlyAmount * 100) / units.length) / 100;
-    for (const unit of units) {
-      unitAmounts.set(unit.id, amount);
-    }
+    unitAmounts = splitEqually(totalMonthlyAmount, units);
   }
 
   // Generate month range
-  const months: string[] = [];
-  const [startYear, startMon] = startMonth.split("-").map(Number);
-  const [endYear, endMon] = endMonth.split("-").map(Number);
-
-  let year = startYear;
-  let month = startMon;
-
-  while (year < endYear || (year === endYear && month <= endMon)) {
-    months.push(`${year}-${String(month).padStart(2, "0")}`);
-    month++;
-    if (month > 12) {
-      month = 1;
-      year++;
-    }
-  }
+  const months = generateMonthRange(startMonth, endMonth);
 
   if (months.length === 0) {
     return { error: "Período inválido" };
@@ -206,8 +190,7 @@ export async function undoPayment(quotaId: string) {
   if (!quota) return { error: "Quota não encontrada" };
   if (quota.status !== "PAID") return { error: "Quota não está marcada como paga" };
 
-  const now = new Date();
-  const newStatus = quota.dueDate < now ? "OVERDUE" : "PENDING";
+  const newStatus = statusAfterUndo(quota.dueDate);
 
   await db.quota.update({
     where: { id: quotaId },
