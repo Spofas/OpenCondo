@@ -241,3 +241,39 @@ This is the core of what makes OpenCondo useful:
 | 2026-03-18 | Database transactions for onboarding | All-or-nothing creation prevents orphaned/incomplete data |
 | 2026-03-18 | PrismaPg driver adapter | Prisma 7 requires explicit driver adapters instead of built-in database connections |
 | 2026-03-18 | Zod v4 for validation | Same schemas validate on both client (forms) and server (API/actions) |
+
+---
+
+## Session handoff notes (for Claude Code context recovery)
+
+This section exists so that if we start a fresh Claude Code session, I (Claude) can read this file
+and get back up to speed without needing the conversation history.
+
+### Current state (2026-03-18)
+- **Branch:** `claude/condo-app-planning-AUjKO`
+- **Build status:** Passing (all 18 routes compile, zero TypeScript errors)
+- **Database:** Schema defined but no migrations run yet (using `db push` for dev)
+- **Test suite:** None set up yet (no vitest/jest)
+
+### Gotchas & quirks discovered during development
+1. **Prisma 7 breaking changes:** PrismaClient no longer auto-connects to the DB. You must pass a driver adapter (we use `@prisma/adapter-pg` with `PrismaPg`). `new PrismaClient()` without options throws an error.
+2. **Prisma 7 missing package:** `@prisma/client-runtime-utils` is not auto-installed with `@prisma/client` — had to add it manually to `package.json`.
+3. **Zod v4 API change:** `.errors` is now `.issues` on ZodError objects. Use `error.issues[0].message` not `error.errors[0].message`.
+4. **Zod v4 + coerce:** `z.coerce.number()` outputs `unknown` type in Zod v4, which breaks `react-hook-form` type inference. Use `z.number()` instead and handle string→number conversion with `valueAsNumber` in the form's `register()` call.
+5. **NextAuth v5 edge/server split:** The middleware file CANNOT import Prisma or bcryptjs (edge runtime doesn't support them). Auth config is split into `config.ts` (edge-safe, no providers) and `index.ts` (server-only, with Credentials provider + DB).
+6. **Next.js 16 middleware deprecation:** Shows a warning about "middleware" being deprecated in favor of "proxy". Still works, but the warning is expected.
+7. **next.config.ts:** Uses `serverExternalPackages: ["@prisma/client", "bcryptjs"]` to prevent bundling issues.
+
+### Key patterns used
+- **Server Actions** (`"use server"`) for database mutations (e.g., `onboarding/actions.ts`)
+- **Client Components** (`"use client"`) for interactive forms (login, register, onboarding wizard)
+- **Server Components** (default) for layouts that read the session/DB (dashboard layout)
+- **Route groups** `(auth)` and `(dashboard)` to share layouts without affecting URLs
+- **Zod schemas** in `lib/validators/` shared between client forms and server actions
+- **`db` singleton** in `lib/db/index.ts` with global caching to prevent connection leaks in dev
+
+### What still needs to be built (in order)
+1. **Phase 2 — Finances:** Budget CRUD, quota generation, payment recording, expense tracking, financial dashboard widgets
+2. **Phase 3 — Communication:** Announcements CRUD, maintenance request workflow, document upload
+3. **Phase 4 — Meetings:** Assembleia scheduling, attendance/quorum, voting, ata creation
+4. **Phase 5 — Polish:** PDF generation, email notifications, CSV import, mobile polish
