@@ -157,16 +157,14 @@ Admin checks use `getAdminContext()` in server actions. View-level access is con
 | Branch | Purpose | Merges into |
 |--------|---------|-------------|
 | `main` | Stable, deployable code. Always working. | — |
-| `develop` | Integration branch for the next release | `main` (when releasing) |
-| `claude/<feature>-<id>` | Individual feature work (AI sessions) | `develop` (via PR) |
+| `claude/<feature>-<id>` | Individual feature work (AI sessions) | `main` (via PR) |
 
 **Workflow:**
 1. Claude develops on `claude/<feature>-<id>` branches
-2. When a feature/phase is complete, Claude creates a **PR** → `develop`
+2. When a feature/phase is complete, Claude creates a **PR** → `main`
 3. The maintainer reviews and merges the PR on GitHub
-4. When `develop` is stable and ready for release, the maintainer merges `develop` → `main`
 
-> Note: The remote only allows pushes to `claude/` branches. Merging into `main` or `develop` must be done by the maintainer (via GitHub PR merge or local `git merge` + `git push`).
+> Note: The remote only allows pushes to `claude/` branches. Merging into `main` must be done by the maintainer (via GitHub PR merge).
 
 ### Conventional Commits
 
