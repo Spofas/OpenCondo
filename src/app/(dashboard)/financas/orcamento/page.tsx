@@ -1,28 +1,57 @@
-import { PieChart, Plus } from "lucide-react";
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
+import { auth } from "@/lib/auth";
+import { db } from "@/lib/db";
+import { BudgetPageClient } from "./budget-page-client";
 
-export default function BudgetPage() {
+export default async function BudgetPage() {
+  const session = await auth();
+  if (!session?.user?.id) redirect("/login");
+
+  const cookieStore = await cookies();
+  const selectedCondoId = cookieStore.get("activeCondominiumId")?.value;
+
+  const membership = selectedCondoId
+    ? await db.membership.findUnique({
+        where: {
+          userId_condominiumId: {
+            userId: session.user.id,
+            condominiumId: selectedCondoId,
+          },
+        },
+      })
+    : await db.membership.findFirst({
+        where: { userId: session.user.id, isActive: true },
+      });
+
+  if (!membership) redirect("/iniciar");
+
+  const budgets = await db.budget.findMany({
+    where: { condominiumId: membership.condominiumId },
+    include: { items: { orderBy: { category: "asc" } } },
+    orderBy: { year: "desc" },
+  });
+
+  const serializedBudgets = budgets.map((b) => ({
+    id: b.id,
+    year: b.year,
+    status: b.status as "DRAFT" | "APPROVED",
+    totalAmount: Number(b.totalAmount),
+    reserveFundPercentage: Number(b.reserveFundPercentage),
+    approvedAt: b.approvedAt?.toISOString() ?? null,
+    createdAt: b.createdAt.toISOString(),
+    items: b.items.map((item) => ({
+      id: item.id,
+      category: item.category,
+      description: item.description,
+      plannedAmount: Number(item.plannedAmount),
+    })),
+  }));
+
   return (
-    <div>
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Orçamento</h1>
-          <p className="text-sm text-muted-foreground">
-            Orçamento anual e fundo de reserva
-          </p>
-        </div>
-        <button className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors">
-          <Plus size={16} />
-          Novo orçamento
-        </button>
-      </div>
-
-      <div className="rounded-xl border border-border bg-card">
-        <div className="flex h-64 flex-col items-center justify-center gap-3 text-muted-foreground">
-          <PieChart size={40} strokeWidth={1.5} />
-          <p className="text-sm">Nenhum orçamento criado</p>
-          <p className="text-xs">Crie o orçamento anual para calcular as quotas</p>
-        </div>
-      </div>
-    </div>
+    <BudgetPageClient
+      budgets={serializedBudgets}
+      isAdmin={membership.role === "ADMIN"}
+    />
   );
 }
