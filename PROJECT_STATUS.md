@@ -271,6 +271,7 @@ Remaining items:
 - Bulk import (CSV upload for units/owners)
 - Email notifications
 - Mobile responsiveness polish
+- Deployment to production — see `DEPLOYMENT_GUIDE.md` for step-by-step instructions (Vercel + Neon)
 
 ---
 
@@ -294,6 +295,8 @@ Remaining items:
 | 2026-03-18 | getAdminContext() helper pattern | Reusable permission check for all admin-only actions — DRY, consistent |
 | 2026-03-18 | Immutable approved budgets | Once approved, budgets can't be edited/deleted — preserves official record |
 | 2026-03-18 | Dynamic field arrays for line items | React Hook Form's useFieldArray lets admins add/remove budget rows freely |
+| 2026-03-18 | Vercel + Neon for hosting | Vercel is built by the Next.js team (best optimization). Neon over Supabase because OpenCondo already has NextAuth (auth) and Prisma (ORM) — Supabase's bundled auth/client would be redundant and unused. Both scale from free tier to production. |
+| 2026-03-18 | Deployment guide created | `DEPLOYMENT_GUIDE.md` — step-by-step instructions for non-technical users to deploy on Vercel + Neon |
 
 ---
 

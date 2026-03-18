@@ -236,7 +236,7 @@ Email provider: transactional email service (e.g., Resend, Postmark)
 
 | Layer | Technology | Rationale |
 |-------|-----------|-----------|
-| **Framework** | Next.js 14+ (App Router) | Fullstack React, SSR/SSG, API routes, great DX |
+| **Framework** | Next.js 16 (App Router) | Fullstack React, SSR/SSG, API routes, great DX |
 | **Language** | TypeScript | Type safety across the stack |
 | **Database** | PostgreSQL | Robust relational DB, perfect for financial data |
 | **ORM** | Prisma | Type-safe queries, migrations, great DX |
@@ -247,7 +247,7 @@ Email provider: transactional email service (e.g., Resend, Postmark)
 | **File Storage** | S3-compatible (Cloudflare R2 or AWS S3) | Document and invoice uploads |
 | **PDF Generation** | @react-pdf/renderer or Puppeteer | Receipts, atas, financial reports |
 | **i18n** | next-intl | Proven i18n for Next.js App Router |
-| **Hosting** | Vercel (app) + Supabase or Neon (DB) | Managed, scalable, EU regions available |
+| **Hosting** | Vercel (app) + Neon (DB) | Managed, scalable, EU regions available. Neon chosen over Supabase because OpenCondo already has its own auth (NextAuth) and ORM (Prisma) — Supabase's bundled auth/client would be redundant. |
 | **Monorepo** | Turborepo (if needed) | Future: shared packages between web and mobile |
 
 ### 5.2 Project Structure
