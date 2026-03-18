@@ -1,41 +1,46 @@
 import type { NextAuthConfig } from "next-auth";
-import Credentials from "next-auth/providers/credentials";
 
+// Base config used by middleware (edge runtime - no Prisma/bcrypt)
 export const authConfig: NextAuthConfig = {
-  providers: [
-    Credentials({
-      name: "credentials",
-      credentials: {
-        email: { label: "Email", type: "email" },
-        password: { label: "Password", type: "password" },
-      },
-      async authorize(credentials) {
-        // TODO: Implement actual credential verification with Prisma
-        // This is a placeholder for the auth foundation
-        if (!credentials?.email || !credentials?.password) {
-          return null;
-        }
-        return null;
-      },
-    }),
-  ],
+  providers: [],  // Providers added in index.ts (server only)
   pages: {
     signIn: "/login",
     newUser: "/registar",
   },
+  session: {
+    strategy: "jwt",
+  },
   callbacks: {
+    async jwt({ token, user }) {
+      if (user) {
+        token.id = user.id;
+      }
+      return token;
+    },
+    async session({ session, token }) {
+      if (token && session.user) {
+        session.user.id = token.id as string;
+      }
+      return session;
+    },
     authorized({ auth, request: { nextUrl } }) {
       const isLoggedIn = !!auth?.user;
-      const isOnDashboard = nextUrl.pathname.startsWith("/painel") ||
-        nextUrl.pathname.startsWith("/financas") ||
-        nextUrl.pathname.startsWith("/comunicacao") ||
-        nextUrl.pathname.startsWith("/assembleia") ||
-        nextUrl.pathname.startsWith("/contratos") ||
-        nextUrl.pathname.startsWith("/definicoes");
+      const protectedPaths = [
+        "/painel",
+        "/financas",
+        "/comunicacao",
+        "/assembleia",
+        "/contratos",
+        "/definicoes",
+        "/onboarding",
+      ];
+      const isProtected = protectedPaths.some((p) =>
+        nextUrl.pathname.startsWith(p)
+      );
 
-      if (isOnDashboard) {
+      if (isProtected) {
         if (isLoggedIn) return true;
-        return false; // Redirect to login
+        return false;
       }
 
       return true;

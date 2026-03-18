@@ -1,4 +1,9 @@
-export { auth as middleware } from "@/lib/auth";
+import NextAuth from "next-auth";
+import { authConfig } from "@/lib/auth/config";
+
+const { auth } = NextAuth(authConfig);
+
+export default auth;
 
 export const config = {
   matcher: [
@@ -8,5 +13,6 @@ export const config = {
     "/assembleia/:path*",
     "/contratos/:path*",
     "/definicoes/:path*",
+    "/onboarding/:path*",
   ],
 };

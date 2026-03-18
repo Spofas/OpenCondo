@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
+import { signOut } from "next-auth/react";
 import {
   LayoutDashboard,
   Wallet,
@@ -17,6 +18,7 @@ import {
   Settings,
   Menu,
   X,
+  LogOut,
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils/cn";
@@ -71,7 +73,12 @@ const navigation: NavGroup[] = [
   },
 ];
 
-export function Sidebar() {
+interface SidebarProps {
+  userName: string;
+  condominiumName: string;
+}
+
+export function Sidebar({ userName, condominiumName }: SidebarProps) {
   const pathname = usePathname();
   const t = useTranslations();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -102,14 +109,19 @@ export function Sidebar() {
           mobileOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
-        {/* Logo */}
-        <div className="flex h-16 items-center gap-3 border-b border-border px-6">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-sm font-bold text-primary-foreground">
-            OC
+        {/* Logo & Condominium */}
+        <div className="border-b border-border px-6 py-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-sm font-bold text-primary-foreground">
+              OC
+            </div>
+            <span className="text-lg font-semibold text-foreground">
+              OpenCondo
+            </span>
           </div>
-          <span className="text-lg font-semibold text-foreground">
-            OpenCondo
-          </span>
+          <p className="mt-2 truncate text-xs text-muted-foreground">
+            {condominiumName}
+          </p>
         </div>
 
         {/* Navigation */}
@@ -148,11 +160,23 @@ export function Sidebar() {
           ))}
         </nav>
 
-        {/* Footer */}
+        {/* User footer */}
         <div className="border-t border-border p-4">
-          <p className="text-xs text-muted-foreground">
-            OpenCondo v0.1.0
-          </p>
+          <div className="flex items-center justify-between">
+            <div className="min-w-0">
+              <p className="truncate text-sm font-medium text-foreground">
+                {userName}
+              </p>
+              <p className="text-xs text-muted-foreground">Administrador</p>
+            </div>
+            <button
+              onClick={() => signOut({ callbackUrl: "/login" })}
+              className="rounded-lg p-2 text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
+              title={t("auth.logout")}
+            >
+              <LogOut size={16} />
+            </button>
+          </div>
         </div>
       </aside>
     </>
