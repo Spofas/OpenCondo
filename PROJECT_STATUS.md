@@ -307,33 +307,74 @@ A budget is the annual spending plan for the building — "we expect to spend �
 - `src/app/(dashboard)/financas/despesas/expense-form.tsx` — Modal form
 - `src/app/(dashboard)/financas/despesas/expense-list.tsx` — Category summary + table
 
-### Phase 2: Financial Management (continued)
+### Phase 3: Communication (complete)
 
-Remaining items:
+#### Announcements (complete)
 
-- **Reserve fund balance tracking**: Separate tracking of the reserve fund (currently we store the percentage but not a running balance)
+**What:** Administrators can create, edit, pin, and delete announcements with categories and read tracking.
 
-### Phase 3: Communication
+- **Categories**: Geral, Obras, Manutenção, Assembleia, Urgente (color-coded badges)
+- **Pinning**: Pin important announcements to the top of the list
+- **Read tracking**: Shows how many members have seen each announcement (X/total)
+- **Dashboard integration**: Last 3 announcements shown on the dashboard
+- **Role-based**: Only admins can create/edit/delete; all members can view
 
-- **Announcements**: Admin posts notices (pinnable, categorized, with read tracking)
-- **Maintenance requests**: Any resident can report issues, admin tracks resolution
-- **Document archive**: Upload and organize building documents
+#### Maintenance Requests (complete)
 
-### Phase 4: Meetings & Contracts
+**What:** Any resident can submit maintenance requests; admins manage the resolution workflow.
 
-- **Meeting scheduling**: Create assembleias with agenda items
-- **Attendance & quorum**: Track who's present and calculate voting eligibility
-- **Voting**: Record votes per agenda item with permilagem-weighted results
-- **Atas (minutes)**: Structured meeting minutes following Portuguese legal format
-- **Contract management**: Track service contracts with renewal reminders
+- **Status workflow**: Submetido → Em análise → Em curso → Concluído
+- **Priority levels**: Baixa, Média, Alta, Urgente (color-coded)
+- **Status tracking**: Admin can update status via dropdown; each change creates a history record
+- **Summary cards**: Count of requests per status at the top
+- **Role-based**: All members can create requests; only admins can update status/delete
+- **Dashboard integration**: Open request count shown on dashboard
+
+#### Document Archive (complete)
+
+**What:** Administrators can register and organize building documents with categories and visibility.
+
+- **Categories**: Atas, Orçamentos, Seguros, Contratos, Regulamentos, Outros (filterable tabs with counts)
+- **Visibility**: Documents can be marked as "All" or "Admin only"
+- **External links**: Documents link to external storage (Google Drive, Dropbox, etc.)
+- **Role-based**: Only admins can add/edit/delete; non-admin users only see "All" visibility docs
+
+### Phase 4: Meetings & Contracts (complete)
+
+#### Meeting Management (complete)
+
+**What:** Full assembleia lifecycle — scheduling, attendance, voting, and minutes.
+
+- **Scheduling**: Create meetings with date, time, location, type (Ordinária/Extraordinária), and agenda items
+- **Agenda**: Dynamic field array for adding/removing agenda points with descriptions
+- **Attendance**: Track each member's status (Presente, Representado, Ausente) with live quorum calculation (permilagem-based)
+- **Voting**: Per-agenda-item voting with A favor/Contra/Abstenção buttons per unit; live permilagem-weighted results
+- **Ata (minutes)**: Rich text editor for meeting minutes; saved per meeting; viewable on dedicated Atas page
+- **Status management**: Mark meetings as Realizada or Cancelada
+- **Dashboard integration**: Next scheduled meeting date shown on dashboard
+
+#### Contract Management (complete)
+
+**What:** Track service contracts and insurance policies with renewal reminders.
+
+- **Contract types**: Limpeza, Elevador, Seguro, Jardinagem, Segurança, Administração, Manutenção, Outros
+- **Status tracking**: Ativo, Expirado, Renovado, Cancelado
+- **Payment info**: Annual cost, payment frequency (Mensal to Pontual), renewal type (Automática/Manual)
+- **Insurance fields**: Policy number, insured value, coverage type (shown conditionally for "Seguro" type)
+- **Supplier management**: Create suppliers inline when adding contracts (name, NIF, phone, email)
+- **Expiry warnings**: Summary cards show active count, total annual cost, and contracts expiring within 30 days
+- **CRUD**: Full create/edit/delete with status change dropdown
 
 ### Phase 5: Polish & Launch
+
+Remaining items:
 
 - Annual financial report generation (conta de gerência)
 - PDF receipts and ata exports
 - Bulk import (CSV upload for units/owners)
 - Email notifications
 - Mobile responsiveness polish
+- Reserve fund balance tracking
 - Deployment to production — see `DEPLOYMENT_GUIDE.md` for step-by-step instructions (Vercel + Neon)
 
 ---
@@ -369,12 +410,11 @@ This section exists so that if we start a fresh Claude Code session, I (Claude) 
 and get back up to speed without needing the conversation history.
 
 ### Current state (2026-03-18)
-- **Branch:** `claude/condo-financial-modules-AUjKO` (financial modules development)
-- **Base branch:** `claude/condo-app-planning-AUjKO` (stable baseline with auth + onboarding + budgets)
-- **Build status:** Passing (`next build` succeeds, all routes compile)
+- **Branch:** `claude/condo-app-planning-AUjKO`
+- **Build status:** Passing (`next build` succeeds, all 20 routes compile)
 - **Database:** Schema defined but no migrations run yet (using `db push` for dev)
-- **Test suite:** Vitest set up with tests for validators and server actions
-- **Latest feature:** Expense tracking (create, edit, delete with category summary) + Financial dashboard with real data
+- **Test suite:** 145 tests passing (8 test files for all validators)
+- **Latest features:** Communication modules (announcements, maintenance, documents), Meeting management (scheduling, attendance, voting, atas), Contract management with supplier tracking. Dashboard updated with live data from all modules.
 
 ### Gotchas & quirks discovered during development
 1. **Prisma 7 breaking changes:** PrismaClient no longer auto-connects to the DB. You must pass a driver adapter (we use `@prisma/adapter-pg` with `PrismaPg`). `new PrismaClient()` without options throws an error.
@@ -396,7 +436,4 @@ and get back up to speed without needing the conversation history.
 - **`db` singleton** in `lib/db/index.ts` with global caching to prevent connection leaks in dev
 
 ### What still needs to be built (in order)
-1. **Phase 2 — Finances (continued):** Reserve fund balance tracking (optional)
-2. **Phase 3 — Communication:** Announcements CRUD, maintenance request workflow, document upload
-3. **Phase 4 — Meetings:** Assembleia scheduling, attendance/quorum, voting, ata creation
-4. **Phase 5 — Polish:** PDF generation, email notifications, CSV import, mobile polish
+1. **Phase 5 — Polish:** PDF generation, email notifications, CSV import, mobile polish, reserve fund tracking

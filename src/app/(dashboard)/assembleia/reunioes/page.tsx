@@ -1,28 +1,105 @@
-import { Users, Plus } from "lucide-react";
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
+import { auth } from "@/lib/auth";
+import { db } from "@/lib/db";
+import { MeetingPageClient } from "./meeting-page-client";
 
-export default function MeetingsPage() {
+export default async function MeetingsPage() {
+  const session = await auth();
+  if (!session?.user?.id) redirect("/login");
+
+  const cookieStore = await cookies();
+  const selectedCondoId = cookieStore.get("activeCondominiumId")?.value;
+
+  const membership = selectedCondoId
+    ? await db.membership.findUnique({
+        where: {
+          userId_condominiumId: {
+            userId: session.user.id,
+            condominiumId: selectedCondoId,
+          },
+        },
+      })
+    : await db.membership.findFirst({
+        where: { userId: session.user.id, isActive: true },
+      });
+
+  if (!membership) redirect("/iniciar");
+
+  const [meetings, units, memberships] = await Promise.all([
+    db.meeting.findMany({
+      where: { condominiumId: membership.condominiumId },
+      include: {
+        agendaItems: { orderBy: { order: "asc" } },
+        attendees: {
+          include: { user: { select: { name: true } } },
+        },
+        votes: {
+          include: { unit: { select: { identifier: true } } },
+        },
+        ata: true,
+      },
+      orderBy: { date: "desc" },
+    }),
+    db.unit.findMany({
+      where: { condominiumId: membership.condominiumId },
+      include: { owner: { select: { name: true } } },
+      orderBy: { identifier: "asc" },
+    }),
+    db.membership.findMany({
+      where: { condominiumId: membership.condominiumId, isActive: true },
+      include: { user: { select: { id: true, name: true } } },
+    }),
+  ]);
+
+  const serializedMeetings = meetings.map((m) => ({
+    id: m.id,
+    date: m.date.toISOString(),
+    location: m.location,
+    type: m.type,
+    status: m.status,
+    agendaItems: m.agendaItems.map((a) => ({
+      id: a.id,
+      order: a.order,
+      title: a.title,
+      description: a.description,
+    })),
+    attendees: m.attendees.map((a) => ({
+      userId: a.userId,
+      userName: a.user.name,
+      status: a.status,
+      permilagem: a.permilagem,
+      representedBy: a.representedBy,
+    })),
+    votes: m.votes.map((v) => ({
+      agendaItemId: v.agendaItemId,
+      unitId: v.unitId,
+      unitIdentifier: v.unit.identifier,
+      vote: v.vote,
+      permilagem: v.permilagem,
+    })),
+    hasAta: !!m.ata,
+    ataContent: m.ata?.content || null,
+  }));
+
+  const serializedUnits = units.map((u) => ({
+    id: u.id,
+    identifier: u.identifier,
+    permilagem: u.permilagem,
+    ownerName: u.owner?.name || null,
+  }));
+
+  const serializedMembers = memberships.map((m) => ({
+    userId: m.user.id,
+    userName: m.user.name,
+  }));
+
   return (
-    <div>
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Assembleias</h1>
-          <p className="text-sm text-muted-foreground">
-            Reuniões de condóminos
-          </p>
-        </div>
-        <button className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors">
-          <Plus size={16} />
-          Agendar assembleia
-        </button>
-      </div>
-
-      <div className="rounded-xl border border-border bg-card">
-        <div className="flex h-64 flex-col items-center justify-center gap-3 text-muted-foreground">
-          <Users size={40} strokeWidth={1.5} />
-          <p className="text-sm">Nenhuma assembleia agendada</p>
-          <p className="text-xs">Agende a assembleia de condóminos e envie a convocatória</p>
-        </div>
-      </div>
-    </div>
+    <MeetingPageClient
+      meetings={serializedMeetings}
+      units={serializedUnits}
+      members={serializedMembers}
+      isAdmin={membership.role === "ADMIN"}
+    />
   );
 }
