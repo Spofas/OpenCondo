@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { getUserMembershipWithCondo } from "@/lib/auth/get-membership";
 import { InviteManager } from "./invite-manager";
 import { UnitManager } from "./unit-manager";
+import { CondoInfoCard } from "./condo-info-card";
 
 export default async function SettingsPage() {
   const session = await auth();
@@ -26,7 +27,7 @@ export default async function SettingsPage() {
       owner: { select: { name: true } },
       tenant: { select: { name: true } },
     },
-    orderBy: { identifier: "asc" },
+    orderBy: [{ sortOrder: "asc" }, { identifier: "asc" }],
   });
 
   // Get invites (only if admin)
@@ -51,41 +52,53 @@ export default async function SettingsPage() {
   return (
     <div>
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-foreground">Definições</h1>
+        <h1 className="text-2xl font-bold text-foreground">Definições de Condomínio</h1>
         <p className="text-sm text-muted-foreground">
-          Configurações do condomínio e conta
+          Configurações do condomínio e membros
         </p>
       </div>
 
       <div className="grid gap-6">
-        {/* Condominium Info */}
-        <div className="rounded-xl border border-border bg-card p-6">
-          <h2 className="mb-4 text-lg font-semibold text-card-foreground">
-            Dados do condomínio
-          </h2>
-          <div className="space-y-2 text-sm">
-            <p>
-              <span className="text-muted-foreground">Nome:</span>{" "}
-              {membership.condominium.name}
-            </p>
-            <p>
-              <span className="text-muted-foreground">Morada:</span>{" "}
-              {membership.condominium.address}
-            </p>
-            {membership.condominium.city && (
+        {/* Condominium Info — editable by admin */}
+        {membership.role === "ADMIN" ? (
+          <CondoInfoCard
+            condo={{
+              id: membership.condominiumId,
+              name: membership.condominium.name,
+              address: membership.condominium.address,
+              city: membership.condominium.city ?? null,
+              nif: membership.condominium.nif ?? null,
+            }}
+          />
+        ) : (
+          <div className="rounded-xl border border-border bg-card p-6">
+            <h2 className="mb-4 text-lg font-semibold text-card-foreground">
+              Dados do condomínio
+            </h2>
+            <div className="space-y-2 text-sm">
               <p>
-                <span className="text-muted-foreground">Cidade:</span>{" "}
-                {membership.condominium.city}
+                <span className="text-muted-foreground">Nome:</span>{" "}
+                {membership.condominium.name}
               </p>
-            )}
-            {membership.condominium.nif && (
               <p>
-                <span className="text-muted-foreground">NIF:</span>{" "}
-                {membership.condominium.nif}
+                <span className="text-muted-foreground">Morada:</span>{" "}
+                {membership.condominium.address}
               </p>
-            )}
+              {membership.condominium.city && (
+                <p>
+                  <span className="text-muted-foreground">Cidade:</span>{" "}
+                  {membership.condominium.city}
+                </p>
+              )}
+              {membership.condominium.nif && (
+                <p>
+                  <span className="text-muted-foreground">NIF:</span>{" "}
+                  {membership.condominium.nif}
+                </p>
+              )}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Members list */}
         <div className="rounded-xl border border-border bg-card p-6">

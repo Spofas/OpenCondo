@@ -17,10 +17,10 @@ import {
   FileSignature,
   Settings,
   Menu,
-  UserCircle,
   X,
   LogOut,
   ChevronDown,
+  ChevronRight,
   Building2,
   Plus,
   AlertTriangle,
@@ -81,7 +81,6 @@ const navigation: NavGroup[] = [
     labelKey: "",
     items: [
       { href: "/contratos", labelKey: "nav.contracts", icon: FileSignature, roles: ["ADMIN"] },
-      { href: "/minha-conta", labelKey: "nav.myAccount", icon: UserCircle },
       { href: "/definicoes", labelKey: "nav.settings", icon: Settings, roles: ["ADMIN"] },
     ],
   },
@@ -167,12 +166,15 @@ export function Sidebar({
 
           {/* Condominium selector */}
           <div className="relative mt-3">
+            <p className="mb-1 px-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+              Condomínio ativo
+            </p>
             <button
               onClick={() => setSwitcherOpen(!switcherOpen)}
-              className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-xs transition-colors hover:bg-secondary cursor-pointer"
+              className="flex w-full items-center gap-2.5 rounded-lg border border-primary/25 bg-primary/8 px-3 py-2 text-left transition-colors hover:bg-primary/15 cursor-pointer"
             >
-              <Building2 size={14} className="shrink-0 text-muted-foreground" />
-              <span className="min-w-0 flex-1 truncate text-muted-foreground">
+              <Building2 size={16} className="shrink-0 text-primary" />
+              <span className="min-w-0 flex-1 truncate text-sm font-semibold text-foreground">
                 {condominiumName}
               </span>
               <ChevronDown
@@ -266,10 +268,17 @@ export function Sidebar({
           })}
         </nav>
 
-        {/* User footer */}
-        <div className="border-t border-border p-4">
-          <div className="flex items-center justify-between">
-            <div className="min-w-0">
+        {/* User footer — Minha Conta link + logout */}
+        <div className="border-t border-border">
+          <Link
+            href="/minha-conta"
+            onClick={() => setMobileOpen(false)}
+            className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-secondary"
+          >
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">
+              {userName.charAt(0).toUpperCase()}
+            </div>
+            <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-medium text-foreground">
                 {userName}
               </p>
@@ -277,12 +286,15 @@ export function Sidebar({
                 {roleLabels[userRole] ?? userRole}
               </p>
             </div>
+            <ChevronRight size={14} className="shrink-0 text-muted-foreground" />
+          </Link>
+          <div className="px-4 pb-3">
             <button
               onClick={() => signOut({ callbackUrl: "/login" })}
-              className="rounded-lg p-2 text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
-              title={t("auth.logout")}
+              className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
             >
-              <LogOut size={16} />
+              <LogOut size={14} />
+              {t("auth.logout")}
             </button>
           </div>
         </div>

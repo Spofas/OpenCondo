@@ -155,6 +155,7 @@ model Unit {
   floor          String?
   typology       String?      // e.g., "T2", "T3"
   permilagem     Int          @default(0)
+  sortOrder      Int          @default(0)
   ownerId        String?
   tenantId       String?
   createdAt      DateTime     @default(now())
