@@ -26,16 +26,7 @@ export default async function QuotasPage() {
 
   if (!membership) redirect("/iniciar");
 
-  // Mark overdue quotas before fetching
   const now = new Date();
-  await db.quota.updateMany({
-    where: {
-      condominiumId: membership.condominiumId,
-      status: "PENDING",
-      dueDate: { lt: now },
-    },
-    data: { status: "OVERDUE" },
-  });
 
   // Fetch all quotas with unit info
   const quotas = await db.quota.findMany({
@@ -65,7 +56,10 @@ export default async function QuotasPage() {
     period: q.period,
     amount: Number(q.amount),
     dueDate: q.dueDate.toISOString(),
-    status: q.status as "PENDING" | "PAID" | "OVERDUE",
+    // Compute overdue status: a PENDING quota past its due date is overdue
+    status: (q.status === "PENDING" && q.dueDate < now
+      ? "OVERDUE"
+      : q.status) as "PENDING" | "PAID" | "OVERDUE",
     paymentDate: q.paymentDate?.toISOString() ?? null,
     paymentMethod: q.paymentMethod,
     paymentNotes: q.paymentNotes,

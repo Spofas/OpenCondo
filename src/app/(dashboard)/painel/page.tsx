@@ -86,17 +86,8 @@ export default async function DashboardPage() {
   const condoId = membership.condominiumId;
   const now = new Date();
 
-  // Mark overdue quotas
-  await db.quota.updateMany({
-    where: {
-      condominiumId: condoId,
-      status: "PENDING",
-      dueDate: { lt: now },
-    },
-    data: { status: "OVERDUE" },
-  });
-
-  // Fetch financial data in parallel
+  // Fetch financial data in parallel.
+  // Overdue status is computed: a PENDING quota past its due date is treated as overdue.
   const [
     pendingQuotas,
     overdueQuotas,
@@ -108,15 +99,21 @@ export default async function DashboardPage() {
     recentAnnouncements,
     latestBudget,
   ] = await Promise.all([
-      // Total pending amount
+      // Total pending amount (not yet due)
       db.quota.aggregate({
-        where: { condominiumId: condoId, status: "PENDING" },
+        where: { condominiumId: condoId, status: "PENDING", dueDate: { gte: now } },
         _sum: { amount: true },
         _count: true,
       }),
-      // Total overdue amount
+      // Total overdue: explicitly marked + PENDING past due date
       db.quota.aggregate({
-        where: { condominiumId: condoId, status: "OVERDUE" },
+        where: {
+          condominiumId: condoId,
+          OR: [
+            { status: "OVERDUE" },
+            { status: "PENDING", dueDate: { lt: now } },
+          ],
+        },
         _sum: { amount: true },
         _count: true,
       }),

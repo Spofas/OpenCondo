@@ -5,6 +5,13 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { parseCsvUnits } from "@/lib/csv-import";
 import { revalidatePath } from "next/cache";
+import { z } from "zod";
+
+const inviteSchema = z.object({
+  condominiumId: z.string().min(1),
+  role: z.enum(["OWNER", "TENANT"]),
+  email: z.string().email().optional().or(z.literal("")),
+});
 
 export async function switchCondominium(condominiumId: string) {
   const session = await auth();
@@ -41,12 +48,17 @@ export async function createInvite(data: {
     return { error: "Não autenticado" };
   }
 
+  const parsed = inviteSchema.safeParse(data);
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0].message };
+  }
+
   // Verify the user is an ADMIN of this condominium
   const membership = await db.membership.findUnique({
     where: {
       userId_condominiumId: {
         userId: session.user.id,
-        condominiumId: data.condominiumId,
+        condominiumId: parsed.data.condominiumId,
       },
     },
   });
@@ -57,9 +69,9 @@ export async function createInvite(data: {
 
   const invite = await db.invite.create({
     data: {
-      condominiumId: data.condominiumId,
-      role: data.role,
-      email: data.email || null,
+      condominiumId: parsed.data.condominiumId,
+      role: parsed.data.role,
+      email: parsed.data.email || null,
       expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
     },
   });

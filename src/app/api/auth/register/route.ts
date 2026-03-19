@@ -3,8 +3,38 @@ import { hash } from "bcryptjs";
 import { db } from "@/lib/db";
 import { registerSchema } from "@/lib/validators/auth";
 
+// In-memory rate limiter: max 5 attempts per IP per 15 minutes
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
+const RATE_LIMIT_MAX = 5;
+const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000;
+
+function isRateLimited(ip: string): boolean {
+  const now = Date.now();
+  const entry = rateLimitMap.get(ip);
+
+  if (!entry || now > entry.resetAt) {
+    rateLimitMap.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
+    return false;
+  }
+
+  if (entry.count >= RATE_LIMIT_MAX) return true;
+
+  entry.count++;
+  return false;
+}
+
 export async function POST(request: Request) {
   try {
+    const ip =
+      request.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "unknown";
+
+    if (isRateLimited(ip)) {
+      return NextResponse.json(
+        { error: "Demasiadas tentativas. Tente novamente em 15 minutos." },
+        { status: 429 }
+      );
+    }
+
     const body = await request.json();
     const parsed = registerSchema.safeParse(body);
 

@@ -1,8 +1,7 @@
 "use server";
 
-import { cookies } from "next/headers";
-import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { getAdminContext } from "@/lib/auth/admin-context";
 import {
   quotaGenerateSchema,
   quotaPaymentSchema,
@@ -16,31 +15,6 @@ import {
   statusAfterUndo,
 } from "@/lib/quota-calculations";
 import { revalidatePath } from "next/cache";
-
-async function getAdminContext() {
-  const session = await auth();
-  if (!session?.user?.id) return null;
-
-  const cookieStore = await cookies();
-  const condominiumId = cookieStore.get("activeCondominiumId")?.value;
-
-  const membership = condominiumId
-    ? await db.membership.findUnique({
-        where: {
-          userId_condominiumId: {
-            userId: session.user.id,
-            condominiumId,
-          },
-        },
-      })
-    : await db.membership.findFirst({
-        where: { userId: session.user.id, isActive: true },
-      });
-
-  if (!membership || membership.role !== "ADMIN") return null;
-
-  return { userId: session.user.id, condominiumId: membership.condominiumId };
-}
 
 /**
  * Generate quota records for all units across a range of months.
@@ -230,27 +204,3 @@ export async function deleteQuotasByPeriod(period: string) {
   };
 }
 
-/**
- * Mark overdue quotas — called when loading the page.
- * Updates any PENDING quotas past their due date to OVERDUE.
- */
-export async function markOverdueQuotas() {
-  const ctx = await getAdminContext();
-  if (!ctx) return { updated: 0 };
-
-  const now = new Date();
-  const result = await db.quota.updateMany({
-    where: {
-      condominiumId: ctx.condominiumId,
-      status: "PENDING",
-      dueDate: { lt: now },
-    },
-    data: { status: "OVERDUE" },
-  });
-
-  if (result.count > 0) {
-    revalidatePath("/financas/quotas");
-  }
-
-  return { updated: result.count };
-}
