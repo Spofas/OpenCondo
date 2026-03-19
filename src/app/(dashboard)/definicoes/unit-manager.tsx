@@ -1,14 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { Upload, Home, Plus, ChevronUp, ChevronDown, Trash2, X } from "lucide-react";
+import { Upload, Home, X } from "lucide-react";
 import {
   importUnitsFromCsv,
   assignUnitMember,
   updateUnitPermilagem,
-  createUnit,
-  moveUnit,
-  deleteUnit,
+  updateUnitIdentifier,
 } from "../actions";
 
 interface UnitInfo {
@@ -29,8 +27,6 @@ interface MemberInfo {
   userEmail: string;
 }
 
-const EMPTY_FORM = { identifier: "", floor: "", typology: "", permilagem: "" };
-
 export function UnitManager({
   condominiumId,
   units,
@@ -41,16 +37,12 @@ export function UnitManager({
   members: MemberInfo[];
 }) {
   const [showImport, setShowImport] = useState(false);
-  const [showCreate, setShowCreate] = useState(false);
   const [csvText, setCsvText] = useState("");
   const [importing, setImporting] = useState(false);
-  const [creating, setCreating] = useState(false);
-  const [createForm, setCreateForm] = useState(EMPTY_FORM);
-  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  // Track permilagem errors per unit
   const [permilagemErrors, setPermilagemErrors] = useState<Record<string, string>>({});
+  const [identifierErrors, setIdentifierErrors] = useState<Record<string, string>>({});
 
   function showMsg(type: "error" | "success", msg: string) {
     if (type === "error") { setError(msg); setSuccess(null); }
@@ -70,22 +62,6 @@ export function UnitManager({
     }
   }
 
-  async function handleCreate() {
-    const perm = parseInt(createForm.permilagem, 10);
-    if (!createForm.identifier.trim()) { showMsg("error", "Identificação é obrigatória"); return; }
-    if (isNaN(perm) || perm < 0 || perm > 1000) { showMsg("error", "Permilagem deve estar entre 0 e 1000"); return; }
-    setCreating(true);
-    const result = await createUnit(condominiumId, {
-      identifier: createForm.identifier,
-      floor: createForm.floor || undefined,
-      typology: createForm.typology || undefined,
-      permilagem: perm,
-    });
-    setCreating(false);
-    if (result.error) { showMsg("error", result.error); }
-    else { showMsg("success", "Fração criada"); setCreateForm(EMPTY_FORM); setShowCreate(false); }
-  }
-
   async function handleAssign(unitId: string, userId: string | null, role: "owner" | "tenant") {
     const result = await assignUnitMember(unitId, userId, role);
     if (result.error) showMsg("error", result.error);
@@ -102,15 +78,16 @@ export function UnitManager({
     if (result?.error) showMsg("error", result.error);
   }
 
-  async function handleMove(unitId: string, direction: "up" | "down") {
-    const result = await moveUnit(unitId, direction);
-    if (result.error) showMsg("error", result.error);
-  }
-
-  async function handleDelete(unitId: string) {
-    const result = await deleteUnit(unitId);
-    if (result.error) { showMsg("error", result.error); setDeleteConfirmId(null); }
-    else { setDeleteConfirmId(null); }
+  async function handleIdentifierChange(unitId: string, value: string) {
+    if (!value.trim()) {
+      setIdentifierErrors((e) => ({ ...e, [unitId]: "Obrigatório" }));
+      return;
+    }
+    setIdentifierErrors((e) => { const n = { ...e }; delete n[unitId]; return n; });
+    const result = await updateUnitIdentifier(unitId, value);
+    if (result?.error) {
+      setIdentifierErrors((e) => ({ ...e, [unitId]: result.error! }));
+    }
   }
 
   const totalPermilagem = units.reduce((sum, u) => sum + u.permilagem, 0);
@@ -120,24 +97,15 @@ export function UnitManager({
       {/* Header */}
       <div className="mb-4 flex items-center justify-between">
         <h2 className="text-lg font-semibold text-card-foreground">
-          Frações ({units.length})
+          {units.length === 1 ? "1 Fração" : `${units.length} Frações`}
         </h2>
-        <div className="flex gap-2">
-          <button
-            onClick={() => { setShowCreate(!showCreate); setShowImport(false); }}
-            className="flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
-          >
-            <Plus size={14} />
-            Nova fração
-          </button>
-          <button
-            onClick={() => { setShowImport(!showImport); setShowCreate(false); }}
-            className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted transition-colors"
-          >
-            <Upload size={14} />
-            Importar CSV
-          </button>
-        </div>
+        <button
+          onClick={() => setShowImport(!showImport)}
+          className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted transition-colors"
+        >
+          <Upload size={14} />
+          Importar CSV
+        </button>
       </div>
 
       {/* Feedback banners */}
@@ -153,68 +121,6 @@ export function UnitManager({
         </div>
       )}
 
-      {/* Create form */}
-      {showCreate && (
-        <div className="mb-6 rounded-lg border border-primary/20 bg-primary/5 p-4">
-          <h3 className="mb-3 text-sm font-medium text-foreground">Nova fração</h3>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <div className="sm:col-span-2">
-              <label className="mb-1 block text-xs text-muted-foreground">Identificação *</label>
-              <input
-                value={createForm.identifier}
-                onChange={(e) => setCreateForm((f) => ({ ...f, identifier: e.target.value }))}
-                placeholder="ex: R/C Esq"
-                className="w-full rounded-lg border border-input bg-background px-3 py-1.5 text-sm outline-none focus:border-primary"
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-xs text-muted-foreground">Piso</label>
-              <input
-                value={createForm.floor}
-                onChange={(e) => setCreateForm((f) => ({ ...f, floor: e.target.value }))}
-                placeholder="ex: R/C"
-                className="w-full rounded-lg border border-input bg-background px-3 py-1.5 text-sm outline-none focus:border-primary"
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-xs text-muted-foreground">Tipologia</label>
-              <input
-                value={createForm.typology}
-                onChange={(e) => setCreateForm((f) => ({ ...f, typology: e.target.value }))}
-                placeholder="ex: T2"
-                className="w-full rounded-lg border border-input bg-background px-3 py-1.5 text-sm outline-none focus:border-primary"
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-xs text-muted-foreground">Permilagem (0–1000)</label>
-              <input
-                type="number"
-                value={createForm.permilagem}
-                onChange={(e) => setCreateForm((f) => ({ ...f, permilagem: e.target.value }))}
-                min={0}
-                max={1000}
-                className="w-full rounded-lg border border-input bg-background px-3 py-1.5 text-sm outline-none focus:border-primary"
-              />
-            </div>
-          </div>
-          <div className="mt-3 flex gap-2">
-            <button
-              onClick={handleCreate}
-              disabled={creating}
-              className="rounded-lg bg-primary px-4 py-2 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors"
-            >
-              {creating ? "A criar..." : "Criar fração"}
-            </button>
-            <button
-              onClick={() => { setShowCreate(false); setCreateForm(EMPTY_FORM); }}
-              className="rounded-lg border border-border px-4 py-2 text-xs font-medium text-foreground hover:bg-muted transition-colors"
-            >
-              Cancelar
-            </button>
-          </div>
-        </div>
-      )}
-
       {/* CSV Import */}
       {showImport && (
         <div className="mb-6 rounded-lg border border-border bg-muted/30 p-4">
@@ -222,13 +128,13 @@ export function UnitManager({
           <p className="mb-3 text-xs text-muted-foreground">
             Formato: identificador;piso;tipologia;permilagem;email
             <br />
-            Exemplo: R/C Esq;R/C;T2;150;joao@email.pt
+            Exemplo: R/C Esq;0;T2;150;joao@email.pt
           </p>
           <textarea
             rows={5}
             value={csvText}
             onChange={(e) => setCsvText(e.target.value)}
-            placeholder={"R/C Esq;R/C;T2;150;joao@email.pt\n1.º Dto;1;T3;180;"}
+            placeholder={"R/C Esq;0;T2;150;joao@email.pt\n1.º Dto;1;T3;180;"}
             className="mb-3 w-full resize-none rounded-lg border border-input bg-background px-3 py-2 font-mono text-xs text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary"
           />
           <div className="flex gap-2">
@@ -264,48 +170,46 @@ export function UnitManager({
       {units.length === 0 ? (
         <div className="flex h-32 flex-col items-center justify-center gap-2 text-muted-foreground">
           <Home size={24} strokeWidth={1.5} />
-          <p className="text-sm">Nenhuma fração registada</p>
+          <p className="text-sm">Nenhuma fração registada. Use "Importar CSV" para adicionar frações.</p>
         </div>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border text-left text-muted-foreground">
-                <th className="w-8 pb-2" />
-                <th className="pb-2 font-medium">Fração</th>
+                <th className="pb-2 font-medium">Identificação</th>
                 <th className="pb-2 font-medium">Piso</th>
                 <th className="pb-2 font-medium">Tipo</th>
                 <th className="pb-2 font-medium">Permil.</th>
                 <th className="pb-2 font-medium">Proprietário</th>
                 <th className="pb-2 font-medium">Inquilino</th>
-                <th className="w-8 pb-2" />
               </tr>
             </thead>
             <tbody>
-              {units.map((unit, idx) => (
+              {units.map((unit) => (
                 <tr key={unit.id} className="border-b border-border/50">
-                  {/* Reorder arrows */}
-                  <td className="py-2">
-                    <div className="flex flex-col gap-0.5">
-                      <button
-                        onClick={() => handleMove(unit.id, "up")}
-                        disabled={idx === 0}
-                        className="rounded p-0.5 text-muted-foreground hover:bg-muted disabled:opacity-20"
-                        title="Mover para cima"
-                      >
-                        <ChevronUp size={13} />
-                      </button>
-                      <button
-                        onClick={() => handleMove(unit.id, "down")}
-                        disabled={idx === units.length - 1}
-                        className="rounded p-0.5 text-muted-foreground hover:bg-muted disabled:opacity-20"
-                        title="Mover para baixo"
-                      >
-                        <ChevronDown size={13} />
-                      </button>
+                  <td className="py-2.5">
+                    <div>
+                      <input
+                        type="text"
+                        defaultValue={unit.identifier}
+                        key={unit.identifier}
+                        onBlur={(e) => {
+                          if (e.target.value !== unit.identifier) {
+                            handleIdentifierChange(unit.id, e.target.value);
+                          }
+                        }}
+                        className={`w-full max-w-[140px] rounded border px-2 py-1 text-sm font-medium text-foreground outline-none focus:border-primary ${
+                          identifierErrors[unit.id]
+                            ? "border-destructive bg-destructive/5"
+                            : "border-transparent bg-transparent hover:border-input focus:bg-background"
+                        }`}
+                      />
+                      {identifierErrors[unit.id] && (
+                        <p className="mt-0.5 text-[10px] text-destructive">{identifierErrors[unit.id]}</p>
+                      )}
                     </div>
                   </td>
-                  <td className="py-2.5 font-medium text-foreground">{unit.identifier}</td>
                   <td className="py-2.5 text-muted-foreground">{unit.floor || "—"}</td>
                   <td className="py-2.5 text-muted-foreground">{unit.typology || "—"}</td>
                   <td className="py-2.5">
@@ -313,7 +217,7 @@ export function UnitManager({
                       <input
                         type="number"
                         defaultValue={unit.permilagem}
-                        key={unit.permilagem} // reset when server data changes
+                        key={unit.permilagem}
                         onBlur={(e) => handlePermilagemChange(unit.id, e.target.value)}
                         className={`w-16 rounded border px-2 py-1 text-xs text-foreground outline-none focus:border-primary ${
                           permilagemErrors[unit.id]
@@ -351,33 +255,6 @@ export function UnitManager({
                         <option key={m.userId} value={m.userId}>{m.userName}</option>
                       ))}
                     </select>
-                  </td>
-                  {/* Delete */}
-                  <td className="py-2.5">
-                    {deleteConfirmId === unit.id ? (
-                      <div className="flex items-center gap-1">
-                        <button
-                          onClick={() => handleDelete(unit.id)}
-                          className="rounded bg-destructive px-2 py-1 text-[10px] font-medium text-white hover:bg-destructive/90 transition-colors"
-                        >
-                          Sim
-                        </button>
-                        <button
-                          onClick={() => setDeleteConfirmId(null)}
-                          className="rounded border border-border px-2 py-1 text-[10px] font-medium hover:bg-muted transition-colors"
-                        >
-                          Não
-                        </button>
-                      </div>
-                    ) : (
-                      <button
-                        onClick={() => setDeleteConfirmId(unit.id)}
-                        className="rounded p-1 text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
-                        title="Eliminar fração"
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    )}
                   </td>
                 </tr>
               ))}

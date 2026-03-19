@@ -20,14 +20,21 @@ export default async function SettingsPage() {
     orderBy: { joinedAt: "asc" },
   });
 
-  // Get units for this condominium
-  const units = await db.unit.findMany({
+  // Get units for this condominium — sorted by floor (numeric), then identifier
+  const rawUnits = await db.unit.findMany({
     where: { condominiumId: membership.condominiumId },
     include: {
       owner: { select: { name: true } },
       tenant: { select: { name: true } },
     },
-    orderBy: [{ sortOrder: "asc" }, { identifier: "asc" }],
+  });
+  const units = rawUnits.slice().sort((a, b) => {
+    const fa = a.floor !== null ? parseInt(a.floor, 10) : Infinity;
+    const fb = b.floor !== null ? parseInt(b.floor, 10) : Infinity;
+    const fa2 = isNaN(fa) ? Infinity : fa;
+    const fb2 = isNaN(fb) ? Infinity : fb;
+    if (fa2 !== fb2) return fa2 - fb2;
+    return a.identifier.localeCompare(b.identifier, "pt");
   });
 
   // Get invites (only if admin)

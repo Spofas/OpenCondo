@@ -182,8 +182,7 @@ export function QuotaList({
                         minimumFractionDigits: 2,
                       })}
                       {" · "}
-                      {periodQuotas.length} fração
-                      {periodQuotas.length !== 1 ? "ões" : ""}
+                      {periodQuotas.length} {periodQuotas.length !== 1 ? "frações" : "fração"}
                     </p>
                   </div>
                   <div className="flex gap-2">
