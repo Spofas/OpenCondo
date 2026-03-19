@@ -14,7 +14,9 @@ model User {
   name           String
   email          String   @unique
   emailVerified  DateTime?
-  passwordHash   String?
+  passwordHash          String?
+  passwordResetToken    String?   @unique
+  passwordResetExpiresAt DateTime?
   phone          String?
   nif            String?
   image          String?
