@@ -7,6 +7,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { signIn } from "next-auth/react";
 import { loginSchema, type LoginInput } from "@/lib/validators/auth";
+import { resolvePostLoginDestination } from "./actions";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -33,8 +34,10 @@ export default function LoginPage() {
       return;
     }
 
-    router.push("/painel");
-    router.refresh();
+    // Resolve destination server-side so the fresh session cookie is readable
+    // and the activeCondominiumId cookie is set in the same round-trip.
+    const destination = await resolvePostLoginDestination();
+    router.push(destination);
   }
 
   return (
