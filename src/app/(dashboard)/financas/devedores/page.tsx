@@ -31,16 +31,6 @@ export default async function DebtorPage() {
   const condoId = membership.condominiumId;
   const now = new Date();
 
-  // Mark overdue quotas first
-  await db.quota.updateMany({
-    where: {
-      condominiumId: condoId,
-      status: "PENDING",
-      dueDate: { lt: now },
-    },
-    data: { status: "OVERDUE" },
-  });
-
   // Fetch all unpaid quotas with unit and owner info
   const unpaidQuotas = await db.quota.findMany({
     where: {

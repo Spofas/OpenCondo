@@ -238,6 +238,8 @@ model Quota {
   unit         Unit        @relation(fields: [unitId], references: [id], onDelete: Cascade)
 
   @@unique([condominiumId, unitId, period])
+  @@index([condominiumId, status])
+  @@index([condominiumId, status, dueDate])
 }
 
 // ─── Financial: Expenses ─────────────────────────────────────────────────────
@@ -260,6 +262,8 @@ model Expense {
   condominium  Condominium @relation(fields: [condominiumId], references: [id], onDelete: Cascade)
   supplier     Supplier?   @relation(fields: [supplierId], references: [id], onDelete: SetNull)
   budgetItem   BudgetItem? @relation(fields: [budgetItemId], references: [id], onDelete: SetNull)
+
+  @@index([condominiumId, date])
 }
 
 // ─── Financial: Recurring Expenses ──────────────────────────────────────────
@@ -304,6 +308,8 @@ model Announcement {
   author       User               @relation(fields: [authorId], references: [id])
   reads        AnnouncementRead[]
   attachments  AnnouncementAttachment[]
+
+  @@index([condominiumId, createdAt])
 }
 
 model AnnouncementAttachment {
@@ -362,6 +368,8 @@ model MaintenanceRequest {
   supplier     Supplier?            @relation(fields: [supplierId], references: [id], onDelete: SetNull)
   updates      MaintenanceUpdate[]
   photos       MaintenancePhoto[]
+
+  @@index([condominiumId, status])
 }
 
 model MaintenanceUpdate {
@@ -444,6 +452,9 @@ model Meeting {
   attendees    MeetingAttendee[]
   ata          Ata?
   votes        Vote[]
+
+  @@index([condominiumId, status])
+  @@index([condominiumId, date])
 }
 
 model AgendaItem {

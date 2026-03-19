@@ -1,7 +1,5 @@
 "use server";
 
-import { cookies } from "next/headers";
-import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import {
   meetingSchema,
@@ -14,31 +12,7 @@ import {
   type AtaInput,
 } from "@/lib/validators/meeting";
 import { revalidatePath } from "next/cache";
-
-async function getAdminContext() {
-  const session = await auth();
-  if (!session?.user?.id) return null;
-
-  const cookieStore = await cookies();
-  const condominiumId = cookieStore.get("activeCondominiumId")?.value;
-
-  const membership = condominiumId
-    ? await db.membership.findUnique({
-        where: {
-          userId_condominiumId: {
-            userId: session.user.id,
-            condominiumId,
-          },
-        },
-      })
-    : await db.membership.findFirst({
-        where: { userId: session.user.id, isActive: true },
-      });
-
-  if (!membership || membership.role !== "ADMIN") return null;
-
-  return { userId: session.user.id, condominiumId: membership.condominiumId };
-}
+import { getAdminContext } from "@/lib/auth/admin-context";
 
 export async function createMeeting(input: MeetingInput) {
   const ctx = await getAdminContext();
@@ -122,28 +96,30 @@ export async function saveAttendance(meetingId: string, input: AttendanceInput) 
     }
   }
 
-  for (const attendee of parsed.data.attendees) {
-    await db.meetingAttendee.upsert({
-      where: {
-        meetingId_userId: {
+  await Promise.all(
+    parsed.data.attendees.map((attendee) =>
+      db.meetingAttendee.upsert({
+        where: {
+          meetingId_userId: {
+            meetingId,
+            userId: attendee.userId,
+          },
+        },
+        update: {
+          status: attendee.status as "PRESENTE" | "REPRESENTADO" | "AUSENTE",
+          representedBy: attendee.representedBy || null,
+          permilagem: permilagemByOwner.get(attendee.userId) || 0,
+        },
+        create: {
           meetingId,
           userId: attendee.userId,
+          status: attendee.status as "PRESENTE" | "REPRESENTADO" | "AUSENTE",
+          representedBy: attendee.representedBy || null,
+          permilagem: permilagemByOwner.get(attendee.userId) || 0,
         },
-      },
-      update: {
-        status: attendee.status as "PRESENTE" | "REPRESENTADO" | "AUSENTE",
-        representedBy: attendee.representedBy || null,
-        permilagem: permilagemByOwner.get(attendee.userId) || 0,
-      },
-      create: {
-        meetingId,
-        userId: attendee.userId,
-        status: attendee.status as "PRESENTE" | "REPRESENTADO" | "AUSENTE",
-        representedBy: attendee.representedBy || null,
-        permilagem: permilagemByOwner.get(attendee.userId) || 0,
-      },
-    });
-  }
+      })
+    )
+  );
 
   revalidatePath("/assembleia/reunioes");
   return { success: true };
@@ -175,28 +151,30 @@ export async function recordVotes(meetingId: string, input: VoteInput) {
     permilagemByUnit.set(unit.id, unit.permilagem);
   }
 
-  for (const vote of parsed.data.votes) {
-    await db.vote.upsert({
-      where: {
-        meetingId_agendaItemId_unitId: {
+  await Promise.all(
+    parsed.data.votes.map((vote) =>
+      db.vote.upsert({
+        where: {
+          meetingId_agendaItemId_unitId: {
+            meetingId,
+            agendaItemId: parsed.data.agendaItemId,
+            unitId: vote.unitId,
+          },
+        },
+        update: {
+          vote: vote.vote as "A_FAVOR" | "CONTRA" | "ABSTENCAO",
+          permilagem: permilagemByUnit.get(vote.unitId) || 0,
+        },
+        create: {
           meetingId,
           agendaItemId: parsed.data.agendaItemId,
           unitId: vote.unitId,
+          vote: vote.vote as "A_FAVOR" | "CONTRA" | "ABSTENCAO",
+          permilagem: permilagemByUnit.get(vote.unitId) || 0,
         },
-      },
-      update: {
-        vote: vote.vote as "A_FAVOR" | "CONTRA" | "ABSTENCAO",
-        permilagem: permilagemByUnit.get(vote.unitId) || 0,
-      },
-      create: {
-        meetingId,
-        agendaItemId: parsed.data.agendaItemId,
-        unitId: vote.unitId,
-        vote: vote.vote as "A_FAVOR" | "CONTRA" | "ABSTENCAO",
-        permilagem: permilagemByUnit.get(vote.unitId) || 0,
-      },
-    });
-  }
+      })
+    )
+  );
 
   revalidatePath("/assembleia/reunioes");
   return { success: true };
