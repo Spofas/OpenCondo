@@ -6,6 +6,26 @@ All notable changes to OpenCondo are recorded here in reverse-chronological orde
 
 ## [Unreleased]
 
+### 2026-03-19 — Database seed for manual testing
+
+Created `prisma/seed.ts` with realistic data covering all modules:
+
+- **5 users**: 1 admin, 3 owners (one multi-unit), 1 tenant — all with password `password123`
+- **Edifício Aurora**: 6 units, permilagem = 1000, Portuguese postal code + NIF
+- **2026 budget** (approved, €24k) with 4 line items (limpeza, elevador, electricidade, fundo de reserva)
+- **72 quotas** (Jan–Dec × 6 units): Jan–Feb paid, Mar mixed, Apr–Dec pending
+- **8 expenses** across categories, linked to suppliers and budget items
+- **2 recurring expense templates** (limpeza mensal, elevador mensal)
+- **3 announcements** (1 pinned obras, 1 assembleia, 1 manutenção)
+- **2 maintenance requests** (1 completed with updates, 1 in progress)
+- **2 meetings**: 1 completed (with attendance, votes, final ata), 1 scheduled
+- **2 contracts** (1 active limpeza, 1 expired seguro)
+- **2 suppliers**, **2 documents**, **1 pending invite**
+
+Run with `pnpm db:seed` after `pnpm db:push`.
+
+---
+
 ### 2026-03-19 — Test coverage expansion (246 → 305 tests)
 
 Added three new test files covering previously untested areas:
