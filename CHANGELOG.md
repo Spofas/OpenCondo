@@ -6,6 +6,26 @@ All notable changes to OpenCondo are recorded here in reverse-chronological orde
 
 ## [Unreleased]
 
+### 2026-03-19 — Test coverage expansion (246 → 305 tests)
+
+Added three new test files covering previously untested areas:
+
+- **`validators/__tests__/auth.test.ts`** (14 tests) — register schema
+  (name length, email format, password min length, password mismatch) and
+  login schema (email format, password required but no min length)
+- **`validators/__tests__/condominium.test.ts`** (19 tests) — condominium
+  schema (postal code `XXXX-XXX` format, NIF 9-digit format, quotaModel
+  enum, optional fields accepting empty strings), unit schema (identifier
+  required, permilagem non-negative integer), units array (min 1 item)
+- **`__tests__/scenario-meetings.test.ts`** (26 tests) — quorum calculation
+  (present + represented permilagem, 50% boundary, multi-unit owner
+  aggregation, unknown attendee handling), permilagem-weighted vote tallying
+  (unanimous, split, abstentions, partial voting, exact 50/50 boundary)
+
+All 11 validators now have tests. Scenario test count: 5 suites, 90 tests.
+
+---
+
 ### 2026-03-19 — Membership lookup utility + admin-context file (phase 2)
 
 **`getUserMembership()` extracted — rolled out to all 16 dashboard pages.**
