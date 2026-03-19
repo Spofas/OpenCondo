@@ -6,6 +6,28 @@ All notable changes to OpenCondo are recorded here in reverse-chronological orde
 
 ## [Unreleased]
 
+### 2026-03-19 — Membership lookup utility + admin-context file (phase 2)
+
+**`getUserMembership()` extracted — rolled out to all 16 dashboard pages.**
+
+Created `src/lib/auth/get-membership.ts` with two exported helpers:
+- `getUserMembership(userId)` — resolves basic membership from the
+  `activeCondominiumId` cookie, used by 13 pages
+- `getUserMembershipWithCondo(userId)` — same but includes the full
+  `condominium` relation, used by `conta-gerencia`, `definicoes`, `minha-conta`
+
+Both functions read the cookie internally so pages only need one line:
+```ts
+const membership = await getUserMembership(session.user.id);
+```
+This removed ~200 lines of identical boilerplate across 16 page files.
+
+Also created the missing `src/lib/auth/admin-context.ts` file that was
+referenced in the previous commit but was absent from disk, causing build
+failures if a cold checkout was attempted.
+
+---
+
 ### 2026-03-19 — Performance & complexity optimisations (phase 1)
 
 **Completed as part of the post-analysis quick-wins pass.**

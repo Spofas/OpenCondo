@@ -1,7 +1,7 @@
-import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { getUserMembershipWithCondo } from "@/lib/auth/get-membership";
 import { buildContaGerencia, type ContaGerenciaReport } from "@/lib/conta-gerencia";
 import { ContaGerenciaClient } from "./conta-gerencia-client";
 
@@ -9,24 +9,7 @@ export default async function ContaGerenciaPage() {
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
 
-  const cookieStore = await cookies();
-  const condominiumId = cookieStore.get("activeCondominiumId")?.value;
-
-  const membership = condominiumId
-    ? await db.membership.findUnique({
-        where: {
-          userId_condominiumId: {
-            userId: session.user.id,
-            condominiumId,
-          },
-        },
-        include: { condominium: true },
-      })
-    : await db.membership.findFirst({
-        where: { userId: session.user.id, isActive: true },
-        include: { condominium: true },
-      });
-
+  const membership = await getUserMembershipWithCondo(session.user.id);
   if (!membership) redirect("/iniciar");
 
   const condoId = membership.condominiumId;

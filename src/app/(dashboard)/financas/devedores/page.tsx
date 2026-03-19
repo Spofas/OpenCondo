@@ -1,7 +1,7 @@
-import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { getUserMembership } from "@/lib/auth/get-membership";
 import { buildDebtorSummary } from "@/lib/debtor-calculations";
 import { DebtorClient } from "./debtor-client";
 
@@ -9,22 +9,7 @@ export default async function DebtorPage() {
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
 
-  const cookieStore = await cookies();
-  const condominiumId = cookieStore.get("activeCondominiumId")?.value;
-
-  const membership = condominiumId
-    ? await db.membership.findUnique({
-        where: {
-          userId_condominiumId: {
-            userId: session.user.id,
-            condominiumId,
-          },
-        },
-      })
-    : await db.membership.findFirst({
-        where: { userId: session.user.id, isActive: true },
-      });
-
+  const membership = await getUserMembership(session.user.id);
   if (!membership) redirect("/iniciar");
   if (membership.role !== "ADMIN") redirect("/painel");
 

@@ -1,31 +1,14 @@
-import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { getUserMembershipWithCondo } from "@/lib/auth/get-membership";
 import { MyAccountClient } from "./my-account-client";
 
 export default async function MyAccountPage() {
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
 
-  const cookieStore = await cookies();
-  const selectedCondoId = cookieStore.get("activeCondominiumId")?.value;
-
-  const membership = selectedCondoId
-    ? await db.membership.findUnique({
-        where: {
-          userId_condominiumId: {
-            userId: session.user.id,
-            condominiumId: selectedCondoId,
-          },
-        },
-        include: { condominium: true },
-      })
-    : await db.membership.findFirst({
-        where: { userId: session.user.id, isActive: true },
-        include: { condominium: true },
-      });
-
+  const membership = await getUserMembershipWithCondo(session.user.id);
   if (!membership) redirect("/iniciar");
 
   const condoId = membership.condominiumId;

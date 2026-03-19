@@ -1,29 +1,14 @@
-import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { getUserMembership } from "@/lib/auth/get-membership";
 import { MaintenancePageClient } from "./maintenance-page-client";
 
 export default async function MaintenancePage() {
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
 
-  const cookieStore = await cookies();
-  const selectedCondoId = cookieStore.get("activeCondominiumId")?.value;
-
-  const membership = selectedCondoId
-    ? await db.membership.findUnique({
-        where: {
-          userId_condominiumId: {
-            userId: session.user.id,
-            condominiumId: selectedCondoId,
-          },
-        },
-      })
-    : await db.membership.findFirst({
-        where: { userId: session.user.id, isActive: true },
-      });
-
+  const membership = await getUserMembership(session.user.id);
   if (!membership) redirect("/iniciar");
 
   const requests = await db.maintenanceRequest.findMany({

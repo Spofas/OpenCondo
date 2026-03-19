@@ -1,29 +1,14 @@
-import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { getUserMembership } from "@/lib/auth/get-membership";
 import { ExpensePageClient } from "./expense-page-client";
 
 export default async function ExpensesPage() {
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
 
-  const cookieStore = await cookies();
-  const selectedCondoId = cookieStore.get("activeCondominiumId")?.value;
-
-  const membership = selectedCondoId
-    ? await db.membership.findUnique({
-        where: {
-          userId_condominiumId: {
-            userId: session.user.id,
-            condominiumId: selectedCondoId,
-          },
-        },
-      })
-    : await db.membership.findFirst({
-        where: { userId: session.user.id, isActive: true },
-      });
-
+  const membership = await getUserMembership(session.user.id);
   if (!membership) redirect("/iniciar");
 
   const expenses = await db.expense.findMany({
