@@ -5,6 +5,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { parseCsvUnits } from "@/lib/csv-import";
 import { revalidatePath } from "next/cache";
+import { sendInviteEmail } from "@/lib/email";
 
 export async function switchCondominium(condominiumId: string) {
   const session = await auth();
@@ -55,6 +56,11 @@ export async function createInvite(data: {
     return { error: "Apenas administradores podem criar convites" };
   }
 
+  const condominium = await db.condominium.findUnique({
+    where: { id: data.condominiumId },
+    select: { name: true },
+  });
+
   const invite = await db.invite.create({
     data: {
       condominiumId: data.condominiumId,
@@ -63,6 +69,14 @@ export async function createInvite(data: {
       expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
     },
   });
+
+  if (data.email && condominium) {
+    try {
+      await sendInviteEmail(data.email, invite.token, condominium.name, data.role);
+    } catch {
+      // Email failure is non-fatal — the admin can still share the token manually.
+    }
+  }
 
   return { success: true, token: invite.token };
 }
