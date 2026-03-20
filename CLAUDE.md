@@ -11,8 +11,8 @@ pnpm test             # Run all tests (vitest)
 pnpm test:watch       # Run tests in watch mode
 pnpm lint             # ESLint
 pnpm verify           # Run lint + test + build (full check)
-pnpm db:push          # Push schema changes to dev DB
-pnpm db:migrate       # Create a migration (production)
+pnpm db:migrate       # Create a new migration (generates SQL + applies to local DB)
+pnpm db:deploy        # Apply pending migrations to the connected DB (used by Vercel)
 pnpm db:studio        # Open Prisma Studio
 ```
 
@@ -107,8 +107,18 @@ src/
 
 ### Prisma / Database
 
-- **Dev:** Use `pnpm db:push` (quick schema sync, no migration files)
-- **Prod:** Use `pnpm db:migrate` (creates migration SQL)
+The project uses **Prisma Migrate** for all schema changes. Migration files live in `prisma/migrations/` and are committed to git. Vercel automatically runs `prisma migrate deploy` before every build (`vercel.json`).
+
+**Schema change workflow:**
+1. Edit `prisma/schema.prisma`
+2. Run `pnpm db:migrate` — Prisma generates the SQL migration file and applies it to your local DB
+3. Commit both the schema change and the generated migration file
+4. Push — Vercel deploys and automatically applies the migration to production
+
+**Rules:**
+- **Never** use `pnpm db:push` on a DB that has migration history — it will conflict
+- Migration files are **immutable** once applied; never edit them
+- For data migrations alongside schema changes, add the SQL directly to the migration file that Prisma generates
 - **Decimals:** Always convert to `number` before sending to client: `Number(record.amount)`
 - **Unique constraints:** Use `@@unique` for business rules (e.g., one budget per condo per year)
 - **Cascade deletes:** Use `onDelete: Cascade` for owned children, `SetNull` for optional references
