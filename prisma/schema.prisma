@@ -14,7 +14,9 @@ model User {
   name           String
   email          String   @unique
   emailVerified  DateTime?
-  passwordHash   String?
+  passwordHash          String?
+  passwordResetToken    String?   @unique
+  passwordResetExpiresAt DateTime?
   phone          String?
   nif            String?
   image          String?
@@ -102,6 +104,7 @@ model Condominium {
   contracts           Contract[]
   suppliers           Supplier[]
   invites             Invite[]
+  recurringExpenses   RecurringExpense[]
 }
 
 // ─── Membership (User <-> Condominium) ───────────────────────────────────────
@@ -149,9 +152,10 @@ model Unit {
   id             String       @id @default(cuid())
   condominiumId  String
   identifier     String       // e.g., "1.º Esq", "R/C Dto"
-  floor          String?
+  floor          Int?         // 0 = R/C, 1 = 1.º, -1 = cave, etc.
   typology       String?      // e.g., "T2", "T3"
   permilagem     Int          @default(0)
+  sortOrder      Int          @default(0)
   ownerId        String?
   tenantId       String?
   createdAt      DateTime     @default(now())
@@ -237,6 +241,8 @@ model Quota {
   unit         Unit        @relation(fields: [unitId], references: [id], onDelete: Cascade)
 
   @@unique([condominiumId, unitId, period])
+  @@index([condominiumId, status])
+  @@index([condominiumId, status, dueDate])
 }
 
 // ─── Financial: Expenses ─────────────────────────────────────────────────────
@@ -259,6 +265,25 @@ model Expense {
   condominium  Condominium @relation(fields: [condominiumId], references: [id], onDelete: Cascade)
   supplier     Supplier?   @relation(fields: [supplierId], references: [id], onDelete: SetNull)
   budgetItem   BudgetItem? @relation(fields: [budgetItemId], references: [id], onDelete: SetNull)
+
+  @@index([condominiumId, date])
+}
+
+// ─── Financial: Recurring Expenses ──────────────────────────────────────────
+
+model RecurringExpense {
+  id             String           @id @default(cuid())
+  condominiumId  String
+  description    String
+  amount         Decimal          @db.Decimal(12, 2)
+  category       String
+  frequency      PaymentFrequency @default(MENSAL)
+  isActive       Boolean          @default(true)
+  lastGenerated  String?          // period string e.g. "2026-03" (last generated month)
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  condominium Condominium @relation(fields: [condominiumId], references: [id], onDelete: Cascade)
 }
 
 // ─── Communication: Announcements ────────────────────────────────────────────
@@ -286,6 +311,8 @@ model Announcement {
   author       User               @relation(fields: [authorId], references: [id])
   reads        AnnouncementRead[]
   attachments  AnnouncementAttachment[]
+
+  @@index([condominiumId, createdAt])
 }
 
 model AnnouncementAttachment {
@@ -344,6 +371,8 @@ model MaintenanceRequest {
   supplier     Supplier?            @relation(fields: [supplierId], references: [id], onDelete: SetNull)
   updates      MaintenanceUpdate[]
   photos       MaintenancePhoto[]
+
+  @@index([condominiumId, status])
 }
 
 model MaintenanceUpdate {
@@ -426,6 +455,9 @@ model Meeting {
   attendees    MeetingAttendee[]
   ata          Ata?
   votes        Vote[]
+
+  @@index([condominiumId, status])
+  @@index([condominiumId, date])
 }
 
 model AgendaItem {

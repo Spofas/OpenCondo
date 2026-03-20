@@ -1,32 +1,16 @@
-import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { getUserMembershipWithCondo } from "@/lib/auth/get-membership";
 import { InviteManager } from "./invite-manager";
+import { UnitManager } from "./unit-manager";
+import { CondoInfoCard } from "./condo-info-card";
 
 export default async function SettingsPage() {
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
 
-  // Get current condo from cookie
-  const cookieStore = await cookies();
-  const selectedCondoId = cookieStore.get("activeCondominiumId")?.value;
-
-  const membership = selectedCondoId
-    ? await db.membership.findUnique({
-        where: {
-          userId_condominiumId: {
-            userId: session.user.id,
-            condominiumId: selectedCondoId,
-          },
-        },
-        include: { condominium: true },
-      })
-    : await db.membership.findFirst({
-        where: { userId: session.user.id, isActive: true },
-        include: { condominium: true },
-      });
-
+  const membership = await getUserMembershipWithCondo(session.user.id);
   if (!membership) redirect("/iniciar");
 
   // Get members of this condominium
@@ -34,6 +18,16 @@ export default async function SettingsPage() {
     where: { condominiumId: membership.condominiumId, isActive: true },
     include: { user: { select: { id: true, name: true, email: true } } },
     orderBy: { joinedAt: "asc" },
+  });
+
+  // Get units for this condominium — sorted by floor ASC (nulls last), then identifier
+  const units = await db.unit.findMany({
+    where: { condominiumId: membership.condominiumId },
+    include: {
+      owner: { select: { name: true } },
+      tenant: { select: { name: true } },
+    },
+    orderBy: [{ floor: "asc" }, { identifier: "asc" }],
   });
 
   // Get invites (only if admin)
@@ -58,41 +52,53 @@ export default async function SettingsPage() {
   return (
     <div>
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-foreground">Definições</h1>
+        <h1 className="text-2xl font-bold text-foreground">Definições de Condomínio</h1>
         <p className="text-sm text-muted-foreground">
-          Configurações do condomínio e conta
+          Configurações do condomínio e membros
         </p>
       </div>
 
       <div className="grid gap-6">
-        {/* Condominium Info */}
-        <div className="rounded-xl border border-border bg-card p-6">
-          <h2 className="mb-4 text-lg font-semibold text-card-foreground">
-            Dados do condomínio
-          </h2>
-          <div className="space-y-2 text-sm">
-            <p>
-              <span className="text-muted-foreground">Nome:</span>{" "}
-              {membership.condominium.name}
-            </p>
-            <p>
-              <span className="text-muted-foreground">Morada:</span>{" "}
-              {membership.condominium.address}
-            </p>
-            {membership.condominium.city && (
+        {/* Condominium Info — editable by admin */}
+        {membership.role === "ADMIN" ? (
+          <CondoInfoCard
+            condo={{
+              id: membership.condominiumId,
+              name: membership.condominium.name,
+              address: membership.condominium.address,
+              city: membership.condominium.city ?? null,
+              nif: membership.condominium.nif ?? null,
+            }}
+          />
+        ) : (
+          <div className="rounded-xl border border-border bg-card p-6">
+            <h2 className="mb-4 text-lg font-semibold text-card-foreground">
+              Dados do condomínio
+            </h2>
+            <div className="space-y-2 text-sm">
               <p>
-                <span className="text-muted-foreground">Cidade:</span>{" "}
-                {membership.condominium.city}
+                <span className="text-muted-foreground">Nome:</span>{" "}
+                {membership.condominium.name}
               </p>
-            )}
-            {membership.condominium.nif && (
               <p>
-                <span className="text-muted-foreground">NIF:</span>{" "}
-                {membership.condominium.nif}
+                <span className="text-muted-foreground">Morada:</span>{" "}
+                {membership.condominium.address}
               </p>
-            )}
+              {membership.condominium.city && (
+                <p>
+                  <span className="text-muted-foreground">Cidade:</span>{" "}
+                  {membership.condominium.city}
+                </p>
+              )}
+              {membership.condominium.nif && (
+                <p>
+                  <span className="text-muted-foreground">NIF:</span>{" "}
+                  {membership.condominium.nif}
+                </p>
+              )}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Members list */}
         <div className="rounded-xl border border-border bg-card p-6">
@@ -122,6 +128,29 @@ export default async function SettingsPage() {
             ))}
           </div>
         </div>
+
+        {/* Unit management — admin only */}
+        {membership.role === "ADMIN" && (
+          <UnitManager
+            condominiumId={membership.condominiumId}
+            units={units.map((u) => ({
+              id: u.id,
+              identifier: u.identifier,
+              floor: u.floor,
+              typology: u.typology,
+              permilagem: u.permilagem,
+              ownerName: u.owner?.name || null,
+              ownerId: u.ownerId,
+              tenantName: u.tenant?.name || null,
+              tenantId: u.tenantId,
+            }))}
+            members={members.map((m) => ({
+              userId: m.user.id,
+              userName: m.user.name,
+              userEmail: m.user.email,
+            }))}
+          />
+        )}
 
         {/* Invite section — admin only */}
         {membership.role === "ADMIN" && (

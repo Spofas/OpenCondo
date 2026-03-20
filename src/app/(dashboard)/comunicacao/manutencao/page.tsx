@@ -1,28 +1,40 @@
-import { Wrench, Plus } from "lucide-react";
+import { redirect } from "next/navigation";
+import { auth } from "@/lib/auth";
+import { db } from "@/lib/db";
+import { getUserMembership } from "@/lib/auth/get-membership";
+import { MaintenancePageClient } from "./maintenance-page-client";
 
-export default function MaintenancePage() {
+export default async function MaintenancePage() {
+  const session = await auth();
+  if (!session?.user?.id) redirect("/login");
+
+  const membership = await getUserMembership(session.user.id);
+  if (!membership) redirect("/iniciar");
+
+  const requests = await db.maintenanceRequest.findMany({
+    where: { condominiumId: membership.condominiumId },
+    include: {
+      requester: { select: { name: true } },
+    },
+    orderBy: { createdAt: "desc" },
+  });
+
+  const serializedRequests = requests.map((r) => ({
+    id: r.id,
+    title: r.title,
+    description: r.description,
+    location: r.location,
+    priority: r.priority,
+    status: r.status,
+    requesterName: r.requester.name,
+    createdAt: r.createdAt.toISOString(),
+    updatedAt: r.updatedAt.toISOString(),
+  }));
+
   return (
-    <div>
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Manutenção</h1>
-          <p className="text-sm text-muted-foreground">
-            Pedidos de manutenção e reparação
-          </p>
-        </div>
-        <button className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors">
-          <Plus size={16} />
-          Novo pedido
-        </button>
-      </div>
-
-      <div className="rounded-xl border border-border bg-card">
-        <div className="flex h-64 flex-col items-center justify-center gap-3 text-muted-foreground">
-          <Wrench size={40} strokeWidth={1.5} />
-          <p className="text-sm">Nenhum pedido de manutenção</p>
-          <p className="text-xs">Os pedidos de manutenção submetidos aparecem aqui</p>
-        </div>
-      </div>
-    </div>
+    <MaintenancePageClient
+      requests={serializedRequests}
+      isAdmin={membership.role === "ADMIN"}
+    />
   );
 }

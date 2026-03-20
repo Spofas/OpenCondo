@@ -1,28 +1,46 @@
-import { Megaphone, Plus } from "lucide-react";
+import { redirect } from "next/navigation";
+import { auth } from "@/lib/auth";
+import { db } from "@/lib/db";
+import { getUserMembership } from "@/lib/auth/get-membership";
+import { AnnouncementPageClient } from "./announcement-page-client";
 
-export default function AnnouncementsPage() {
+export default async function AnnouncementsPage() {
+  const session = await auth();
+  if (!session?.user?.id) redirect("/login");
+
+  const membership = await getUserMembership(session.user.id);
+  if (!membership) redirect("/iniciar");
+
+  const [announcements, totalMembers] = await Promise.all([
+    db.announcement.findMany({
+      where: { condominiumId: membership.condominiumId },
+      include: {
+        author: { select: { name: true } },
+        _count: { select: { reads: true } },
+      },
+      orderBy: { createdAt: "desc" },
+    }),
+    db.membership.count({
+      where: { condominiumId: membership.condominiumId, isActive: true },
+    }),
+  ]);
+
+  const serializedAnnouncements = announcements.map((a) => ({
+    id: a.id,
+    title: a.title,
+    body: a.body,
+    category: a.category,
+    pinned: a.pinned,
+    authorName: a.author.name,
+    createdAt: a.createdAt.toISOString(),
+    readCount: a._count.reads,
+  }));
+
   return (
-    <div>
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Avisos</h1>
-          <p className="text-sm text-muted-foreground">
-            Comunicados e avisos aos condóminos
-          </p>
-        </div>
-        <button className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors">
-          <Plus size={16} />
-          Novo aviso
-        </button>
-      </div>
-
-      <div className="rounded-xl border border-border bg-card">
-        <div className="flex h-64 flex-col items-center justify-center gap-3 text-muted-foreground">
-          <Megaphone size={40} strokeWidth={1.5} />
-          <p className="text-sm">Nenhum aviso publicado</p>
-          <p className="text-xs">Publique avisos para comunicar com os condóminos</p>
-        </div>
-      </div>
-    </div>
+    <AnnouncementPageClient
+      announcements={serializedAnnouncements}
+      isAdmin={membership.role === "ADMIN"}
+      totalMembers={totalMembers}
+    />
   );
 }

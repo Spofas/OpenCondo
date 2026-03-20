@@ -42,6 +42,10 @@
     "quotas": "Quotas",
     "expenses": "Despesas",
     "budget": "Orçamento",
+    "annualReport": "Conta de gerência",
+    "debtors": "Devedores",
+    "recurringExpenses": "Recorrentes",
+    "calendar": "Calendário",
     "communication": "Comunicação",
     "announcements": "Avisos",
     "maintenance": "Manutenção",
@@ -50,7 +54,8 @@
     "meetingsList": "Reuniões",
     "minutes": "Atas",
     "contracts": "Contratos",
-    "settings": "Definições"
+    "myAccount": "Minha conta",
+    "settings": "Definições de Condomínio"
   },
   "dashboard": {
     "title": "Painel",

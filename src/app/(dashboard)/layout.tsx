@@ -50,7 +50,7 @@ export default async function DashboardLayout({
         }))}
       />
       <main className="lg:pl-64">
-        <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-6xl px-4 pb-8 pt-16 sm:px-6 sm:pt-8 lg:px-8">
           {children}
         </div>
       </main>

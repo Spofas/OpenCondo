@@ -37,7 +37,7 @@ export default function OnboardingPage() {
       city: "",
       nif: "",
       quotaModel: "PERMILAGEM",
-      units: [{ identifier: "", floor: "", typology: "", permilagem: 0 }],
+      units: [{ identifier: "", floor: undefined, typology: "", permilagem: 0 }],
     },
   });
 
@@ -275,9 +275,13 @@ export default function OnboardingPage() {
                             Piso
                           </label>
                           <input
-                            {...register(`units.${index}.floor`)}
+                            type="number"
+                            {...register(`units.${index}.floor`, {
+                              setValueAs: (v) =>
+                                v === "" || v === null || v === undefined ? undefined : parseInt(v, 10),
+                            })}
                             className="w-full rounded-lg border border-border bg-background px-3 py-1.5 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary"
-                            placeholder="1.º"
+                            placeholder="0 = R/C"
                           />
                         </div>
 
@@ -320,7 +324,7 @@ export default function OnboardingPage() {
                 <button
                   type="button"
                   onClick={() =>
-                    append({ identifier: "", floor: "", typology: "", permilagem: 0 })
+                    append({ identifier: "", floor: undefined, typology: "", permilagem: 0 })
                   }
                   className="flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-border py-2.5 text-sm text-muted-foreground hover:border-primary hover:text-primary transition-colors"
                 >

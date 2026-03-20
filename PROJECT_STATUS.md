@@ -307,31 +307,113 @@ A budget is the annual spending plan for the building — "we expect to spend �
 - `src/app/(dashboard)/financas/despesas/expense-form.tsx` — Modal form
 - `src/app/(dashboard)/financas/despesas/expense-list.tsx` — Category summary + table
 
-### Phase 2: Financial Management (continued)
+### Phase 3: Communication (complete)
 
-Remaining items:
+#### Announcements (complete)
 
-- **Reserve fund balance tracking**: Separate tracking of the reserve fund (currently we store the percentage but not a running balance)
+**What:** Administrators can create, edit, pin, and delete announcements with categories and read tracking.
 
-### Phase 3: Communication
+- **Categories**: Geral, Obras, Manutenção, Assembleia, Urgente (color-coded badges)
+- **Pinning**: Pin important announcements to the top of the list
+- **Read tracking**: Shows how many members have seen each announcement (X/total)
+- **Dashboard integration**: Last 3 announcements shown on the dashboard
+- **Role-based**: Only admins can create/edit/delete; all members can view
 
-- **Announcements**: Admin posts notices (pinnable, categorized, with read tracking)
-- **Maintenance requests**: Any resident can report issues, admin tracks resolution
-- **Document archive**: Upload and organize building documents
+#### Maintenance Requests (complete)
 
-### Phase 4: Meetings & Contracts
+**What:** Any resident can submit maintenance requests; admins manage the resolution workflow.
 
-- **Meeting scheduling**: Create assembleias with agenda items
-- **Attendance & quorum**: Track who's present and calculate voting eligibility
-- **Voting**: Record votes per agenda item with permilagem-weighted results
-- **Atas (minutes)**: Structured meeting minutes following Portuguese legal format
-- **Contract management**: Track service contracts with renewal reminders
+- **Status workflow**: Submetido → Em análise → Em curso → Concluído
+- **Priority levels**: Baixa, Média, Alta, Urgente (color-coded)
+- **Status tracking**: Admin can update status via dropdown; each change creates a history record
+- **Summary cards**: Count of requests per status at the top
+- **Role-based**: All members can create requests; only admins can update status/delete
+- **Dashboard integration**: Open request count shown on dashboard
 
-### Phase 5: Polish & Launch
+#### Document Archive (complete)
 
-- Annual financial report generation (conta de gerência)
+**What:** Administrators can register and organize building documents with categories and visibility.
+
+- **Categories**: Atas, Orçamentos, Seguros, Contratos, Regulamentos, Outros (filterable tabs with counts)
+- **Visibility**: Documents can be marked as "All" or "Admin only"
+- **External links**: Documents link to external storage (Google Drive, Dropbox, etc.)
+- **Role-based**: Only admins can add/edit/delete; non-admin users only see "All" visibility docs
+
+### Phase 4: Meetings & Contracts (complete)
+
+#### Meeting Management (complete)
+
+**What:** Full assembleia lifecycle — scheduling, attendance, voting, and minutes.
+
+- **Scheduling**: Create meetings with date, time, location, type (Ordinária/Extraordinária), and agenda items
+- **Agenda**: Dynamic field array for adding/removing agenda points with descriptions
+- **Attendance**: Track each member's status (Presente, Representado, Ausente) with live quorum calculation (permilagem-based)
+- **Voting**: Per-agenda-item voting with A favor/Contra/Abstenção buttons per unit; live permilagem-weighted results
+- **Ata (minutes)**: Rich text editor for meeting minutes; saved per meeting; viewable on dedicated Atas page
+- **Status management**: Mark meetings as Realizada or Cancelada
+- **Dashboard integration**: Next scheduled meeting date shown on dashboard
+
+#### Contract Management (complete)
+
+**What:** Track service contracts and insurance policies with renewal reminders.
+
+- **Contract types**: Limpeza, Elevador, Seguro, Jardinagem, Segurança, Administração, Manutenção, Outros
+- **Status tracking**: Ativo, Expirado, Renovado, Cancelado
+- **Payment info**: Annual cost, payment frequency (Mensal to Pontual), renewal type (Automática/Manual)
+- **Insurance fields**: Policy number, insured value, coverage type (shown conditionally for "Seguro" type)
+- **Supplier management**: Create suppliers inline when adding contracts (name, NIF, phone, email)
+- **Expiry warnings**: Summary cards show active count, total annual cost, and contracts expiring within 30 days
+- **CRUD**: Full create/edit/delete with status change dropdown
+
+### Phase 5: Advanced Features & Polish (in progress)
+
+#### Conta de Gerência — Annual Financial Report (complete)
+
+**What:** Auto-generated annual management report required by Portuguese law.
+
+- Summarizes: total income (quotas), expenses by category, budget variance, reserve fund status, outstanding debts per unit
+- Pure function `buildContaGerencia()` processes all data — fully testable without Next.js
+- PDF export via API route
+- Available at `/financas/conta-gerencia`
+
+#### Debtor Tracking (complete)
+
+**What:** Dedicated view for tracking overdue units with aging analysis.
+
+- **Aging buckets**: Current (not yet due), 1-30 days, 31-60 days, 61-90 days, 90+ days overdue
+- **Per-unit breakdown**: Owner name/email, unpaid count, visual aging bar, amounts per bucket
+- **Summary cards**: Total debt, total overdue, units with debt, units with overdue
+- **Color-coded**: Blue (current) → amber (1-30d) → orange (31-60d) → red (61-90d) → dark red (90d+)
+- Pure logic in `src/lib/debtor-calculations.ts` (8 unit tests + 12 scenario tests)
+- Available at `/financas/devedores` (admin only)
+
+#### Recurring Expenses (complete)
+
+**What:** Template-based expense management for expenses that repeat periodically.
+
+- **CRUD for templates**: Create/edit/delete recurring expense models with description, amount, category, frequency
+- **Frequency support**: Monthly (MENSAL), quarterly (TRIMESTRAL), semi-annual (SEMESTRAL), annual (ANUAL)
+- **One-click generation**: "Gerar" button creates actual expense records for the current period
+- **Duplicate prevention**: Tracks `lastGenerated` period per template to avoid double-generation
+- **Pause/resume**: Toggle individual templates active/inactive without deleting
+- Schema: Added `RecurringExpense` model to Prisma
+- Validator tests (5) + frequency scenario tests (16)
+- Available at `/financas/despesas-recorrentes` (admin only)
+
+#### Calendar View (complete)
+
+**What:** Visual monthly calendar showing meetings, quota due dates, and contract renewals.
+
+- **Monthly grid**: Clickable days with color-coded dots (green = meetings, blue = quotas, orange = contracts)
+- **Event detail sidebar**: Click a day to see full event details; otherwise shows next 10 upcoming events
+- **Month navigation**: Previous/next buttons with "Today" shortcut
+- **Data sources**: Meetings (date + type + status), quota due dates (grouped + overdue count), contract end dates
+- Available at `/calendario` (all roles)
+
+#### Remaining Phase 5 items:
+
 - PDF receipts and ata exports
-- Bulk import (CSV upload for units/owners)
+- Bulk import UI (CSV parsing logic exists in `src/lib/csv-import.ts`, needs page)
 - Email notifications
 - Mobile responsiveness polish
 - Deployment to production — see `DEPLOYMENT_GUIDE.md` for step-by-step instructions (Vercel + Neon)
@@ -368,13 +450,18 @@ Remaining items:
 This section exists so that if we start a fresh Claude Code session, I (Claude) can read this file
 and get back up to speed without needing the conversation history.
 
-### Current state (2026-03-18)
-- **Branch:** `claude/condo-financial-modules-AUjKO` (financial modules development)
-- **Base branch:** `claude/condo-app-planning-AUjKO` (stable baseline with auth + onboarding + budgets)
-- **Build status:** Passing (`next build` succeeds, all routes compile)
-- **Database:** Schema defined but no migrations run yet (using `db push` for dev)
-- **Test suite:** Vitest set up with tests for validators and server actions
-- **Latest feature:** Expense tracking (create, edit, delete with category summary) + Financial dashboard with real data
+### Current state (2026-03-19)
+- **Branch:** `claude/condo-app-planning-AUjKO`
+- **Build status:** Passing (`next build` succeeds, all 26 routes compile)
+- **Database:** Schema defined with 31+ models (including RecurringExpense). No migrations — using `db push` for dev. DB not running in CI, but schema is valid.
+- **Test suite:** 246 tests passing (20 test files)
+  - 9 validator test files
+  - 3 pure logic unit test files (quota-calculations, debtor-calculations, conta-gerencia)
+  - 4 scenario test files (lifecycle, csv-import, recurring-expenses, edge-cases) with shared fixtures
+  - 2 server action mock tests (condominium, invites)
+  - 2 auth validator tests
+- **Latest features:** Debtor tracking with aging analysis, recurring expense templates, calendar view, plus comprehensive scenario tests simulating realistic condo data (Edifício Aurora: 6 units, full year of quotas with mixed payment patterns).
+- **Note:** `pnpm lint` is broken on Next.js 16.1.7 (`next lint` misparses args). The build catches type errors, so this is non-blocking.
 
 ### Gotchas & quirks discovered during development
 1. **Prisma 7 breaking changes:** PrismaClient no longer auto-connects to the DB. You must pass a driver adapter (we use `@prisma/adapter-pg` with `PrismaPg`). `new PrismaClient()` without options throws an error.
@@ -396,7 +483,9 @@ and get back up to speed without needing the conversation history.
 - **`db` singleton** in `lib/db/index.ts` with global caching to prevent connection leaks in dev
 
 ### What still needs to be built (in order)
-1. **Phase 2 — Finances (continued):** Reserve fund balance tracking (optional)
-2. **Phase 3 — Communication:** Announcements CRUD, maintenance request workflow, document upload
-3. **Phase 4 — Meetings:** Assembleia scheduling, attendance/quorum, voting, ata creation
-4. **Phase 5 — Polish:** PDF generation, email notifications, CSV import, mobile polish
+1. **Manual testing** — All new features (debtor tracking, recurring expenses, calendar) need manual testing with a running database. Start the DB, run `pnpm db:push`, seed some data, and walk through each page.
+2. **Bulk import UI** — CSV parsing logic exists (`src/lib/csv-import.ts`) but has no page/form yet. Needs a page at `/definicoes` or `/onboarding` with file upload + preview + confirm flow.
+3. **PDF exports** — Receipt generation for quotas (API route exists at `/api/receipts/[quotaId]`), ata PDF export, conta de gerência PDF.
+4. **Email notifications** — Transactional emails for announcements, quota reminders, maintenance updates, meeting convocatória.
+5. **Mobile responsiveness** — Current UI is desktop-first; needs responsive tweaks for sidebar, tables, modals.
+6. **Deployment** — See `DEPLOYMENT_GUIDE.md` for Vercel + Neon setup.

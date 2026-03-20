@@ -1,30 +1,17 @@
-import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { getUserMembership } from "@/lib/auth/get-membership";
 import { QuotaPageClient } from "./quota-page-client";
 
 export default async function QuotasPage() {
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
 
-  const cookieStore = await cookies();
-  const selectedCondoId = cookieStore.get("activeCondominiumId")?.value;
-
-  const membership = selectedCondoId
-    ? await db.membership.findUnique({
-        where: {
-          userId_condominiumId: {
-            userId: session.user.id,
-            condominiumId: selectedCondoId,
-          },
-        },
-      })
-    : await db.membership.findFirst({
-        where: { userId: session.user.id, isActive: true },
-      });
-
+  const membership = await getUserMembership(session.user.id);
   if (!membership) redirect("/iniciar");
+
+  const isAdmin = membership.role === "ADMIN";
 
   // Mark overdue quotas before fetching
   const now = new Date();
@@ -37,17 +24,33 @@ export default async function QuotasPage() {
     data: { status: "OVERDUE" },
   });
 
-  // Fetch all quotas with unit info
+  // Non-admin: only show quotas for units they own/rent
+  let unitIdFilter: { in: string[] } | undefined;
+  if (!isAdmin) {
+    const ownUnits = await db.unit.findMany({
+      where: {
+        condominiumId: membership.condominiumId,
+        OR: [{ ownerId: session.user.id }, { tenantId: session.user.id }],
+      },
+      select: { id: true },
+    });
+    unitIdFilter = { in: ownUnits.map((u) => u.id) };
+  }
+
+  // Fetch quotas (filtered for non-admin)
   const quotas = await db.quota.findMany({
-    where: { condominiumId: membership.condominiumId },
+    where: {
+      condominiumId: membership.condominiumId,
+      ...(unitIdFilter ? { unitId: unitIdFilter } : {}),
+    },
     include: { unit: { select: { id: true, identifier: true, permilagem: true } } },
-    orderBy: [{ period: "desc" }, { unit: { identifier: "asc" } }],
+    orderBy: [{ period: "desc" }, { unit: { floor: "asc" } }, { unit: { identifier: "asc" } }],
   });
 
-  // Fetch units for the generation form
+  // Fetch units for the generation form (admin only; non-admin doesn't see the form)
   const units = await db.unit.findMany({
     where: { condominiumId: membership.condominiumId },
-    orderBy: { identifier: "asc" },
+    orderBy: [{ floor: "asc" }, { identifier: "asc" }],
     select: { id: true, identifier: true, permilagem: true },
   });
 
@@ -76,7 +79,7 @@ export default async function QuotasPage() {
       quotas={serializedQuotas}
       units={units}
       defaultSplitMethod={condominium?.quotaModel ?? "PERMILAGEM"}
-      isAdmin={membership.role === "ADMIN"}
+      isAdmin={isAdmin}
     />
   );
 }
