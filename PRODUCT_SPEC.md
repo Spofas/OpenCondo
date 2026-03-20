@@ -1,7 +1,7 @@
 # OpenCondo — Product Specification
 
 **Version:** 0.1 (MVP)
-**Date:** 2026-03-17
+**Date:** 2026-03-20
 **License:** MIT (open core — premium features in paid tier)
 
 ---
@@ -40,7 +40,6 @@ OpenCondo is designed with these legal requirements as first-class features.
 ### 2.1 Authentication
 
 - Email + password registration
-- Email verification required
 - Password reset via email
 - Invitation-based onboarding (admin invites owners/tenants via email)
 - Session-based auth with secure cookies
@@ -59,8 +58,7 @@ OpenCondo is designed with these legal requirements as first-class features.
 5. Invites owners via email (owner receives link to register and claim their unit)
 
 **Bulk import:**
-- CSV/Excel upload for units and owners
-- Template file provided for download
+- CSV upload for units
 - Validation with error reporting before import
 
 **Data model — multi-condo ready:**
@@ -79,7 +77,7 @@ OpenCondo is designed with these legal requirements as first-class features.
 - Generate quota statements per owner per period
 - Track payment status: pendente, pago, em atraso
 - Manual payment recording (admin marks as paid with date, method, notes)
-- Overdue tracking with configurable grace period
+- Overdue tracking
 - Payment receipts (recibos) — PDF generation
 - Debt summary per owner
 
@@ -88,10 +86,8 @@ OpenCondo is designed with these legal requirements as first-class features.
 #### 3.2.2 Expense Tracking
 
 - Record expenses with: date, description, amount, category, supplier
-- Expense categories (configurable): limpeza, elevador, eletricidade, água, seguro, manutenção, obras, jurídico, outros
-- Attach invoices/receipts (file upload — PDF, image)
+- Expense categories: limpeza, elevador, eletricidade, água, seguro, manutenção, obras, jurídico, outros
 - Recurring expense support (e.g., monthly cleaning contract)
-- Supplier directory
 
 #### 3.2.3 Budgets & Reserve Fund
 
@@ -114,28 +110,22 @@ OpenCondo is designed with these legal requirements as first-class features.
 #### 3.3.1 Announcements (Avisos)
 
 - Admin creates announcements visible to all residents
-- Title, body (rich text), optional attachments
+- Title, body, optional attachments
 - Pin important announcements
-- Mark as read tracking
 - Categories: geral, obras, manutenção, assembleia, urgente
-- Email notification sent to all residents on new announcement
 
 #### 3.3.2 Maintenance Requests (Pedidos de Manutenção)
 
 - Any user can submit a request
-- Fields: title, description, location (common area or unit-adjacent), priority, photos
+- Fields: title, description, location, priority
 - Status workflow: submetido → em análise → em curso → concluído
-- Admin can assign to a supplier, add notes, update status
-- Requester receives email on status changes
-- History log of all updates
+- Admin can add notes and update status
 
 #### 3.3.3 Document Archive (Arquivo de Documentos)
 
-- Organized folder structure: atas, orçamentos, seguros, contratos, regulamentos, outros
+- Organized by category: atas, orçamentos, seguros, contratos, regulamentos, outros
 - Upload any file type (PDF, images, Word, Excel)
 - Role-based visibility (some documents admin-only, others shared)
-- Version tracking for updated documents
-- Search by name and category
 
 ### 3.4 Assembleia de Condóminos (General Meetings)
 
@@ -143,51 +133,31 @@ OpenCondo is designed with these legal requirements as first-class features.
 
 - Schedule meeting: date, time, location, type (ordinária/extraordinária)
 - Create agenda (ordem de trabalhos) with numbered items
-- Send convocatória (notice) via email to all owners (legally required 10 days in advance for ordinary, varies for extraordinary)
-- Track attendance (presença): present, represented (com procuração), absent
+- Track attendance: present, represented (com procuração), absent
 - Quorum calculation based on permilagem of present/represented owners
 
 #### 3.4.2 Atas (Minutes)
 
-- Structured ata template following Portuguese legal requirements:
-  - Date, time, location
-  - List of attendees with permilagem
-  - Quorum verification
-  - Deliberations per agenda item with vote counts
-  - Signatures section
+- Structured ata following Portuguese legal requirements
 - Rich text editor for ata content
 - PDF export with proper formatting
-- Digital approval workflow: owners can approve/contest the ata within 90 days (per law)
 - Ata numbering (sequential per condominium)
 
 #### 3.4.3 Voting
 
 - Record votes per agenda item: a favor, contra, abstenção
 - Vote weight based on permilagem
-- Calculate majorities: simple majority, 2/3 majority, unanimity (as required by different deliberation types)
-- Vote results recorded in the ata
+- Calculate majorities: simple, 2/3, unanimity
 
 ### 3.5 Contract Management (Gestão de Contratos)
 
 - Track recurring contracts: cleaning, elevator maintenance, insurance, pest control, etc.
 - Fields: supplier, description, start date, end date, renewal type (auto/manual), annual cost, payment frequency
-- Document attachment (contract PDF)
-- **Renewal reminders:** email alerts at configurable intervals before expiry (e.g., 90, 60, 30 days)
-- Insurance-specific fields: policy number, coverage type, insured value
 - Contract status: ativo, expirado, renovado, cancelado
 
-### 3.6 Notifications (Email)
+### 3.6 Calendar (Calendário)
 
-Triggered email notifications for:
-- New announcement published
-- Maintenance request status change
-- Quota payment due (configurable days before due date)
-- Quota overdue reminder
-- Meeting convocatória
-- Contract renewal approaching
-- Ata available for review
-
-Email provider: transactional email service (e.g., Resend, Postmark)
+- Unified view of upcoming meetings, contract renewals, and quota due dates
 
 ---
 
@@ -200,30 +170,23 @@ Email provider: transactional email service (e.g., Resend, Postmark)
 
 ### 4.2 Security
 - HTTPS everywhere
-- Password hashing (bcrypt/argon2)
+- Password hashing (bcrypt)
 - CSRF protection
 - Rate limiting on auth endpoints
 - Input sanitization (XSS, SQL injection prevention)
-- File upload validation and scanning
 - Role-based access control on every endpoint
 
 ### 4.3 Privacy (GDPR/RGPD)
-- EU-hosted infrastructure
-- Privacy policy in Portuguese
-- Cookie consent
-- User data export on request
-- Account deletion capability
+- EU-hosted infrastructure (Neon Frankfurt region)
 - Minimal data collection
 
 ### 4.4 Accessibility
-- WCAG 2.1 AA compliance target
 - Keyboard navigation
-- Screen reader support
 - Sufficient color contrast
 
 ### 4.5 Internationalization
-- Portuguese (pt-PT) as default language
-- i18n framework from day one (next-intl or similar)
+- Portuguese (pt-PT) as default and primary language
+- i18n framework in place (next-intl)
 - All user-facing strings externalized
 - Date/currency formatting: dd/mm/yyyy, € (EUR)
 - Future: English (en) support
@@ -241,14 +204,13 @@ Email provider: transactional email service (e.g., Resend, Postmark)
 | **Database** | PostgreSQL | Robust relational DB, perfect for financial data |
 | **ORM** | Prisma | Type-safe queries, migrations, great DX |
 | **Auth** | NextAuth.js (Auth.js) | Flexible auth with session management |
-| **UI Library** | shadcn/ui + Tailwind CSS | Friendly, customizable components. Not a heavy dependency |
+| **UI** | Tailwind CSS + custom components | Lightweight, no heavy component library dependency |
 | **Forms** | React Hook Form + Zod | Validation on client and server |
-| **Email** | Resend (or Postmark) | Transactional email with good deliverability |
-| **File Storage** | S3-compatible (Cloudflare R2 or AWS S3) | Document and invoice uploads |
-| **PDF Generation** | @react-pdf/renderer or Puppeteer | Receipts, atas, financial reports |
+| **Email** | Resend (planned) | Transactional email with good deliverability |
+| **File Storage** | S3-compatible (planned) | Document and invoice uploads |
+| **PDF Generation** | API route (receipts implemented) | Receipts, atas, financial reports |
 | **i18n** | next-intl | Proven i18n for Next.js App Router |
-| **Hosting** | Vercel (app) + Neon (DB) | Managed, scalable, EU regions available. Neon chosen over Supabase because OpenCondo already has its own auth (NextAuth) and ORM (Prisma) — Supabase's bundled auth/client would be redundant. |
-| **Monorepo** | Turborepo (if needed) | Future: shared packages between web and mobile |
+| **Hosting** | Vercel (app) + Neon (DB) | Managed, scalable, EU regions. Neon chosen over Supabase because OpenCondo already has its own auth (NextAuth) and ORM (Prisma) — Supabase's bundled auth/client would be redundant. |
 
 ### 5.2 Project Structure
 
@@ -258,11 +220,15 @@ OpenCondo/
 │   ├── app/                    # Next.js App Router pages
 │   │   ├── (auth)/             # Login, register, forgot password
 │   │   ├── (dashboard)/        # Authenticated app shell
+│   │   │   ├── actions.ts      # Shared server actions
 │   │   │   ├── painel/         # Dashboard overview
 │   │   │   ├── financas/       # Finances section
 │   │   │   │   ├── quotas/
 │   │   │   │   ├── despesas/
-│   │   │   │   └── orcamento/
+│   │   │   │   ├── despesas-recorrentes/
+│   │   │   │   ├── devedores/
+│   │   │   │   ├── orcamento/
+│   │   │   │   └── conta-gerencia/
 │   │   │   ├── comunicacao/    # Communication section
 │   │   │   │   ├── avisos/
 │   │   │   │   ├── manutencao/
@@ -271,33 +237,22 @@ OpenCondo/
 │   │   │   │   ├── reunioes/
 │   │   │   │   └── atas/
 │   │   │   ├── contratos/      # Contracts section
-│   │   │   └── definicoes/     # Settings
-│   │   └── api/                # API routes
-│   ├── components/             # Shared UI components
-│   │   ├── ui/                 # shadcn/ui primitives
-│   │   ├── forms/              # Form components
-│   │   └── layout/             # Layout components (sidebar, header)
+│   │   │   ├── calendario/     # Calendar
+│   │   │   └── definicoes/     # Settings (units, members, condo info)
+│   │   └── api/                # API routes (auth, receipts, conta-gerencia)
 │   ├── lib/                    # Utilities and shared logic
 │   │   ├── auth/               # Auth configuration
-│   │   ├── db/                 # Prisma client, helpers
-│   │   ├── email/              # Email templates and sending
-│   │   ├── pdf/                # PDF generation
-│   │   ├── validators/         # Zod schemas
-│   │   └── utils/              # General utilities
-│   ├── i18n/                   # Internationalization
-│   │   ├── pt.json             # Portuguese translations
-│   │   └── en.json             # English translations (future)
-│   └── types/                  # TypeScript type definitions
+│   │   ├── db/                 # Prisma client (lazy-initialized)
+│   │   ├── validators/         # Zod schemas + tests
+│   │   └── *-calculations.ts   # Pure business logic (testable)
+│   └── i18n/messages/pt.json   # Portuguese translations
 ├── prisma/
 │   ├── schema.prisma           # Database schema
-│   ├── migrations/             # Database migrations
+│   ├── migrations/             # Database migrations (committed to git)
 │   └── seed.ts                 # Seed data for development
-├── public/                     # Static assets
-├── tests/                      # Test files
-├── .env.example                # Environment variables template
-├── next.config.js
+├── vercel.json                 # Build command (migrate + build)
+├── next.config.ts
 ├── tailwind.config.ts
-├── tsconfig.json
 └── package.json
 ```
 
@@ -307,15 +262,14 @@ OpenCondo/
 Condominium
 ├── id, name, address, nif, totalPermilagem
 ├── quotaModel (PERMILAGEM | EQUAL)
-├── fiscalYearStart
 │
 ├── Units (Frações)
-│   ├── id, identifier, floor, typology, permilagem
+│   ├── id, identifier, floor (INT), typology, permilagem
 │   ├── ownerId → User
 │   └── tenantId → User (optional)
 │
-├── Users (via membership)
-│   ├── id, name, email, phone, nif
+├── Users (via Membership)
+│   ├── id, name, email, passwordHash
 │   ├── role (ADMIN | OWNER | TENANT)
 │   └── condominiumId → Condominium
 │
@@ -327,112 +281,101 @@ Condominium
 ├── Quotas
 │   ├── id, unitId, period, amount, dueDate
 │   ├── status (PENDING | PAID | OVERDUE)
-│   └── paymentDate, paymentMethod, receiptUrl
+│   └── paymentDate, paymentMethod, notes
 │
 ├── Expenses (Despesas)
 │   ├── id, date, description, amount, category
-│   ├── supplierId, invoiceUrl
-│   └── budgetItemId (optional link to budget)
+│   ├── isRecurring, recurrenceMonths
+│   └── supplierId (optional)
 │
 ├── Announcements (Avisos)
 │   ├── id, title, body, category, pinned
-│   ├── authorId → User
-│   └── AnnouncementReads (userId, readAt)
+│   └── authorId → User
 │
 ├── MaintenanceRequests (Pedidos de Manutenção)
 │   ├── id, title, description, location, priority
 │   ├── status, requesterId → User
-│   ├── assignedSupplierId
 │   └── MaintenanceUpdates (status, note, date)
 │
 ├── Documents (Documentos)
-│   ├── id, name, category, fileUrl, version
+│   ├── id, name, category, fileUrl
 │   └── visibility (ALL | ADMIN_ONLY)
 │
 ├── Meetings (Assembleias)
 │   ├── id, date, time, location, type (ORDINARY | EXTRAORDINARY)
 │   ├── status (SCHEDULED | COMPLETED | CANCELLED)
 │   ├── AgendaItems (order, title, description)
-│   ├── Attendees (userId, status, permilagem, representedBy)
+│   ├── Attendees (userId, status, permilagem)
 │   └── Ata
 │       ├── id, number, content, status (DRAFT | FINAL)
-│       ├── pdfUrl
-│       └── AtaApprovals (userId, status, date)
-│
-├── Votes
-│   ├── id, meetingId, agendaItemId, unitId
-│   ├── vote (FOR | AGAINST | ABSTAIN)
-│   └── permilagem (weight)
+│       └── pdfUrl
 │
 ├── Contracts (Contratos)
 │   ├── id, supplier, description, type
 │   ├── startDate, endDate, renewalType (AUTO | MANUAL)
 │   ├── annualCost, paymentFrequency
-│   ├── status (ACTIVE | EXPIRED | RENEWED | CANCELLED)
-│   └── documentUrl, policyNumber (insurance)
+│   └── status (ACTIVE | EXPIRED | RENEWED | CANCELLED)
 │
-└── Suppliers (Fornecedores)
-    ├── id, name, nif, phone, email
-    ├── category, notes
-    └── contractIds
+└── Invites
+    ├── id, email, role, unitId (optional)
+    └── token, expiresAt, usedAt
 ```
 
 ### 5.4 API Design
 
-Server Actions (Next.js) for mutations, with RSC (React Server Components) for data fetching. API routes for:
-- Webhook endpoints (future payment provider callbacks)
-- File upload endpoints
-- PDF generation endpoints
-- Email preview (development)
+Server Actions (Next.js) for all mutations, React Server Components for data fetching. API routes for:
+- Auth (NextAuth)
+- PDF receipt generation (`/api/receipts/[quotaId]`)
+- Conta de gerência report generation (`/api/conta-gerencia`)
 
-All mutations validated with Zod schemas. Authorization checked via middleware and per-action guards.
+All mutations validated with Zod schemas. Authorization checked per-action via `getAdminContext()`.
 
 ---
 
 ## 6. MVP Roadmap
 
-### Phase 1 — Foundation (Weeks 1–2)
-- [ ] Project scaffolding (Next.js, Prisma, Tailwind, shadcn/ui)
-- [ ] Database schema and initial migration
-- [ ] Authentication (register, login, forgot password)
-- [ ] Condominium creation and unit setup
-- [ ] User invitation flow
-- [ ] App shell (sidebar navigation, responsive layout)
-- [ ] i18n setup with Portuguese strings
+### Phase 1 — Foundation ✅
+- [x] Project scaffolding (Next.js, Prisma, Tailwind)
+- [x] Database schema and migrations
+- [x] Authentication (register, login, forgot password, password reset)
+- [x] Condominium creation and unit setup
+- [x] User invitation flow (email invite → register → claim unit)
+- [x] App shell (sidebar navigation, responsive layout)
+- [x] Role-based views (ADMIN, OWNER, TENANT)
+- [x] i18n setup with Portuguese strings
 
-### Phase 2 — Finances (Weeks 3–4)
-- [ ] Budget creation and management
-- [ ] Reserve fund tracking
-- [ ] Quota generation and management
-- [ ] Manual payment recording
-- [ ] Expense tracking with categories
-- [ ] Overdue quota tracking
-- [ ] Basic financial dashboard
+### Phase 2 — Finances ✅
+- [x] Budget creation and management
+- [x] Reserve fund tracking (10% legal minimum)
+- [x] Quota generation (permilagem-based and equal split)
+- [x] Manual payment recording
+- [x] Expense tracking with categories
+- [x] Recurring expenses
+- [x] Overdue quota tracking (Devedores page)
+- [x] Payment receipt PDF generation
+- [x] Conta de gerência (annual financial report) PDF
 
-### Phase 3 — Communication (Weeks 5–6)
-- [ ] Announcements (CRUD, pinning, read tracking)
-- [ ] Maintenance requests (submit, status workflow)
-- [ ] Document archive (upload, organize, search)
-- [ ] Email notifications (announcement, maintenance updates)
+### Phase 3 — Communication ✅
+- [x] Announcements (create, pin, categorize)
+- [x] Maintenance requests (submit, status workflow, admin notes)
+- [x] Document archive (upload, organize by category, visibility control)
 
-### Phase 4 — Meetings & Contracts (Weeks 7–8)
-- [ ] Meeting scheduling and agenda
-- [ ] Convocatória generation and email sending
-- [ ] Attendance and quorum tracking
-- [ ] Voting and results recording
-- [ ] Ata creation with legal template
-- [ ] Ata PDF export and approval workflow
-- [ ] Contract management with renewal reminders
+### Phase 4 — Meetings & Contracts ✅
+- [x] Meeting scheduling with agenda
+- [x] Attendance and quorum tracking
+- [x] Voting and results recording
+- [x] Ata creation and management
+- [x] Contract management (track renewals, costs, status)
+- [x] Calendar view
 
-### Phase 5 — Polish & Launch (Weeks 9–10)
-- [ ] Conta de gerência (annual report) generation
-- [ ] Bulk import (units and owners via CSV)
-- [ ] Receipt (recibo) PDF generation
-- [ ] Email notification tuning
+### Phase 5 — Polish & Launch (In Progress)
+- [x] CSV bulk import for units
+- [x] Seed data for development
+- [x] Deployment to production (Vercel + Neon)
+- [ ] Email notifications (announcements, maintenance updates, quota reminders)
+- [ ] Receipt PDF polish
 - [ ] Mobile responsiveness polish
-- [ ] Seed data and demo condominium
 - [ ] Landing page
-- [ ] Deployment to production (Vercel + managed DB)
 
 ---
 

@@ -3,6 +3,7 @@
 import { randomBytes } from "crypto";
 import { hash } from "bcryptjs";
 import { db } from "@/lib/db";
+import { sendPasswordResetEmail } from "@/lib/email";
 
 /**
  * Generate a password reset token for the given email.
@@ -28,8 +29,12 @@ export async function requestPasswordReset(email: string) {
     },
   });
 
-  // TODO: send email in production.
-  // For now, return the token so it can be displayed in dev.
+  if (process.env.NODE_ENV === "production") {
+    await sendPasswordResetEmail(user.email, token);
+    return { success: true };
+  }
+
+  // Dev: return the token so it can be displayed in the UI without a real email.
   return { success: true, devToken: token };
 }
 

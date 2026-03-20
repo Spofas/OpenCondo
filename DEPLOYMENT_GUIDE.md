@@ -42,6 +42,8 @@ If the code is already on GitHub, skip to Step 2.
 
 ## Step 2: Create your database on Neon
 
+The database is where all the data lives — units, residents, payments, everything. Think of it as the filing cabinet behind the app.
+
 1. Go to [neon.tech](https://neon.tech) and click **Sign Up**
 2. Sign up with your GitHub account (easiest option)
 3. Once logged in, click **Create Project**
@@ -56,35 +58,13 @@ If the code is already on GitHub, skip to Step 2.
    ```
    **Copy this and save it somewhere safe** (a text file, a note, etc.). This is your `DATABASE_URL`. You'll need it in Step 3.
 
-### Setting up the database tables
-
-The database is empty right now — it needs the table structure that OpenCondo uses. You have two options:
-
-**Option A: From Neon's SQL Editor (no terminal needed)**
-
-1. In your Neon dashboard, click **SQL Editor** in the left sidebar
-2. You'll need to run the Prisma migration. For now, this step will be done automatically by Vercel in Step 3 (see the build command setup)
-
-**Option B: From a computer with Node.js installed**
-
-If you or someone helping you has Node.js installed:
-
-1. Open a terminal/command prompt
-2. Navigate to the OpenCondo project folder
-3. Create a file called `.env` with this content (replace the URL with yours):
-   ```
-   DATABASE_URL="your-neon-connection-string-here"
-   ```
-4. Run these commands:
-   ```
-   pnpm install
-   pnpm db:push
-   ```
-5. You should see "Your database is now in sync with your Prisma schema" — that means it worked!
+> **Note:** You do not need to create any tables manually. Vercel will set up the database structure automatically the first time it builds the app.
 
 ---
 
 ## Step 3: Deploy to Vercel
+
+Vercel is the service that takes the code from GitHub and makes it available as a website.
 
 1. Go to [vercel.com](https://vercel.com) and click **Sign Up**
 2. Sign up with your **GitHub account** (this lets Vercel access your code)
@@ -92,41 +72,30 @@ If you or someone helping you has Node.js installed:
 4. Find your `OpenCondo` repository in the list and click **Import**
 5. Vercel will auto-detect that it's a Next.js project. You'll see a configuration screen.
 
-### Configure the build settings
-
-Under **Build and Output Settings**, set the **Build Command** to:
-
-```
-npx prisma generate && next build
-```
-
-This ensures the database tools are ready before the app builds.
+> **Note:** The build command is already configured in the project's `vercel.json` file — you do not need to change any build settings manually. Vercel reads this file automatically.
 
 ### Add environment variables
+
+This is the most important step. Environment variables are secret settings that the app needs to run — like a key to open the filing cabinet.
 
 Click **Environment Variables** and add these one at a time:
 
 | Name | Value | Where to get it |
 |------|-------|-----------------|
 | `DATABASE_URL` | Your Neon connection string from Step 2 | The string you saved earlier |
-| `NEXTAUTH_URL` | `https://your-project-name.vercel.app` | Vercel will show you the URL after first deploy — you can update this later |
+| `NEXTAUTH_URL` | `https://your-project-name.vercel.app` | Vercel will show you the URL after the first deploy — you can update this after |
 | `NEXTAUTH_SECRET` | A random secret string | See below how to generate one |
 
 **How to generate NEXTAUTH_SECRET:**
 
 Go to [generate-secret.vercel.app/32](https://generate-secret.vercel.app/32) in your browser. It will show a random string. Copy it and paste it as the value for `NEXTAUTH_SECRET`.
 
-Alternatively, if you have a terminal, run:
-```
-openssl rand -base64 32
-```
-
 ### Deploy
 
 1. Click **Deploy**
 2. Wait 2-3 minutes. Vercel will:
-   - Download the code
-   - Install dependencies
+   - Download the code from GitHub
+   - Set up the database tables automatically (using Prisma migrations)
    - Build the app
    - Make it live at `your-project-name.vercel.app`
 3. If the build succeeds, you'll see a "Congratulations!" screen with a link to your live app
@@ -140,21 +109,7 @@ openssl rand -base64 32
 
 ---
 
-## Step 4: Set up the database tables (if you didn't do it in Step 2)
-
-If you used Option A in Step 2 (skipped the terminal), you need to push the database schema. The easiest way:
-
-1. In your Neon dashboard, go to **SQL Editor**
-2. The Prisma schema needs to be applied. If you have access to a terminal anywhere:
-   ```
-   DATABASE_URL="your-neon-connection-string" npx prisma db push
-   ```
-
-If you don't have terminal access at all, ask someone technical to run this one command for you. It only needs to be done once (and again whenever the database structure changes).
-
----
-
-## Step 5: Test it
+## Step 4: Test it
 
 1. Open your Vercel URL in a browser
 2. You should see the OpenCondo login page
@@ -165,11 +120,11 @@ If you don't have terminal access at all, ask someone technical to run this one 
 **If something isn't working:**
 - Check Vercel's **Deployments** tab for error messages
 - Make sure all 3 environment variables are set correctly
-- The most common issue is a wrong `DATABASE_URL` — double-check it matches what Neon gave you
+- The most common issue is a wrong `DATABASE_URL` — double-check it matches what Neon gave you exactly
 
 ---
 
-## Step 6: Custom domain (optional)
+## Step 5: Custom domain (optional)
 
 If you want `app.opencondo.pt` instead of `opencondo.vercel.app`:
 
@@ -178,18 +133,20 @@ If you want `app.opencondo.pt` instead of `opencondo.vercel.app`:
 3. Type your domain (e.g., `app.opencondo.pt`)
 4. Vercel will show you DNS records to add at your domain registrar
 5. Add those records (usually a CNAME pointing to `cname.vercel-dns.com`)
-6. Wait 5-30 minutes for DNS to propagate
+6. Wait 5-30 minutes for the change to take effect across the internet
 7. Update `NEXTAUTH_URL` to your custom domain and redeploy
 
 ---
 
 ## Ongoing: What happens when you update the code
 
-Once connected, **Vercel automatically deploys every time you push code to GitHub.** This means:
+Once connected, **Vercel automatically deploys every time you merge code into the `main` branch on GitHub.** This means:
 
-- Push to `main` branch → your live site updates automatically
+- Merge a pull request into `main` → your live site updates automatically within a few minutes
 - Push to other branches → Vercel creates a preview URL (great for testing before going live)
 - No manual deployment needed after initial setup
+
+If the database structure changes (new features that need new tables), the update is applied automatically as part of the same deploy — your existing data is never deleted.
 
 ---
 
@@ -206,15 +163,15 @@ When you're ready for real users, here's what to upgrade:
 ### Neon Pro (~$19/month)
 - More storage (10 GB+)
 - More compute hours
-- Point-in-time recovery (undo database mistakes)
+- Point-in-time recovery (lets you undo database mistakes from up to 7 days ago)
 - Go to your Neon dashboard → **Billing** → upgrade
 
 ### Additional services you'll eventually want
 
 | Service | What for | When to add | Cost |
 |---------|----------|-------------|------|
-| **Resend** (resend.com) | Sending emails (notifications, invites) | When you build the email features | Free up to 3,000 emails/month |
-| **Cloudflare R2** or **AWS S3** | File storage (documents, invoices) | When you build document upload | R2: free up to 10 GB |
+| **Resend** (resend.com) | Sending emails (notifications, invites, password resets) | When you enable email features | Free up to 3,000 emails/month |
+| **Cloudflare R2** or **AWS S3** | File storage (documents, invoices, contract PDFs) | When you enable document uploads | R2: free up to 10 GB |
 | **Sentry** (sentry.io) | Error tracking (get alerts when something breaks) | Before launch | Free tier available |
 
 ---
@@ -235,26 +192,26 @@ When you're ready for real users, here's what to upgrade:
 ## Troubleshooting
 
 ### "Build failed" on Vercel
-- Click on the failed deployment to see the error log
-- Most common: missing environment variable. Make sure all 3 are set.
+- Click on the failed deployment to see the full error log
+- Most common cause: a missing or incorrect environment variable. Make sure all 3 are set.
 
 ### "Cannot connect to database"
 - Check that `DATABASE_URL` in Vercel matches your Neon connection string exactly
 - Make sure it includes `?sslmode=require` at the end
-- In Neon, check that your project isn't suspended (free tier suspends after 5 min of inactivity — it auto-wakes, but the first request may be slow)
+- In Neon, check that your project isn't suspended (free tier suspends after 5 minutes of inactivity — it wakes automatically, but the first request after a long pause may be slow)
 
 ### "Login doesn't work"
 - Check that `NEXTAUTH_URL` matches the exact URL in your browser (including `https://`)
 - Check that `NEXTAUTH_SECRET` is set and not empty
-- Redeploy after changing any environment variable
+- Always redeploy after changing any environment variable — changes only take effect after the next build
 
 ### "Page shows an error"
-- Go to Vercel → Deployments → click the latest → **Functions** tab → look for errors
-- Check if the database tables exist (did you run `prisma db push`?)
+- Go to Vercel → Deployments → click the latest → **Functions** tab → look for error messages
+- Check Vercel's build log to see if the database setup step ran successfully
 
 ### App is slow on first load
-- Neon's free tier suspends the database after 5 minutes of no activity. The first request after suspension takes 1-3 seconds while it wakes up. This doesn't happen on paid plans.
+- Neon's free tier suspends the database after 5 minutes of no activity. The first request after suspension takes 1-3 seconds while it wakes up. This is normal on the free plan and does not happen on paid plans.
 
 ---
 
-*Last updated: 2026-03-18*
+*Last updated: 2026-03-20*
