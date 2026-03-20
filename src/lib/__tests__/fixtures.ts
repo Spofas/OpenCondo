@@ -9,20 +9,20 @@
 // ── Units ──────────────────────────────────────────────────────────────────
 
 export const AURORA_UNITS = [
-  { id: "aurora-rc-esq", identifier: "R/C Esq", floor: "R/C", typology: "T1", permilagem: 100 },
-  { id: "aurora-rc-dto", identifier: "R/C Dto", floor: "R/C", typology: "T2", permilagem: 130 },
-  { id: "aurora-1-esq", identifier: "1.º Esq", floor: "1",   typology: "T2", permilagem: 160 },
-  { id: "aurora-1-dto", identifier: "1.º Dto", floor: "1",   typology: "T3", permilagem: 200 },
-  { id: "aurora-2-esq", identifier: "2.º Esq", floor: "2",   typology: "T3", permilagem: 190 },
-  { id: "aurora-2-dto", identifier: "2.º Dto", floor: "2",   typology: "T4", permilagem: 220 },
+  { id: "aurora-rc-esq", identifier: "R/C Esq", floor: 0, typology: "T1", permilagem: 100 },
+  { id: "aurora-rc-dto", identifier: "R/C Dto", floor: 0, typology: "T2", permilagem: 130 },
+  { id: "aurora-1-esq", identifier: "1.º Esq", floor: 1, typology: "T2", permilagem: 160 },
+  { id: "aurora-1-dto", identifier: "1.º Dto", floor: 1, typology: "T3", permilagem: 200 },
+  { id: "aurora-2-esq", identifier: "2.º Esq", floor: 2, typology: "T3", permilagem: 190 },
+  { id: "aurora-2-dto", identifier: "2.º Dto", floor: 2, typology: "T4", permilagem: 220 },
 ] as const;
 
 export const AURORA_TOTAL_PERMILAGEM = AURORA_UNITS.reduce((s, u) => s + u.permilagem, 0); // 1000
 
 export const SOL_UNITS = [
-  { id: "sol-a", identifier: "Fração A", floor: "0", typology: "T2", permilagem: 333 },
-  { id: "sol-b", identifier: "Fração B", floor: "1", typology: "T2", permilagem: 333 },
-  { id: "sol-c", identifier: "Fração C", floor: "2", typology: "T3", permilagem: 334 },
+  { id: "sol-a", identifier: "Fração A", floor: 0, typology: "T2", permilagem: 333 },
+  { id: "sol-b", identifier: "Fração B", floor: 1, typology: "T2", permilagem: 333 },
+  { id: "sol-c", identifier: "Fração C", floor: 2, typology: "T3", permilagem: 334 },
 ] as const;
 
 // ── Owners ─────────────────────────────────────────────────────────────────
@@ -89,6 +89,7 @@ import { splitByPermilagem } from "../quota-calculations";
 export interface TestQuota {
   unitId: string;
   unitIdentifier: string;
+  unitFloor: number | null;
   ownerName: string | null;
   ownerEmail: string | null;
   amount: number;
@@ -132,6 +133,7 @@ export function makeAuroraQuotas(
       quotas.push({
         unitId: unit.id,
         unitIdentifier: unit.identifier,
+        unitFloor: unit.floor,
         ownerName: owner?.name ?? null,
         ownerEmail: owner?.email ?? null,
         amount,
@@ -149,16 +151,16 @@ export function makeAuroraQuotas(
 // ── CSV fixture ────────────────────────────────────────────────────────────
 
 export const AURORA_CSV_SEMICOLON = `identificador;piso;tipologia;permilagem;email
-R/C Esq;R/C;T1;100;ana@test.com
-R/C Dto;R/C;T2;130;bruno@test.com
+R/C Esq;0;T1;100;ana@test.com
+R/C Dto;0;T2;130;bruno@test.com
 1.º Esq;1;T2;160;carla@test.com
 1.º Dto;1;T3;200;daniel@test.com
 2.º Esq;2;T3;190;eva@test.com
 2.º Dto;2;T4;220;filipe@test.com`;
 
 export const AURORA_CSV_COMMA = `fracao,andar,tipo,permil,proprietario
-R/C Esq,R/C,T1,100,ana@test.com
-R/C Dto,R/C,T2,130,bruno@test.com
+R/C Esq,0,T1,100,ana@test.com
+R/C Dto,0,T2,130,bruno@test.com
 1.º Esq,1,T2,160,carla@test.com
 1.º Dto,1,T3,200,daniel@test.com
 2.º Esq,2,T3,190,eva@test.com

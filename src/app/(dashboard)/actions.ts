@@ -160,7 +160,7 @@ export async function importUnitsFromCsv(condominiumId: string, csvText: string)
       data: {
         condominiumId,
         identifier: unit.identifier,
-        floor: unit.floor || null,
+        floor: unit.floor ?? null,
         typology: unit.typology || null,
         permilagem: unit.permilagem,
         ownerId,

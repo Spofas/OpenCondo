@@ -107,7 +107,7 @@ describe("condominiumSchema", () => {
 describe("unitSchema", () => {
   const valid = {
     identifier: "1.º Esq",
-    floor: "1",
+    floor: 1,
     typology: "T2",
     permilagem: 125,
   };

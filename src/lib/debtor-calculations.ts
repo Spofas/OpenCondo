@@ -8,6 +8,7 @@
 export interface DebtorUnit {
   unitId: string;
   unitIdentifier: string;
+  unitFloor: number | null;
   ownerName: string | null;
   ownerEmail: string | null;
   /** Total unpaid amount */
@@ -35,6 +36,7 @@ export interface DebtorSummary {
 export interface QuotaForDebtor {
   unitId: string;
   unitIdentifier: string;
+  unitFloor: number | null;
   ownerName: string | null;
   ownerEmail: string | null;
   amount: number;
@@ -57,6 +59,7 @@ export function buildDebtorSummary(
       entry = {
         unitId: q.unitId,
         unitIdentifier: q.unitIdentifier,
+        unitFloor: q.unitFloor,
         ownerName: q.ownerName,
         ownerEmail: q.ownerEmail,
         totalDebt: 0,
@@ -104,7 +107,12 @@ export function buildDebtorSummary(
       overdue90: round(d.overdue90),
       overdue90Plus: round(d.overdue90Plus),
     }))
-    .sort((a, b) => b.totalDebt - a.totalDebt);
+    .sort((a, b) => {
+      const fa = a.unitFloor ?? Infinity;
+      const fb = b.unitFloor ?? Infinity;
+      if (fa !== fb) return fa - fb;
+      return a.unitIdentifier.localeCompare(b.unitIdentifier, "pt");
+    });
 
   const totalDebt = round(debtors.reduce((s, d) => s + d.totalDebt, 0));
   const totalOverdue = round(

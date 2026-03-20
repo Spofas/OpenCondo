@@ -16,7 +16,7 @@ import {
 interface UnitInfo {
   id: string;
   identifier: string;
-  floor: string | null;
+  floor: number | null;
   typology: string | null;
   permilagem: number;
   isOwner: boolean;
@@ -166,7 +166,9 @@ export function MyAccountClient({
                     </span>
                   </div>
                   <div className="mt-2 flex gap-4 text-xs text-muted-foreground">
-                    {unit.floor && <span>Piso {unit.floor}</span>}
+                    {unit.floor !== null && (
+                      <span>Piso {unit.floor === 0 ? "R/C" : `${unit.floor}.º`}</span>
+                    )}
                     {unit.typology && <span>{unit.typology}</span>}
                     <span>{unit.permilagem}‰</span>
                   </div>

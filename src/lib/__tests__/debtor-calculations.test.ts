@@ -7,6 +7,7 @@ function makeQuota(overrides: Partial<QuotaForDebtor> = {}): QuotaForDebtor {
   return {
     unitId: "u1",
     unitIdentifier: "1.º Esq",
+    unitFloor: null,
     ownerName: "Ana Silva",
     ownerEmail: "ana@test.com",
     amount: 100,
@@ -68,20 +69,21 @@ describe("buildDebtorSummary", () => {
     expect(result.debtors[0].overdue90Plus).toBe(100);
   });
 
-  it("groups by unit and sorts by total debt desc", () => {
+  it("groups by unit and sorts by floor asc, then identifier asc", () => {
     const quotas = [
-      makeQuota({ unitId: "u1", unitIdentifier: "A", amount: 50, dueDate: "2025-06-01" }),
-      makeQuota({ unitId: "u1", unitIdentifier: "A", amount: 50, dueDate: "2025-05-01" }),
-      makeQuota({ unitId: "u2", unitIdentifier: "B", amount: 200, dueDate: "2025-06-01" }),
+      makeQuota({ unitId: "u1", unitIdentifier: "A", unitFloor: null, amount: 50, dueDate: "2025-06-01" }),
+      makeQuota({ unitId: "u1", unitIdentifier: "A", unitFloor: null, amount: 50, dueDate: "2025-05-01" }),
+      makeQuota({ unitId: "u2", unitIdentifier: "B", unitFloor: null, amount: 200, dueDate: "2025-06-01" }),
     ];
     const result = buildDebtorSummary(quotas, TODAY);
 
+    // Both units have floor=null (sorts as Infinity), so they fall back to identifier order: A < B
     expect(result.debtors).toHaveLength(2);
-    expect(result.debtors[0].unitIdentifier).toBe("B");
-    expect(result.debtors[0].totalDebt).toBe(200);
-    expect(result.debtors[1].unitIdentifier).toBe("A");
-    expect(result.debtors[1].totalDebt).toBe(100);
-    expect(result.debtors[1].unpaidCount).toBe(2);
+    expect(result.debtors[0].unitIdentifier).toBe("A");
+    expect(result.debtors[0].totalDebt).toBe(100);
+    expect(result.debtors[0].unpaidCount).toBe(2);
+    expect(result.debtors[1].unitIdentifier).toBe("B");
+    expect(result.debtors[1].totalDebt).toBe(200);
   });
 
   it("computes summary totals", () => {

@@ -145,7 +145,8 @@ describe("Scenario: Aurora lifecycle — debtor tracking", () => {
     const eva = summary.debtors.find((d) => d.unitId === "aurora-2-esq");
     expect(eva).toBeDefined();
     // Eva has highest permilagem-based amount AND most unpaid months
-    expect(summary.debtors[0].unitId).toBe("aurora-2-esq");
+    const sortedByDebt = [...summary.debtors].sort((a, b) => b.totalDebt - a.totalDebt);
+    expect(sortedByDebt[0].unitId).toBe("aurora-2-esq");
   });
 
   it("Eva has 9 months overdue and 3 months current/pending", () => {

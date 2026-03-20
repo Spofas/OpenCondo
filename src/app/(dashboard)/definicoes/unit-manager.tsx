@@ -12,7 +12,7 @@ import {
 interface UnitInfo {
   id: string;
   identifier: string;
-  floor: string | null;
+  floor: number | null;
   typology: string | null;
   permilagem: number;
   ownerName: string | null;
@@ -210,7 +210,9 @@ export function UnitManager({
                       )}
                     </div>
                   </td>
-                  <td className="py-2.5 text-muted-foreground">{unit.floor || "—"}</td>
+                  <td className="py-2.5 text-muted-foreground">
+                    {unit.floor === null ? "—" : unit.floor === 0 ? "R/C" : `${unit.floor}.º`}
+                  </td>
                   <td className="py-2.5 text-muted-foreground">{unit.typology || "—"}</td>
                   <td className="py-2.5">
                     <div>

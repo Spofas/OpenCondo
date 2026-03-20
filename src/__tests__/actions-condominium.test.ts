@@ -36,8 +36,8 @@ const validCondo = {
 };
 
 const validUnits = [
-  { identifier: "1.º Esq", floor: "1", typology: "T2", permilagem: 500 },
-  { identifier: "1.º Dto", floor: "1", typology: "T3", permilagem: 500 },
+  { identifier: "1.º Esq", floor: 1, typology: "T2", permilagem: 500 },
+  { identifier: "1.º Dto", floor: 1, typology: "T3", permilagem: 500 },
 ];
 
 describe("createCondominiumWithUnits", () => {

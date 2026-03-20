@@ -27,6 +27,7 @@ export default async function DebtorPage() {
         select: {
           id: true,
           identifier: true,
+          floor: true,
           owner: { select: { name: true, email: true } },
         },
       },
@@ -37,6 +38,7 @@ export default async function DebtorPage() {
   const quotasForCalc = unpaidQuotas.map((q) => ({
     unitId: q.unit.id,
     unitIdentifier: q.unit.identifier,
+    unitFloor: q.unit.floor,
     ownerName: q.unit.owner?.name ?? null,
     ownerEmail: q.unit.owner?.email ?? null,
     amount: Number(q.amount),

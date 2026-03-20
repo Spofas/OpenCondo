@@ -19,7 +19,7 @@ export const condominiumSchema = z.object({
 
 export const unitSchema = z.object({
   identifier: z.string().min(1, "Identificação é obrigatória"),
-  floor: z.string().optional(),
+  floor: z.number().int().optional(),
   typology: z.string().optional(),
   permilagem: z.number().int().min(0, "Permilagem deve ser >= 0"),
 });

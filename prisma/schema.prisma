@@ -152,7 +152,7 @@ model Unit {
   id             String       @id @default(cuid())
   condominiumId  String
   identifier     String       // e.g., "1.º Esq", "R/C Dto"
-  floor          String?
+  floor          Int?         // 0 = R/C, 1 = 1.º, -1 = cave, etc.
   typology       String?      // e.g., "T2", "T3"
   permilagem     Int          @default(0)
   sortOrder      Int          @default(0)

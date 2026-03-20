@@ -50,7 +50,7 @@ export default async function QuotasPage() {
   // Fetch units for the generation form (admin only; non-admin doesn't see the form)
   const units = await db.unit.findMany({
     where: { condominiumId: membership.condominiumId },
-    orderBy: [{ sortOrder: "asc" }, { identifier: "asc" }],
+    orderBy: [{ floor: "asc" }, { identifier: "asc" }],
     select: { id: true, identifier: true, permilagem: true },
   });
 

@@ -67,7 +67,7 @@ export async function createCondominiumWithUnits(
         data: units.map((unit) => ({
           condominiumId: condominium.id,
           identifier: unit.identifier,
-          floor: unit.floor || null,
+          floor: unit.floor ?? null,
           typology: unit.typology || null,
           permilagem:
             condo.quotaModel === "PERMILAGEM" ? unit.permilagem : 0,

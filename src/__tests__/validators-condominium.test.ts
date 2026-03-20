@@ -62,7 +62,7 @@ describe("unitSchema", () => {
   it("accepts valid unit data", () => {
     const result = unitSchema.safeParse({
       identifier: "1.º Esq",
-      floor: "1",
+      floor: 1,
       typology: "T2",
       permilagem: 150,
     });

@@ -153,12 +153,12 @@ async function main() {
 
   // ─── Units (6 frações) ─────────────────────────────────────────────────────
   const unitData = [
-    { identifier: "R/C Esq", floor: "0", typology: "T1", permilagem: 100, ownerId: admin.id },
-    { identifier: "R/C Dto", floor: "0", typology: "T1", permilagem: 100, ownerId: joao.id, tenantId: ana.id },
-    { identifier: "1.º Esq", floor: "1", typology: "T2", permilagem: 200, ownerId: joao.id },
-    { identifier: "1.º Dto", floor: "1", typology: "T2", permilagem: 200, ownerId: maria.id },
-    { identifier: "2.º Esq", floor: "2", typology: "T3", permilagem: 250, ownerId: carlos.id },
-    { identifier: "2.º Dto", floor: "2", typology: "T2", permilagem: 150, ownerId: carlos.id },
+    { identifier: "R/C Esq", floor: 0, typology: "T1", permilagem: 100, ownerId: admin.id },
+    { identifier: "R/C Dto", floor: 0, typology: "T1", permilagem: 100, ownerId: joao.id, tenantId: ana.id },
+    { identifier: "1.º Esq", floor: 1, typology: "T2", permilagem: 200, ownerId: joao.id },
+    { identifier: "1.º Dto", floor: 1, typology: "T2", permilagem: 200, ownerId: maria.id },
+    { identifier: "2.º Esq", floor: 2, typology: "T3", permilagem: 250, ownerId: carlos.id },
+    { identifier: "2.º Dto", floor: 2, typology: "T2", permilagem: 150, ownerId: carlos.id },
   ];
 
   const units = [];

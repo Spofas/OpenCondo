@@ -8,7 +8,7 @@
 
 export interface CsvUnitRow {
   identifier: string;
-  floor: string;
+  floor: number | null;
   typology: string;
   permilagem: number;
   ownerEmail?: string;
@@ -75,7 +75,9 @@ export function parseCsvUnits(csv: string): CsvParseResult {
       continue;
     }
 
-    const floor = colMap.floor >= 0 ? cols[colMap.floor] || "" : "";
+    const floorRaw = colMap.floor >= 0 ? cols[colMap.floor] || "" : "";
+    const floorParsed = floorRaw !== "" ? parseInt(floorRaw, 10) : NaN;
+    const floor: number | null = !isNaN(floorParsed) ? floorParsed : null;
     const typology = colMap.typology >= 0 ? cols[colMap.typology] || "" : "";
 
     let permilagem = 0;
