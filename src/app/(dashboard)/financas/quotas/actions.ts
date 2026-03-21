@@ -157,22 +157,38 @@ export async function recordPayment(quotaId: string, input: QuotaPaymentInput) {
 
   const quota = await db.quota.findFirst({
     where: { id: quotaId, condominiumId: ctx.condominiumId },
+    include: { unit: true },
   });
 
   if (!quota) return { error: "Quota não encontrada" };
   if (quota.status === "PAID") return { error: "Quota já está paga" };
 
-  await db.quota.update({
-    where: { id: quotaId },
-    data: {
-      status: "PAID",
-      paymentDate: new Date(parsed.data.paymentDate),
-      paymentMethod: parsed.data.paymentMethod,
-      paymentNotes: parsed.data.paymentNotes || null,
-    },
-  });
+  const paymentDate = new Date(parsed.data.paymentDate);
+
+  await db.$transaction([
+    db.quota.update({
+      where: { id: quotaId },
+      data: {
+        status: "PAID",
+        paymentDate,
+        paymentMethod: parsed.data.paymentMethod,
+        paymentNotes: parsed.data.paymentNotes || null,
+      },
+    }),
+    db.transaction.create({
+      data: {
+        condominiumId: ctx.condominiumId,
+        date: paymentDate,
+        amount: quota.amount,
+        type: "QUOTA_PAYMENT",
+        description: `Quota ${quota.period} — ${quota.unit.identifier}`,
+        quotaId,
+      },
+    }),
+  ]);
 
   revalidatePath("/financas/quotas");
+  revalidatePath("/financas/livro-caixa");
   return { success: true };
 }
 
@@ -192,17 +208,21 @@ export async function undoPayment(quotaId: string) {
 
   const newStatus = statusAfterUndo(quota.dueDate);
 
-  await db.quota.update({
-    where: { id: quotaId },
-    data: {
-      status: newStatus,
-      paymentDate: null,
-      paymentMethod: null,
-      paymentNotes: null,
-    },
-  });
+  await db.$transaction([
+    db.quota.update({
+      where: { id: quotaId },
+      data: {
+        status: newStatus,
+        paymentDate: null,
+        paymentMethod: null,
+        paymentNotes: null,
+      },
+    }),
+    db.transaction.deleteMany({ where: { quotaId } }),
+  ]);
 
   revalidatePath("/financas/quotas");
+  revalidatePath("/financas/livro-caixa");
   return { success: true };
 }
 
