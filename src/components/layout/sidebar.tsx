@@ -26,6 +26,7 @@ import {
   AlertTriangle,
   RefreshCw,
   CalendarDays,
+  BookOpen,
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils/cn";
@@ -60,6 +61,7 @@ const navigation: NavGroup[] = [
       { href: "/financas/devedores", labelKey: "nav.debtors", icon: AlertTriangle, roles: ["ADMIN"] },
       { href: "/financas/despesas-recorrentes", labelKey: "nav.recurringExpenses", icon: RefreshCw, roles: ["ADMIN"] },
       { href: "/financas/conta-gerencia", labelKey: "nav.annualReport", icon: FileText, roles: ["ADMIN"] },
+      { href: "/financas/livro-caixa", labelKey: "nav.ledger", icon: BookOpen, roles: ["ADMIN"] },
     ],
   },
   {

@@ -42,18 +42,31 @@ export async function createExpense(input: ExpenseInput) {
 
   const { date, description, amount, category, notes } = parsed.data;
 
-  await db.expense.create({
-    data: {
-      condominiumId: ctx.condominiumId,
-      date: new Date(date),
-      description,
-      amount,
-      category,
-      notes: notes || null,
-    },
+  await db.$transaction(async (tx) => {
+    const expense = await tx.expense.create({
+      data: {
+        condominiumId: ctx.condominiumId,
+        date: new Date(date),
+        description,
+        amount,
+        category,
+        notes: notes || null,
+      },
+    });
+    await tx.transaction.create({
+      data: {
+        condominiumId: ctx.condominiumId,
+        date: new Date(date),
+        amount: -amount,
+        type: "EXPENSE",
+        description,
+        expenseId: expense.id,
+      },
+    });
   });
 
   revalidatePath("/financas/despesas");
+  revalidatePath("/financas/livro-caixa");
   revalidatePath("/painel");
   return { success: true };
 }
@@ -75,18 +88,29 @@ export async function updateExpense(expenseId: string, input: ExpenseInput) {
 
   const { date, description, amount, category, notes } = parsed.data;
 
-  await db.expense.update({
-    where: { id: expenseId },
-    data: {
-      date: new Date(date),
-      description,
-      amount,
-      category,
-      notes: notes || null,
-    },
-  });
+  await db.$transaction([
+    db.expense.update({
+      where: { id: expenseId },
+      data: {
+        date: new Date(date),
+        description,
+        amount,
+        category,
+        notes: notes || null,
+      },
+    }),
+    db.transaction.updateMany({
+      where: { expenseId },
+      data: {
+        date: new Date(date),
+        amount: -amount,
+        description,
+      },
+    }),
+  ]);
 
   revalidatePath("/financas/despesas");
+  revalidatePath("/financas/livro-caixa");
   revalidatePath("/painel");
   return { success: true };
 }
