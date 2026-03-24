@@ -55,7 +55,8 @@
     "minutes": "Atas",
     "contracts": "Contratos",
     "myAccount": "Minha conta",
-    "settings": "Definições de Condomínio"
+    "settings": "Definições de Condomínio",
+    "ledger": "Livro de caixa"
   },
   "dashboard": {
     "title": "Painel",
