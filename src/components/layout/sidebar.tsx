@@ -23,8 +23,6 @@ import {
   ChevronRight,
   Building2,
   Plus,
-  AlertTriangle,
-  RefreshCw,
   CalendarDays,
   BookOpen,
 } from "lucide-react";
@@ -58,10 +56,13 @@ const navigation: NavGroup[] = [
       { href: "/financas/quotas", labelKey: "nav.quotas", icon: Wallet },
       { href: "/financas/despesas", labelKey: "nav.expenses", icon: Receipt, roles: ["ADMIN"] },
       { href: "/financas/orcamento", labelKey: "nav.budget", icon: PieChart },
-      { href: "/financas/devedores", labelKey: "nav.debtors", icon: AlertTriangle, roles: ["ADMIN"] },
-      { href: "/financas/despesas-recorrentes", labelKey: "nav.recurringExpenses", icon: RefreshCw, roles: ["ADMIN"] },
+    ],
+  },
+  {
+    labelKey: "nav.reports",
+    items: [
       { href: "/financas/conta-gerencia", labelKey: "nav.annualReport", icon: FileText, roles: ["ADMIN"] },
-      { href: "/financas/livro-caixa", labelKey: "nav.ledger", icon: BookOpen, roles: ["ADMIN"] },
+      { href: "/financas/livro-caixa", labelKey: "nav.cashBalance", icon: BookOpen, roles: ["ADMIN"] },
     ],
   },
   {

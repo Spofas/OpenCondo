@@ -11,6 +11,8 @@ export default async function ExpensesPage() {
   const membership = await getUserMembership(session.user.id);
   if (!membership) redirect("/iniciar");
 
+  const isAdmin = membership.role === "ADMIN";
+
   const expenses = await db.expense.findMany({
     where: { condominiumId: membership.condominiumId },
     orderBy: { date: "desc" },
@@ -25,10 +27,37 @@ export default async function ExpensesPage() {
     notes: e.notes,
   }));
 
+  let recurringTemplates: Array<{
+    id: string;
+    description: string;
+    amount: number;
+    category: string;
+    frequency: string;
+    isActive: boolean;
+    lastGenerated: string | null;
+  }> = [];
+
+  if (isAdmin) {
+    const templates = await db.recurringExpense.findMany({
+      where: { condominiumId: membership.condominiumId },
+      orderBy: [{ isActive: "desc" }, { category: "asc" }],
+    });
+    recurringTemplates = templates.map((t) => ({
+      id: t.id,
+      description: t.description,
+      amount: Number(t.amount),
+      category: t.category,
+      frequency: t.frequency,
+      isActive: t.isActive,
+      lastGenerated: t.lastGenerated ?? null,
+    }));
+  }
+
   return (
     <ExpensePageClient
       expenses={serializedExpenses}
-      isAdmin={membership.role === "ADMIN"}
+      isAdmin={isAdmin}
+      recurringTemplates={recurringTemplates}
     />
   );
 }
