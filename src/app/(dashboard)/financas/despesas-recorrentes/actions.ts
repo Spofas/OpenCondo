@@ -113,50 +113,52 @@ export async function generateRecurringExpenses(period: string) {
   const year = parseInt(yearStr, 10);
   const month = parseInt(monthStr, 10);
 
-  const templates = await db.recurringExpense.findMany({
-    where: { condominiumId: ctx.condominiumId, isActive: true },
+  const { generated, skipped } = await db.$transaction(async (tx) => {
+    const templates = await tx.recurringExpense.findMany({
+      where: { condominiumId: ctx.condominiumId, isActive: true },
+    });
+
+    let gen = 0;
+    let skip = 0;
+
+    for (const tmpl of templates) {
+      // Check frequency: should we generate for this month?
+      const freqMonths = FREQUENCY_MONTHS[tmpl.frequency] || 1;
+      if (freqMonths > 1 && month % freqMonths !== 1) {
+        // For quarterly: generate in months 1,4,7,10
+        // For semi-annual: generate in months 1,7
+        // For annual: generate in month 1
+        skip++;
+        continue;
+      }
+
+      // Check if already generated for this period
+      if (tmpl.lastGenerated === period) {
+        skip++;
+        continue;
+      }
+
+      await tx.expense.create({
+        data: {
+          condominiumId: ctx.condominiumId,
+          date: new Date(year, month - 1, 1),
+          description: tmpl.description,
+          amount: tmpl.amount,
+          category: tmpl.category,
+          isRecurring: true,
+        },
+      });
+
+      await tx.recurringExpense.update({
+        where: { id: tmpl.id },
+        data: { lastGenerated: period },
+      });
+
+      gen++;
+    }
+
+    return { generated: gen, skipped: skip };
   });
-
-  let generated = 0;
-  let skipped = 0;
-
-  for (const tmpl of templates) {
-    // Check frequency: should we generate for this month?
-    const freqMonths = FREQUENCY_MONTHS[tmpl.frequency] || 1;
-    if (freqMonths > 1 && month % freqMonths !== 1) {
-      // For quarterly: generate in months 1,4,7,10
-      // For semi-annual: generate in months 1,7
-      // For annual: generate in month 1
-      skipped++;
-      continue;
-    }
-
-    // Check if already generated for this period
-    if (tmpl.lastGenerated === period) {
-      skipped++;
-      continue;
-    }
-
-    // Create the expense
-    await db.expense.create({
-      data: {
-        condominiumId: ctx.condominiumId,
-        date: new Date(year, month - 1, 1),
-        description: tmpl.description,
-        amount: tmpl.amount,
-        category: tmpl.category,
-        isRecurring: true,
-      },
-    });
-
-    // Update lastGenerated
-    await db.recurringExpense.update({
-      where: { id: tmpl.id },
-      data: { lastGenerated: period },
-    });
-
-    generated++;
-  }
 
   revalidatePath("/financas/despesas-recorrentes");
   revalidatePath("/financas/despesas");

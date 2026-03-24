@@ -1,13 +1,18 @@
 import { Resend } from "resend";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+let _resend: Resend | null = null;
+function getResend() {
+  if (!_resend) _resend = new Resend(process.env.RESEND_API_KEY);
+  return _resend;
+}
+
 const FROM = process.env.EMAIL_FROM ?? "OpenCondo <noreply@opencondo.app>";
 const BASE_URL = process.env.NEXTAUTH_URL ?? "http://localhost:3000";
 
 export async function sendPasswordResetEmail(to: string, token: string) {
   const resetUrl = `${BASE_URL}/recuperar-password/${token}`;
 
-  await resend.emails.send({
+  await getResend().emails.send({
     from: FROM,
     to,
     subject: "Recuperação de palavra-passe — OpenCondo",
@@ -44,7 +49,7 @@ export async function sendInviteEmail(
   const roleLabel = role === "OWNER" ? "Proprietário" : "Inquilino";
   const joinUrl = `${BASE_URL}/entrar?token=${token}`;
 
-  await resend.emails.send({
+  await getResend().emails.send({
     from: FROM,
     to,
     subject: `Convite para ${condominiumName} — OpenCondo`,
