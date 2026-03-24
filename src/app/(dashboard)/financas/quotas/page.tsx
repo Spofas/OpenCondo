@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { getUserMembership } from "@/lib/auth/get-membership";
+import { buildDebtorSummary } from "@/lib/debtor-calculations";
 import { QuotaPageClient } from "./quota-page-client";
 
 export default async function QuotasPage() {
@@ -74,12 +75,48 @@ export default async function QuotasPage() {
     paymentNotes: q.paymentNotes,
   }));
 
+  // Build debtor summary for admin
+  let debtorSummary = null;
+  if (isAdmin) {
+    const unpaidQuotas = await db.quota.findMany({
+      where: {
+        condominiumId: membership.condominiumId,
+        status: { in: ["PENDING", "OVERDUE"] },
+      },
+      include: {
+        unit: {
+          select: {
+            id: true,
+            identifier: true,
+            floor: true,
+            owner: { select: { name: true, email: true } },
+          },
+        },
+      },
+      orderBy: { dueDate: "asc" },
+    });
+
+    const quotasForCalc = unpaidQuotas.map((q) => ({
+      unitId: q.unit.id,
+      unitIdentifier: q.unit.identifier,
+      unitFloor: q.unit.floor,
+      ownerName: q.unit.owner?.name ?? null,
+      ownerEmail: q.unit.owner?.email ?? null,
+      amount: Number(q.amount),
+      dueDate: q.dueDate.toISOString().slice(0, 10),
+      status: q.status as "PENDING" | "OVERDUE",
+    }));
+
+    debtorSummary = buildDebtorSummary(quotasForCalc, now);
+  }
+
   return (
     <QuotaPageClient
       quotas={serializedQuotas}
       units={units}
       defaultSplitMethod={condominium?.quotaModel ?? "PERMILAGEM"}
       isAdmin={isAdmin}
+      debtorSummary={debtorSummary}
     />
   );
 }

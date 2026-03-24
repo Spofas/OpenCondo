@@ -28,15 +28,17 @@ function AgingBar({ current, o30, o60, o90, o90p, total }: {
   );
 }
 
-export function DebtorClient({ summary }: { summary: DebtorSummary }) {
+export function DebtorClient({ summary, hideTitle }: { summary: DebtorSummary; hideTitle?: boolean }) {
   return (
     <div>
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-foreground">Devedores</h1>
-        <p className="text-sm text-muted-foreground">
-          Acompanhamento de dívidas por fração
-        </p>
-      </div>
+      {!hideTitle && (
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-foreground">Devedores</h1>
+          <p className="text-sm text-muted-foreground">
+            Acompanhamento de dívidas por fração
+          </p>
+        </div>
+      )}
 
       {/* Summary cards */}
       <div className="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-4">

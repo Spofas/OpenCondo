@@ -43,8 +43,8 @@
     "expenses": "Despesas",
     "budget": "Orçamento",
     "annualReport": "Conta de gerência",
-    "debtors": "Devedores",
-    "recurringExpenses": "Recorrentes",
+    "reports": "Relatórios",
+    "cashBalance": "Saldo / Caixa",
     "calendar": "Calendário",
     "communication": "Comunicação",
     "announcements": "Avisos",
@@ -55,8 +55,7 @@
     "minutes": "Atas",
     "contracts": "Contratos",
     "myAccount": "Minha conta",
-    "settings": "Definições de Condomínio",
-    "ledger": "Livro de caixa"
+    "settings": "Definições de Condomínio"
   },
   "dashboard": {
     "title": "Painel",
