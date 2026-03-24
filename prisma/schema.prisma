@@ -240,6 +240,7 @@ model Quota {
   receiptUrl      String?
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
+  deletedAt       DateTime?
 
   condominium   Condominium   @relation(fields: [condominiumId], references: [id], onDelete: Cascade)
   unit          Unit          @relation(fields: [unitId], references: [id], onDelete: Cascade)
@@ -266,6 +267,7 @@ model Expense {
   notes          String?
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime?
 
   condominium   Condominium   @relation(fields: [condominiumId], references: [id], onDelete: Cascade)
   supplier      Supplier?     @relation(fields: [supplierId], references: [id], onDelete: SetNull)
@@ -294,6 +296,7 @@ model Transaction {
   quotaId       String?
   expenseId     String?
   createdAt     DateTime        @default(now())
+  deletedAt     DateTime?
 
   condominium Condominium @relation(fields: [condominiumId], references: [id], onDelete: Cascade)
   quota       Quota?      @relation(fields: [quotaId], references: [id], onDelete: Cascade)

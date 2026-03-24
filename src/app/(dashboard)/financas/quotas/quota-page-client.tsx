@@ -35,12 +35,16 @@ export function QuotaPageClient({
   defaultSplitMethod,
   isAdmin,
   debtorSummary,
+  availableYears,
+  selectedYear,
 }: {
   quotas: QuotaData[];
   units: UnitData[];
   defaultSplitMethod: "PERMILAGEM" | "EQUAL";
   isAdmin: boolean;
   debtorSummary: DebtorSummary | null;
+  availableYears: string[];
+  selectedYear: string;
 }) {
   const [activeTab, setActiveTab] = useState<Tab>("quotas");
   const [showForm, setShowForm] = useState(false);
@@ -92,7 +96,12 @@ export function QuotaPageClient({
       )}
 
       {activeTab === "quotas" && (
-        <QuotaList quotas={quotas} isAdmin={isAdmin} />
+        <QuotaList
+          quotas={quotas}
+          isAdmin={isAdmin}
+          availableYears={availableYears}
+          selectedYear={selectedYear}
+        />
       )}
 
       {activeTab === "devedores" && debtorSummary && (

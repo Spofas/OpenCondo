@@ -1,7 +1,5 @@
-import { redirect } from "next/navigation";
-import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { getUserMembership } from "@/lib/auth/get-membership";
+import { requireMembership } from "@/lib/auth/require-membership";
 import {
   AlertTriangle,
   AlertCircle,
@@ -91,11 +89,7 @@ function QuickActionButton({
 }
 
 export default async function DashboardPage() {
-  const session = await auth();
-  if (!session?.user?.id) redirect("/login");
-
-  const membership = await getUserMembership(session.user.id);
-  if (!membership) redirect("/iniciar");
+  const { session, membership } = await requireMembership();
 
   const condoId = membership.condominiumId;
   const isAdmin = membership.role === "ADMIN";
@@ -105,7 +99,7 @@ export default async function DashboardPage() {
 
   // Mark overdue quotas
   await db.quota.updateMany({
-    where: { condominiumId: condoId, status: "PENDING", dueDate: { lt: now } },
+    where: { condominiumId: condoId, status: "PENDING", dueDate: { lt: now }, deletedAt: null },
     data: { status: "OVERDUE" },
   });
 
@@ -115,7 +109,7 @@ export default async function DashboardPage() {
     const [overdueQuotas, openMaintenanceCount, nextMeeting, expiringContracts, unitCount, currentPeriodQuotaCount] =
       await Promise.all([
         db.quota.aggregate({
-          where: { condominiumId: condoId, status: "OVERDUE" },
+          where: { condominiumId: condoId, status: "OVERDUE", deletedAt: null },
           _sum: { amount: true },
           _count: true,
         }),
@@ -133,7 +127,7 @@ export default async function DashboardPage() {
           orderBy: { endDate: "asc" },
         }),
         db.unit.count({ where: { condominiumId: condoId } }),
-        db.quota.count({ where: { condominiumId: condoId, period: currentPeriod } }),
+        db.quota.count({ where: { condominiumId: condoId, period: currentPeriod, deletedAt: null } }),
       ]);
 
     // 1. Overdue quotas
@@ -219,12 +213,12 @@ export default async function DashboardPage() {
 
     const [overdueQuotas, pendingQuotas, nextMeeting] = await Promise.all([
       db.quota.aggregate({
-        where: { condominiumId: condoId, unitId: { in: myUnitIds }, status: "OVERDUE" },
+        where: { condominiumId: condoId, unitId: { in: myUnitIds }, status: "OVERDUE", deletedAt: null },
         _sum: { amount: true },
         _count: true,
       }),
       db.quota.aggregate({
-        where: { condominiumId: condoId, unitId: { in: myUnitIds }, status: "PENDING" },
+        where: { condominiumId: condoId, unitId: { in: myUnitIds }, status: "PENDING", deletedAt: null },
         _sum: { amount: true },
         _count: true,
       }),

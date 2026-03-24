@@ -87,23 +87,24 @@ export async function updateBudget(budgetId: string, input: BudgetInput) {
 
   const totalAmount = items.reduce((sum, item) => sum + item.plannedAmount, 0);
 
-  // Delete existing items and recreate
-  await db.budgetItem.deleteMany({ where: { budgetId } });
-
-  await db.budget.update({
-    where: { id: budgetId },
-    data: {
-      year,
-      totalAmount,
-      reserveFundPercentage,
-      items: {
-        create: items.map((item) => ({
-          category: item.category,
-          description: item.description || null,
-          plannedAmount: item.plannedAmount,
-        })),
+  // Delete existing items and recreate atomically
+  await db.$transaction(async (tx) => {
+    await tx.budgetItem.deleteMany({ where: { budgetId } });
+    await tx.budget.update({
+      where: { id: budgetId },
+      data: {
+        year,
+        totalAmount,
+        reserveFundPercentage,
+        items: {
+          create: items.map((item) => ({
+            category: item.category,
+            description: item.description || null,
+            plannedAmount: item.plannedAmount,
+          })),
+        },
       },
-    },
+    });
   });
 
   revalidatePath("/financas/orcamento");

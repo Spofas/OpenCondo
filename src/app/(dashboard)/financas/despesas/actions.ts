@@ -94,14 +94,25 @@ export async function deleteExpense(expenseId: string) {
   if (!ctx) return { error: "Sem permissão" };
 
   const expense = await db.expense.findFirst({
-    where: { id: expenseId, condominiumId: ctx.condominiumId },
+    where: { id: expenseId, condominiumId: ctx.condominiumId, deletedAt: null },
   });
 
   if (!expense) return { error: "Despesa não encontrada" };
 
-  await db.expense.delete({ where: { id: expenseId } });
+  const now = new Date();
+  await db.$transaction(async (tx) => {
+    await tx.expense.update({
+      where: { id: expenseId },
+      data: { deletedAt: now },
+    });
+    await tx.transaction.updateMany({
+      where: { expenseId, deletedAt: null },
+      data: { deletedAt: now },
+    });
+  });
 
   revalidatePath("/financas/despesas");
+  revalidatePath("/financas/livro-caixa");
   revalidatePath("/painel");
   return { success: true };
 }

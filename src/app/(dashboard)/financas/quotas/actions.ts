@@ -197,7 +197,10 @@ export async function undoPayment(quotaId: string) {
         paymentNotes: null,
       },
     }),
-    db.transaction.deleteMany({ where: { quotaId } }),
+    db.transaction.updateMany({
+      where: { quotaId, deletedAt: null },
+      data: { deletedAt: new Date() },
+    }),
   ]);
 
   revalidatePath("/financas/quotas");
@@ -213,12 +216,14 @@ export async function deleteQuotasByPeriod(period: string) {
   const ctx = await getAdminContext();
   if (!ctx) return { error: "Sem permissão" };
 
-  const result = await db.quota.deleteMany({
+  const result = await db.quota.updateMany({
     where: {
       condominiumId: ctx.condominiumId,
       period,
       status: { in: ["PENDING", "OVERDUE"] },
+      deletedAt: null,
     },
+    data: { deletedAt: new Date() },
   });
 
   revalidatePath("/financas/quotas");
@@ -243,6 +248,7 @@ export async function markOverdueQuotas() {
       condominiumId: ctx.condominiumId,
       status: "PENDING",
       dueDate: { lt: now },
+      deletedAt: null,
     },
     data: { status: "OVERDUE" },
   });

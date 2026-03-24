@@ -20,6 +20,7 @@ const mockInviteFindMany = vi.fn();
 const mockInviteUpdate = vi.fn();
 const mockMembershipFindUnique = vi.fn();
 const mockMembershipCreate = vi.fn();
+const mockCondominiumFindUnique = vi.fn();
 const mockDbTransaction = vi.fn();
 
 vi.mock("@/lib/db", () => ({
@@ -33,6 +34,9 @@ vi.mock("@/lib/db", () => ({
     membership: {
       findUnique: (...args: unknown[]) => mockMembershipFindUnique(...args),
       create: (...args: unknown[]) => mockMembershipCreate(...args),
+    },
+    condominium: {
+      findUnique: (...args: unknown[]) => mockCondominiumFindUnique(...args),
     },
     $transaction: (...args: unknown[]) => mockDbTransaction(...args),
   },
@@ -147,6 +151,7 @@ describe("createInvite", () => {
   it("creates invite and returns token", async () => {
     mockAuth.mockResolvedValue({ user: { id: "user-1" } });
     mockMembershipFindUnique.mockResolvedValue({ role: "ADMIN" });
+    mockCondominiumFindUnique.mockResolvedValue({ name: "Edifício Teste" });
     mockInviteCreate.mockResolvedValue({ token: "abc-123" });
 
     const result = await createInvite({ condominiumId: "c1", role: "OWNER" });

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   ChevronDown,
   ChevronUp,
@@ -61,32 +62,24 @@ function getPaymentMethodLabel(method: string | null): string {
 export function QuotaList({
   quotas,
   isAdmin,
+  availableYears,
+  selectedYear,
 }: {
   quotas: QuotaData[];
   isAdmin: boolean;
+  availableYears: string[];
+  selectedYear: string;
 }) {
-  // Derive available years from quota data
-  const currentYear = new Date().getFullYear().toString();
-  const availableYears = Array.from(
-    new Set(quotas.map((q) => q.period.slice(0, 4)))
-  ).sort((a, b) => b.localeCompare(a)); // newest first in dropdown
-
-  const defaultYear = availableYears.includes(currentYear)
-    ? currentYear
-    : availableYears[0] ?? currentYear;
-
-  const [selectedYear, setSelectedYear] = useState(defaultYear);
+  const router = useRouter();
   const [expandedPeriod, setExpandedPeriod] = useState<string | null>(null);
   const [payingQuota, setPayingQuota] = useState<QuotaData | null>(null);
   const [confirmDeletePeriod, setConfirmDeletePeriod] = useState<string | null>(null);
   const [actionError, setActionError] = useState("");
 
-  // Filter to selected year
-  const yearQuotas = quotas.filter((q) => q.period.startsWith(selectedYear));
-
+  // Quotas are already scoped to selectedYear by the server
   // Group by period
   const groupedByPeriod = new Map<string, QuotaData[]>();
-  for (const quota of yearQuotas) {
+  for (const quota of quotas) {
     const existing = groupedByPeriod.get(quota.period) || [];
     existing.push(quota);
     groupedByPeriod.set(quota.period, existing);
@@ -120,14 +113,14 @@ export function QuotaList({
     );
   }
 
-  // Summary stats scoped to selected year
-  const totalPending = yearQuotas
+  // Summary stats
+  const totalPending = quotas
     .filter((q) => q.status === "PENDING")
     .reduce((sum, q) => sum + q.amount, 0);
-  const totalOverdue = yearQuotas
+  const totalOverdue = quotas
     .filter((q) => q.status === "OVERDUE")
     .reduce((sum, q) => sum + q.amount, 0);
-  const totalPaid = yearQuotas
+  const totalPaid = quotas
     .filter((q) => q.status === "PAID")
     .reduce((sum, q) => sum + q.amount, 0);
 
@@ -145,7 +138,7 @@ export function QuotaList({
         <select
           value={selectedYear}
           onChange={(e) => {
-            setSelectedYear(e.target.value);
+            router.push(`?year=${e.target.value}`);
             setExpandedPeriod(null);
           }}
           className="rounded-lg border border-input bg-background px-3 py-1.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"

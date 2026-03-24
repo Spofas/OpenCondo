@@ -51,6 +51,7 @@ export async function GET(request: NextRequest) {
     where: {
       condominiumId,
       period: { startsWith: `${year}-` },
+      deletedAt: null,
     },
     include: {
       unit: {
@@ -70,6 +71,7 @@ export async function GET(request: NextRequest) {
         gte: new Date(`${year}-01-01`),
         lt: new Date(`${year + 1}-01-01`),
       },
+      deletedAt: null,
     },
   });
 
