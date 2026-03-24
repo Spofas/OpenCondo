@@ -45,7 +45,7 @@ export default async function QuotasPage() {
       ...(unitIdFilter ? { unitId: unitIdFilter } : {}),
     },
     include: { unit: { select: { id: true, identifier: true, permilagem: true } } },
-    orderBy: [{ period: "desc" }, { unit: { floor: "asc" } }, { unit: { identifier: "asc" } }],
+    orderBy: [{ period: "asc" }, { unit: { floor: "asc" } }, { unit: { identifier: "asc" } }],
   });
 
   // Fetch units for the generation form (admin only; non-admin doesn't see the form)
