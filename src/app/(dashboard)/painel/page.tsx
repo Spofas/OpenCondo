@@ -12,6 +12,10 @@ import {
   Receipt,
   Megaphone,
   ClipboardList,
+  TrendingUp,
+  TrendingDown,
+  Wallet,
+  Clock,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -68,6 +72,31 @@ function AttentionCard({ item }: { item: AttentionItem }) {
   );
 }
 
+function StatCard({
+  label,
+  value,
+  icon: Icon,
+  iconColor,
+  sub,
+}: {
+  label: string;
+  value: string;
+  icon: React.ElementType;
+  iconColor: string;
+  sub?: string;
+}) {
+  return (
+    <div className="rounded-xl border border-border bg-card p-4">
+      <div className="mb-3 flex items-center justify-between">
+        <span className="text-xs font-medium text-muted-foreground">{label}</span>
+        <Icon size={15} className={iconColor} />
+      </div>
+      <p className="text-xl font-semibold text-foreground">{value}</p>
+      {sub && <p className="mt-0.5 text-xs text-muted-foreground">{sub}</p>}
+    </div>
+  );
+}
+
 function QuickActionButton({
   href,
   icon: Icon,
@@ -96,6 +125,7 @@ export default async function DashboardPage() {
   const now = new Date();
   const in30Days = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
   const currentPeriod = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  const yearStart = new Date(now.getFullYear(), 0, 1);
 
   // Mark overdue quotas
   await db.quota.updateMany({
@@ -105,39 +135,94 @@ export default async function DashboardPage() {
 
   const attentionItems: AttentionItem[] = [];
 
+  type StatCardProps = React.ComponentProps<typeof StatCard>;
+  let statCards: StatCardProps[] = [];
+
   if (isAdmin) {
-    const [overdueQuotas, openMaintenanceCount, nextMeeting, expiringContracts, unitCount, currentPeriodQuotaCount] =
-      await Promise.all([
-        db.quota.aggregate({
-          where: { condominiumId: condoId, status: "OVERDUE", deletedAt: null },
-          _sum: { amount: true },
-          _count: true,
-        }),
-        db.maintenanceRequest.count({
-          where: { condominiumId: condoId, status: { in: ["SUBMETIDO", "EM_ANALISE", "EM_CURSO"] } },
-        }),
-        db.meeting.findFirst({
-          where: { condominiumId: condoId, status: "AGENDADA", date: { gte: now } },
-          orderBy: { date: "asc" },
-          select: { date: true, type: true },
-        }),
-        db.contract.findMany({
-          where: { condominiumId: condoId, status: "ATIVO", endDate: { gte: now, lte: in30Days } },
-          select: { id: true, type: true, endDate: true },
-          orderBy: { endDate: "asc" },
-        }),
-        db.unit.count({ where: { condominiumId: condoId } }),
-        db.quota.count({ where: { condominiumId: condoId, period: currentPeriod, deletedAt: null } }),
-      ]);
+    const [
+      overdueQuotas,
+      openMaintenanceCount,
+      nextMeeting,
+      expiringContracts,
+      unitCount,
+      currentPeriodQuotaCount,
+      receitas,
+      despesas,
+    ] = await Promise.all([
+      db.quota.aggregate({
+        where: { condominiumId: condoId, status: "OVERDUE", deletedAt: null },
+        _sum: { amount: true },
+        _count: true,
+      }),
+      db.maintenanceRequest.count({
+        where: { condominiumId: condoId, status: { in: ["SUBMETIDO", "EM_ANALISE", "EM_CURSO"] } },
+      }),
+      db.meeting.findFirst({
+        where: { condominiumId: condoId, status: "AGENDADA", date: { gte: now } },
+        orderBy: { date: "asc" },
+        select: { date: true, type: true },
+      }),
+      db.contract.findMany({
+        where: { condominiumId: condoId, status: "ATIVO", endDate: { gte: now, lte: in30Days } },
+        select: { id: true, type: true, endDate: true },
+        orderBy: { endDate: "asc" },
+      }),
+      db.unit.count({ where: { condominiumId: condoId } }),
+      db.quota.count({ where: { condominiumId: condoId, period: currentPeriod, deletedAt: null } }),
+      db.transaction.aggregate({
+        where: { condominiumId: condoId, type: "QUOTA_PAYMENT", deletedAt: null, date: { gte: yearStart } },
+        _sum: { amount: true },
+      }),
+      db.transaction.aggregate({
+        where: { condominiumId: condoId, type: "EXPENSE", deletedAt: null, date: { gte: yearStart } },
+        _sum: { amount: true },
+      }),
+    ]);
+
+    const receitasAmount = Number(receitas._sum.amount ?? 0);
+    const despesasAmount = Math.abs(Number(despesas._sum.amount ?? 0));
+    const saldo = receitasAmount - despesasAmount;
+    const overdueAmount = Number(overdueQuotas._sum.amount ?? 0);
+    const year = now.getFullYear();
+
+    statCards = [
+      {
+        label: `Saldo ${year}`,
+        value: formatCurrency(saldo),
+        icon: Wallet,
+        iconColor: saldo >= 0 ? "text-green-500" : "text-red-500",
+        sub: "receitas − despesas",
+      },
+      {
+        label: `Receitas ${year}`,
+        value: formatCurrency(receitasAmount),
+        icon: TrendingUp,
+        iconColor: "text-green-500",
+        sub: "quotas pagas",
+      },
+      {
+        label: `Despesas ${year}`,
+        value: formatCurrency(despesasAmount),
+        icon: TrendingDown,
+        iconColor: "text-orange-500",
+        sub: "despesas registadas",
+      },
+      {
+        label: "Em atraso",
+        value: formatCurrency(overdueAmount),
+        icon: AlertTriangle,
+        iconColor: overdueAmount > 0 ? "text-red-500" : "text-muted-foreground",
+        sub: overdueQuotas._count > 0 ? `${overdueQuotas._count} quota${overdueQuotas._count !== 1 ? "s" : ""}` : "nenhuma",
+      },
+    ];
 
     // 1. Overdue quotas
     if (overdueQuotas._count > 0) {
-      const amount = Number(overdueQuotas._sum.amount ?? 0);
       attentionItems.push({
         id: "overdue-quotas",
         level: "error",
         icon: AlertTriangle,
-        message: `${overdueQuotas._count} quota${overdueQuotas._count !== 1 ? "s" : ""} em atraso · ${formatCurrency(amount)}`,
+        message: `${overdueQuotas._count} quota${overdueQuotas._count !== 1 ? "s" : ""} em atraso · ${formatCurrency(overdueAmount)}`,
         href: "/financas/quotas",
         cta: "Registar pagamento",
       });
@@ -155,7 +240,7 @@ export default async function DashboardPage() {
       });
     }
 
-    // 3. Expiring contracts (one item per contract)
+    // 3. Expiring contracts
     for (const contract of expiringContracts) {
       const daysLeft = Math.ceil((contract.endDate!.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
       const when =
@@ -172,7 +257,7 @@ export default async function DashboardPage() {
       });
     }
 
-    // 4. Quotas not yet generated for current month (only if units exist)
+    // 4. Quotas not yet generated for current month
     if (unitCount > 0 && currentPeriodQuotaCount === 0) {
       const monthName = now.toLocaleDateString("pt-PT", { month: "long" });
       attentionItems.push({
@@ -211,7 +296,7 @@ export default async function DashboardPage() {
     });
     const myUnitIds = myUnits.map((u) => u.id);
 
-    const [overdueQuotas, pendingQuotas, nextMeeting] = await Promise.all([
+    const [overdueQuotas, pendingQuotas, nextMeeting, nextDueQuota] = await Promise.all([
       db.quota.aggregate({
         where: { condominiumId: condoId, unitId: { in: myUnitIds }, status: "OVERDUE", deletedAt: null },
         _sum: { amount: true },
@@ -227,16 +312,43 @@ export default async function DashboardPage() {
         orderBy: { date: "asc" },
         select: { date: true, type: true },
       }),
+      db.quota.findFirst({
+        where: { condominiumId: condoId, unitId: { in: myUnitIds }, status: "PENDING", deletedAt: null },
+        orderBy: { dueDate: "asc" },
+        select: { amount: true, dueDate: true },
+      }),
     ]);
+
+    const overdueAmount = Number(overdueQuotas._sum.amount ?? 0);
+
+    statCards = [
+      {
+        label: "Próxima quota",
+        value: nextDueQuota ? formatCurrency(Number(nextDueQuota.amount)) : "—",
+        icon: Clock,
+        iconColor: "text-blue-500",
+        sub: nextDueQuota
+          ? `vence ${nextDueQuota.dueDate.toLocaleDateString("pt-PT", { day: "numeric", month: "short" })}`
+          : "sem quotas pendentes",
+      },
+      {
+        label: "Em atraso",
+        value: formatCurrency(overdueAmount),
+        icon: AlertTriangle,
+        iconColor: overdueAmount > 0 ? "text-red-500" : "text-muted-foreground",
+        sub: overdueQuotas._count > 0
+          ? `${overdueQuotas._count} quota${overdueQuotas._count !== 1 ? "s" : ""}`
+          : "nenhuma",
+      },
+    ];
 
     // 1. Overdue quotas
     if (overdueQuotas._count > 0) {
-      const amount = Number(overdueQuotas._sum.amount ?? 0);
       attentionItems.push({
         id: "my-overdue",
         level: "error",
         icon: AlertTriangle,
-        message: `${overdueQuotas._count} quota${overdueQuotas._count !== 1 ? "s" : ""} em atraso · ${formatCurrency(amount)}`,
+        message: `${overdueQuotas._count} quota${overdueQuotas._count !== 1 ? "s" : ""} em atraso · ${formatCurrency(overdueAmount)}`,
         href: "/financas/quotas",
         cta: "Ver quotas",
       });
@@ -277,6 +389,15 @@ export default async function DashboardPage() {
         <h1 className="text-2xl font-bold text-foreground">Painel</h1>
         <p className="text-muted-foreground">Bem-vindo, {firstName}</p>
       </div>
+
+      {/* Stat cards */}
+      <section className="mb-8">
+        <div className={`grid gap-3 ${isAdmin ? "grid-cols-2 sm:grid-cols-4" : "grid-cols-2"}`}>
+          {statCards.map((card) => (
+            <StatCard key={card.label} {...card} />
+          ))}
+        </div>
+      </section>
 
       {/* Attention items */}
       <section className="mb-8">
