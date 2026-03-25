@@ -208,11 +208,15 @@ export default async function DashboardPage() {
         sub: "despesas registadas",
       },
       {
-        label: "Em atraso",
-        value: formatCurrency(overdueAmount),
-        icon: AlertTriangle,
-        iconColor: overdueAmount > 0 ? "text-red-500" : "text-muted-foreground",
-        sub: overdueQuotas._count > 0 ? `${overdueQuotas._count} quota${overdueQuotas._count !== 1 ? "s" : ""}` : "nenhuma",
+        label: "Próxima assembleia",
+        value: nextMeeting
+          ? nextMeeting.date.toLocaleDateString("pt-PT", { day: "numeric", month: "short" })
+          : "—",
+        icon: Calendar,
+        iconColor: "text-blue-500",
+        sub: nextMeeting
+          ? nextMeeting.type === "ORDINARIA" ? "Ordinária" : "Extraordinária"
+          : "nenhuma agendada",
       },
     ];
 
