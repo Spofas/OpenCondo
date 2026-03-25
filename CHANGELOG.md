@@ -6,6 +6,34 @@ All notable changes to OpenCondo are recorded here in reverse-chronological orde
 
 ## [Unreleased]
 
+### 2026-03-25 — Security, data integrity, and architecture hardening
+
+**Security:**
+- `api/receipts/[quotaId]` — non-admin users can now only download receipts for units they own or rent; previously any condo member could access any receipt
+- CSV import duplicate identifier detection now reports the conflicting line numbers
+
+**Data integrity:**
+- Soft deletes on `Expense`, `Quota`, `Transaction` — records are now flagged with `deletedAt` instead of being permanently removed (migration `20260324224329_add_soft_delete_fields`)
+- Budget update wrapped in `db.$transaction` — items are replaced atomically; no partial state if the operation fails
+- Soft-delete cascades implemented in server actions: deleting an expense also soft-deletes its linked Transaction; undoing a quota payment soft-deletes the payment Transaction
+
+**Performance:**
+- Quotas page now accepts a `?year=` search param — only the selected year's quotas are fetched from the database instead of all historical data
+- Year selector in the quota list navigates via URL instead of filtering all quotas client-side
+
+**Architecture:**
+- New `src/lib/auth/require-membership.ts` — `requireMembership()` centralises the auth + membership boilerplate used by every server page
+- New `src/lib/serializers.ts` — `serializeExpense()`, `serializeTransaction()`, `serializeQuota()`, `serializeRecurringExpense()` centralise Decimal→number and Date→string conversions
+- `findFirst` membership fallback (multi-condo users) now uses `orderBy: { joinedAt: "asc" }` for deterministic results
+- All Prisma queries that read soft-deletable models now filter `deletedAt: null`
+
+**Ops:**
+- New `/api/cron/process` route — nightly job (02:00 UTC via Vercel Cron) marks overdue quotas and generates recurring expenses across all condominiums; protected by `CRON_SECRET` env var
+- `vercel.json` updated to register the cron schedule
+
+**Tests:**
+- Fixed `actions-invite.test.ts` — added missing `db.condominium` mock so the "creates invite and returns token" test no longer throws on `findUnique`
+
 ### 2026-03-19 — Database seed for manual testing
 
 Created `prisma/seed.ts` with realistic data covering all modules:

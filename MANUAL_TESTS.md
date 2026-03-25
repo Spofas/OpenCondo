@@ -37,6 +37,13 @@ Write notes next to anything that fails so it can be fixed later.
   R/C Esq;0;T2;170;
   R/C Dto;0;T2;160;
   ```
+- [ ] Paste a CSV with duplicate identifiers in the file itself and verify the error message names both line numbers:
+  ```
+  Novo1;0;T1;100;
+  Novo2;1;T2;150;
+  Novo1;2;T3;200;
+  ```
+  Expected: error on line 3 saying identifier 'Novo1' is a duplicate of line 1
 - [ ] Cancel closes the panel without doing anything
 
 ### 1.4 Condo Info
@@ -74,9 +81,19 @@ Write notes next to anything that fails so it can be fixed later.
 - [ ] Generate quotas for a second month (Fevereiro 2026) — 6 more lines appear
 - [ ] Try generating the same month twice — it should be rejected
 
+### Year filter test
+- [ ] Generate quotas for a different year (e.g. 2025 if you have seed data, or check URL `?year=2025`)
+- [ ] Only quotas for the selected year are shown
+- [ ] The year selector dropdown contains only years with quota data
+
 ### Receipt test
 - [ ] On a paid quota, click the receipt button (recibo) — a PDF opens or downloads
 - [ ] The PDF shows the unit identifier, amount, payment date, and condo name
+
+### Receipt ownership test (non-admin)
+- [ ] Log in as a Proprietário who owns unit R/C Esq
+- [ ] Navigate to `/api/receipts/<quotaId>` for a quota belonging to a **different** unit — the server returns a 403 error, not the PDF
+- [ ] Navigate to `/api/receipts/<quotaId>` for a quota belonging to **their** unit — the PDF downloads correctly
 
 ---
 
@@ -99,6 +116,7 @@ Write notes next to anything that fails so it can be fixed later.
 - [ ] Delete one expense — a confirmation step appears ("Tem a certeza?")
 - [ ] Confirm — it disappears from the list
 - [ ] Cancel on the confirmation — nothing is deleted
+- [ ] Check Livro de Caixa — the deleted expense's transaction entry no longer appears (soft-deleted together)
 
 ### Recurring expenses
 - [ ] Go to Finanças → Despesas Recorrentes
@@ -265,4 +283,4 @@ Use this section to record anything unexpected during testing:
 
 ---
 
-*Last updated: 2026-03-20*
+*Last updated: 2026-03-25*

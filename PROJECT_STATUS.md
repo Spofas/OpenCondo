@@ -1,6 +1,6 @@
 # OpenCondo — Project Status & Architecture Guide
 
-**Last updated:** 2026-03-18
+**Last updated:** 2026-03-25
 **For:** Anyone following along, regardless of programming experience
 
 ---
@@ -442,6 +442,12 @@ A budget is the annual spending plan for the building — "we expect to spend �
 | 2026-03-18 | Dynamic field arrays for line items | React Hook Form's useFieldArray lets admins add/remove budget rows freely |
 | 2026-03-18 | Vercel + Neon for hosting | Vercel is built by the Next.js team (best optimization). Neon over Supabase because OpenCondo already has NextAuth (auth) and Prisma (ORM) — Supabase's bundled auth/client would be redundant and unused. Both scale from free tier to production. |
 | 2026-03-18 | Deployment guide created | `DEPLOYMENT_GUIDE.md` — step-by-step instructions for non-technical users to deploy on Vercel + Neon |
+| 2026-03-25 | Soft deletes on Expense/Quota/Transaction | Recoverable deletions, audit trail, no orphaned financial data; hard deletes permanently destroy payment history |
+| 2026-03-25 | URL search param for quota year filter | Avoids loading full quota history on every render; bookmarkable and shareable links |
+| 2026-03-25 | requireMembership() centralized helper | Every server page repeated the same auth+membership boilerplate — extracted to `src/lib/auth/require-membership.ts` |
+| 2026-03-25 | Centralized serializers | Prisma Decimal→number and Date→string conversions scattered across pages; consolidated in `src/lib/serializers.ts` |
+| 2026-03-25 | Vercel Cron for overdue + recurring | Nightly job at 02:00 UTC covers all condominiums; removes per-page side-effects for overdue marking (still kept as fallback on page load) |
+| 2026-03-25 | Receipt endpoint ownership check | Non-admin users could previously download any unit's receipt; restricted to units they own/rent |
 
 ---
 
@@ -450,17 +456,17 @@ A budget is the annual spending plan for the building — "we expect to spend �
 This section exists so that if we start a fresh Claude Code session, I (Claude) can read this file
 and get back up to speed without needing the conversation history.
 
-### Current state (2026-03-19)
-- **Branch:** `claude/condo-app-planning-AUjKO`
-- **Build status:** Passing (`next build` succeeds, all 26 routes compile)
-- **Database:** Schema defined with 31+ models (including RecurringExpense). No migrations — using `db push` for dev. DB not running in CI, but schema is valid.
-- **Test suite:** 246 tests passing (20 test files)
+### Current state (2026-03-25)
+- **Branch:** `claude/opencondo-development-Ch14I`
+- **Build status:** Passing (`next build` succeeds, all routes compile)
+- **Database:** Prisma Migrate in use (migration history committed). Latest migration: `20260324224329_add_soft_delete_fields` (adds `deletedAt` to `Expense`, `Quota`, `Transaction`).
+- **Test suite:** 348 tests passing (21 test files)
   - 9 validator test files
   - 3 pure logic unit test files (quota-calculations, debtor-calculations, conta-gerencia)
   - 4 scenario test files (lifecycle, csv-import, recurring-expenses, edge-cases) with shared fixtures
-  - 2 server action mock tests (condominium, invites)
+  - 3 server action mock tests (condominium, invites — fixed in this session)
   - 2 auth validator tests
-- **Latest features:** Debtor tracking with aging analysis, recurring expense templates, calendar view, plus comprehensive scenario tests simulating realistic condo data (Edifício Aurora: 6 units, full year of quotas with mixed payment patterns).
+- **Latest features (2026-03-25):** Soft deletes on financial records, nightly cron, receipt ownership gate, year-scoped quota queries, centralized auth+serializer helpers.
 - **Note:** `pnpm lint` is broken on Next.js 16.1.7 (`next lint` misparses args). The build catches type errors, so this is non-blocking.
 
 ### Gotchas & quirks discovered during development
@@ -481,11 +487,12 @@ and get back up to speed without needing the conversation history.
 - **Route groups** `(auth)` and `(dashboard)` to share layouts without affecting URLs
 - **Zod schemas** in `lib/validators/` shared between client forms and server actions
 - **`db` singleton** in `lib/db/index.ts` with global caching to prevent connection leaks in dev
+- **`requireMembership()`** in `lib/auth/require-membership.ts` — call at the top of every server page instead of repeating `auth()` + `getUserMembership()` + redirect logic
+- **Serializers** in `lib/serializers.ts` — call `serializeExpense(e)`, `serializeTransaction(t)`, etc. to convert Prisma Decimals and Dates before passing to client components
+- **Soft deletes** — all `Expense`, `Quota`, `Transaction` writes filter `deletedAt: null`; deletions set `deletedAt = now()` instead of removing rows; cascades handled manually in actions (delete expense → also soft-delete its Transaction)
 
 ### What still needs to be built (in order)
-1. **Manual testing** — All new features (debtor tracking, recurring expenses, calendar) need manual testing with a running database. Start the DB, run `pnpm db:push`, seed some data, and walk through each page.
-2. **Bulk import UI** — CSV parsing logic exists (`src/lib/csv-import.ts`) but has no page/form yet. Needs a page at `/definicoes` or `/onboarding` with file upload + preview + confirm flow.
-3. **PDF exports** — Receipt generation for quotas (API route exists at `/api/receipts/[quotaId]`), ata PDF export, conta de gerência PDF.
-4. **Email notifications** — Transactional emails for announcements, quota reminders, maintenance updates, meeting convocatória.
-5. **Mobile responsiveness** — Current UI is desktop-first; needs responsive tweaks for sidebar, tables, modals.
-6. **Deployment** — See `DEPLOYMENT_GUIDE.md` for Vercel + Neon setup.
+1. **Bulk import UI** — CSV parsing logic exists (`src/lib/csv-import.ts`, with duplicate detection) but has no page/form yet. Needs a page at `/definicoes` or `/onboarding` with file upload + preview + confirm flow.
+2. **Email notifications** — Transactional emails for announcements, quota reminders, maintenance updates, meeting convocatória. Needs `RESEND_API_KEY` env var and email templates.
+3. **Mobile responsiveness** — Current UI is desktop-first; needs responsive tweaks for sidebar, tables, modals.
+4. **Deployment** — See `DEPLOYMENT_GUIDE.md` for Vercel + Neon setup. Remember to set `CRON_SECRET` in env vars.
