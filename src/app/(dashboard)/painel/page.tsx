@@ -274,21 +274,6 @@ export default async function DashboardPage() {
       });
     }
 
-    // 5. Upcoming meeting (within 14 days)
-    if (nextMeeting) {
-      const daysUntil = Math.ceil((nextMeeting.date.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-      if (daysUntil <= 14) {
-        const meetingType = nextMeeting.type === "ORDINARIA" ? "Ordinária" : "Extraordinária";
-        attentionItems.push({
-          id: "next-meeting",
-          level: "info",
-          icon: Calendar,
-          message: `Assembleia ${meetingType} em ${daysUntil} dia${daysUntil !== 1 ? "s" : ""} · ${nextMeeting.date.toLocaleDateString("pt-PT", { day: "numeric", month: "short" })}`,
-          href: "/assembleia/reunioes",
-          cta: "Ver reunião",
-        });
-      }
-    }
   } else {
     // Owner / Tenant
     const myUnits = await db.unit.findMany({
@@ -336,13 +321,15 @@ export default async function DashboardPage() {
           : "sem quotas pendentes",
       },
       {
-        label: "Em atraso",
-        value: formatCurrency(overdueAmount),
-        icon: AlertTriangle,
-        iconColor: overdueAmount > 0 ? "text-red-500" : "text-muted-foreground",
-        sub: overdueQuotas._count > 0
-          ? `${overdueQuotas._count} quota${overdueQuotas._count !== 1 ? "s" : ""}`
-          : "nenhuma",
+        label: "Próxima assembleia",
+        value: nextMeeting
+          ? nextMeeting.date.toLocaleDateString("pt-PT", { day: "numeric", month: "short" })
+          : "—",
+        icon: Calendar,
+        iconColor: "text-blue-500",
+        sub: nextMeeting
+          ? nextMeeting.type === "ORDINARIA" ? "Ordinária" : "Extraordinária"
+          : "nenhuma agendada",
       },
     ];
 
@@ -371,18 +358,6 @@ export default async function DashboardPage() {
       });
     }
 
-    // 3. Next meeting (always shown if scheduled)
-    if (nextMeeting) {
-      const meetingType = nextMeeting.type === "ORDINARIA" ? "Ordinária" : "Extraordinária";
-      attentionItems.push({
-        id: "next-meeting",
-        level: "info",
-        icon: Calendar,
-        message: `Próxima assembleia ${meetingType} · ${nextMeeting.date.toLocaleDateString("pt-PT", { day: "numeric", month: "long" })}`,
-        href: "/assembleia/reunioes",
-        cta: "Ver reunião",
-      });
-    }
   }
 
   const firstName = session.user.name?.split(" ")[0] ?? session.user.name;
