@@ -85,9 +85,9 @@ describe("splitByPermilagem", () => {
       expect(amount).toBeGreaterThan(0);
     }
 
-    // Verify the total is close to the original (may differ by rounding)
+    // Rounding error must be under €0.06 (6 units × max €0.005 per unit at 2dp)
     const sumOfParts = Array.from(result.values()).reduce((s, v) => s + v, 0);
-    expect(sumOfParts).toBeCloseTo(totalMonthly, 0);
+    expect(Math.abs(sumOfParts - totalMonthly)).toBeLessThan(0.06);
 
     // Verify proportionality: unit with 220‰ should pay more than unit with 120‰
     expect(result.get("2-dto")!).toBeGreaterThan(result.get("rc-esq")!);

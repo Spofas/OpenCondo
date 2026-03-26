@@ -162,4 +162,79 @@ describe("buildContaGerencia", () => {
 
     expect(report.netBalance).toBe(200); // 500 - 300
   });
+
+  it("includes unbudgeted expenses in totals and category breakdown", () => {
+    // Expenses whose category has no matching budget item must still count
+    const report = buildContaGerencia(
+      makeInput({
+        budget: {
+          totalAmount: 1000,
+          status: "APPROVED",
+          reserveFundPercentage: 10,
+          items: [
+            { category: "Limpeza", description: null, plannedAmount: 600 },
+          ],
+        },
+        expenses: [
+          { category: "Limpeza", amount: 400, date: "2025-03-01" },
+          { category: "Obras", amount: 750, date: "2025-04-01" },   // no budget line
+          { category: "Diversos", amount: 200, date: "2025-05-01" }, // no budget line
+        ],
+      })
+    );
+
+    // All expenses count toward the total regardless of whether they're budgeted
+    expect(report.totalExpenses).toBe(1350);
+
+    // All three categories appear in the breakdown
+    expect(report.expensesByCategory).toHaveLength(3);
+    const categories = report.expensesByCategory.map((e) => e.category);
+    expect(categories).toContain("Obras");
+    expect(categories).toContain("Diversos");
+    expect(categories).toContain("Limpeza");
+
+    // Budget lines only cover the budgeted category
+    expect(report.budgetLines).toHaveLength(1);
+    expect(report.budgetLines[0].category).toBe("Limpeza");
+    expect(report.budgetLines[0].actual).toBe(400);
+    expect(report.budgetLines[0].variance).toBe(200); // 600 - 400
+
+    // Net balance still accounts for all expenses, not just budgeted ones
+    expect(report.netBalance).toBe(-1350); // no paid quotas, all expenses
+  });
+
+  it("budget lines with zero actual spend show full planned amount as positive variance", () => {
+    const report = buildContaGerencia(
+      makeInput({
+        budget: {
+          totalAmount: 2400,
+          status: "APPROVED",
+          reserveFundPercentage: 10,
+          items: [
+            { category: "Limpeza", description: null, plannedAmount: 1200 },
+            { category: "Elevador", description: null, plannedAmount: 800 },
+            { category: "Seguro", description: null, plannedAmount: 400 },
+          ],
+        },
+        expenses: [
+          // Only Limpeza has actual spend; Elevador and Seguro have nothing
+          { category: "Limpeza", amount: 900, date: "2025-06-01" },
+        ],
+      })
+    );
+
+    expect(report.budgetLines).toHaveLength(3);
+
+    const limpeza = report.budgetLines.find((l) => l.category === "Limpeza")!;
+    expect(limpeza.actual).toBe(900);
+    expect(limpeza.variance).toBe(300); // underspent
+
+    const elevador = report.budgetLines.find((l) => l.category === "Elevador")!;
+    expect(elevador.actual).toBe(0);
+    expect(elevador.variance).toBe(800); // full planned amount saved
+
+    const seguro = report.budgetLines.find((l) => l.category === "Seguro")!;
+    expect(seguro.actual).toBe(0);
+    expect(seguro.variance).toBe(400); // full planned amount saved
+  });
 });

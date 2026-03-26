@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { isDueThisPeriod } from "@/lib/cron-utils";
 
 /**
  * Nightly cron job — runs at 02:00 UTC via Vercel Cron (vercel.json).
@@ -80,24 +81,3 @@ export async function GET(request: NextRequest) {
   return NextResponse.json({ success: true, period: currentPeriod, ...results });
 }
 
-/**
- * Returns true if the given frequency is due in the current month.
- * MENSAL = every month, TRIMESTRAL = every 3 months (Jan, Apr, Jul, Oct),
- * SEMESTRAL = every 6 months (Jan, Jul), ANUAL = January only.
- * PONTUAL = never auto-generated.
- */
-function isDueThisPeriod(frequency: string, now: Date): boolean {
-  const month = now.getMonth() + 1; // 1-indexed
-  switch (frequency) {
-    case "MENSAL":
-      return true;
-    case "TRIMESTRAL":
-      return month % 3 === 1; // Jan(1), Apr(4), Jul(7), Oct(10)
-    case "SEMESTRAL":
-      return month === 1 || month === 7;
-    case "ANUAL":
-      return month === 1;
-    default:
-      return false; // PONTUAL — manual only
-  }
-}
