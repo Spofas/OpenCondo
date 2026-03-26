@@ -6,6 +6,28 @@ All notable changes to OpenCondo are recorded here in reverse-chronological orde
 
 ## [Unreleased]
 
+### 2026-03-26 — Test coverage improvements and painel stat cards
+
+**Tests:**
+- Extracted `isDueThisPeriod` from the cron route into `src/lib/cron-utils.ts` — pure function, no Next.js dependency, now fully testable
+- Added `src/lib/__tests__/cron-utils.test.ts`: 20+ tests covering MENSAL/TRIMESTRAL/SEMESTRAL/ANUAL/PONTUAL, unknown frequency strings, and agreement with the FREQUENCY_MONTHS-based logic used in scenario tests
+- Tightened `splitByPermilagem` rounding test: `toBeCloseTo(total, 0)` (±0.5 tolerance) replaced with `Math.abs(sum - total) < 0.06` (tight — at most 6 units × €0.005)
+- Added `conta-gerencia` edge case: unbudgeted expenses count in `totalExpenses`, `expensesByCategory`, and `netBalance` but do not appear in `budgetLines`
+- Added `conta-gerencia` edge case: budget lines with no actual spend show `actual: 0` and `variance` equal to the full planned amount
+- Total: 363 tests passing across 27 test files
+
+**Dashboard (painel):**
+- Admin stat cards: Saldo YTD, Receitas YTD, Despesas YTD, Próxima assembleia
+- Owner stat cards: Próxima quota (amount + due date), Próxima assembleia
+- Removed "Em atraso" stat card (covered by attention items section)
+- Removed duplicate upcoming-meeting attention alert (covered by stat card)
+
+**Docs:**
+- Fixed seed to populate `Transaction` records so Livro de Caixa is non-empty
+- Added `CRON_SECRET` to the DEPLOYMENT_GUIDE env vars table
+
+---
+
 ### 2026-03-25 — Security, data integrity, and architecture hardening
 
 **Security:**

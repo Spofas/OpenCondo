@@ -460,13 +460,14 @@ and get back up to speed without needing the conversation history.
 - **Branch:** `claude/opencondo-development-Ch14I`
 - **Build status:** Passing (`next build` succeeds, all routes compile)
 - **Database:** Prisma Migrate in use (migration history committed). Latest migration: `20260324224329_add_soft_delete_fields` (adds `deletedAt` to `Expense`, `Quota`, `Transaction`).
-- **Test suite:** 348 tests passing (21 test files)
+- **Test suite:** 363 tests passing (27 test files)
   - 9 validator test files
-  - 3 pure logic unit test files (quota-calculations, debtor-calculations, conta-gerencia)
+  - 4 pure logic unit test files (quota-calculations, debtor-calculations, conta-gerencia, cron-utils)
   - 4 scenario test files (lifecycle, csv-import, recurring-expenses, edge-cases) with shared fixtures
   - 3 server action mock tests (condominium, invites — fixed in this session)
   - 2 auth validator tests
 - **Latest features (2026-03-25):** Soft deletes on financial records, nightly cron, receipt ownership gate, year-scoped quota queries, centralized auth+serializer helpers.
+- **Latest features (2026-03-26):** Extracted `isDueThisPeriod` to `src/lib/cron-utils.ts` (testable without Next.js); added 20+ cron tests, tightened permilagem rounding bound, added conta-gerencia edge case tests (unbudgeted expenses, zero-spend budget lines); painel stat cards (YTD Saldo/Receitas/Despesas + Próxima assembleia).
 - **Note:** `pnpm lint` is broken on Next.js 16.1.7 (`next lint` misparses args). The build catches type errors, so this is non-blocking.
 
 ### Gotchas & quirks discovered during development
