@@ -2,6 +2,12 @@
 
 Portuguese condominium management platform built with Next.js 16, Prisma, PostgreSQL, and Tailwind CSS.
 
+## Session start
+
+At the beginning of every session, read these two files before doing anything else:
+- `PROJECT_STATUS.md` — current branch, build state, architecture, key patterns, gotchas, and what still needs building
+- `CHANGELOG.md` — what changed in the most recent sessions (read top-to-bottom, stop after the third entry)
+
 ## Quick Reference
 
 ```bash
