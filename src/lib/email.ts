@@ -22,7 +22,7 @@ function emailWrapper(content: string) {
       <hr style="border:none;border-top:1px solid #e5e7eb;margin:32px 0 16px">
       <p style="color:#9ca3af;font-size:12px;margin:0">
         OpenCondo · Gestão de condomínios<br>
-        <a href="${BASE_URL}/definicoes" style="color:#9ca3af">Gerir preferências de notificação</a>
+        <a href="${BASE_URL}/minha-conta" style="color:#9ca3af">Gerir preferências de notificação</a>
       </p>
     </div>
   `;
