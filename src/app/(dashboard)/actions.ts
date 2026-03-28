@@ -138,8 +138,15 @@ export async function importUnitsFromCsv(condominiumId: string, csvText: string)
     return { error: errors.length > 0 ? errors.join("; ") : "Nenhuma fração encontrada no CSV" };
   }
 
+  // Get condominium name for invite emails
+  const condominium = await db.condominium.findUnique({
+    where: { id: condominiumId },
+    select: { name: true },
+  });
+
   let created = 0;
   let skipped = 0;
+  let invited = 0;
   const importErrors: string[] = [...errors];
 
   for (const unit of units) {
@@ -167,7 +174,23 @@ export async function importUnitsFromCsv(condominiumId: string, csvText: string)
       if (owner) {
         ownerId = owner.id;
       } else {
-        importErrors.push(`Proprietário '${unit.ownerEmail}' não encontrado para ${unit.identifier}`);
+        // Auto-invite unregistered owner
+        try {
+          const invite = await db.invite.create({
+            data: {
+              condominiumId,
+              role: "OWNER",
+              email: unit.ownerEmail,
+              expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+            },
+          });
+          if (condominium) {
+            sendInviteEmail(unit.ownerEmail, invite.token, condominium.name, "OWNER").catch(() => {});
+          }
+          invited++;
+        } catch {
+          importErrors.push(`Erro ao convidar '${unit.ownerEmail}' para ${unit.identifier}`);
+        }
       }
     }
 
@@ -185,12 +208,20 @@ export async function importUnitsFromCsv(condominiumId: string, csvText: string)
   }
 
   revalidatePath("/definicoes");
+
+  // Build summary message
+  const parts: string[] = [];
+  parts.push(`${created} fração${created !== 1 ? "ões" : ""} importada${created !== 1 ? "s" : ""}`);
+  if (skipped > 0) parts.push(`${skipped} já existente${skipped !== 1 ? "s" : ""}`);
+  if (invited > 0) parts.push(`${invited} convite${invited !== 1 ? "s" : ""} enviado${invited !== 1 ? "s" : ""}`);
+
   return {
     success: true,
     created,
     skipped,
+    invited,
     errors: importErrors,
-    message: `${created} fração${created !== 1 ? "ões" : ""} importada${created !== 1 ? "s" : ""}${skipped > 0 ? ` (${skipped} já existente${skipped !== 1 ? "s" : ""})` : ""}`,
+    message: parts.join(", "),
   };
 }
 
