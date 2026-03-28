@@ -271,6 +271,67 @@ To test this properly you need a second user. Use the invite flow from section 1
 
 ---
 
+## 18. Finances — Livro de Caixa (Cash Ledger)
+
+- [ ] Go to Finanças → Livro de Caixa
+- [ ] Using the seed data (or after recording payments and expenses), confirm the ledger is not empty
+- [ ] Each paid quota from section 3 appears as a positive entry (type: Quota)
+- [ ] Each expense from section 5 appears as a negative entry (type: Despesa)
+- [ ] The running balance at the bottom of the list equals the sum of all entries
+- [ ] Delete an expense from Finanças → Despesas — go back to Livro de Caixa and confirm that entry is also gone (soft-delete cascaded to the Transaction)
+- [ ] Use "Anular pagamento" on a paid quota — go back to Livro de Caixa and confirm the quota payment entry is also gone
+
+---
+
+## 19. Dashboard (Painel) — Stat Cards
+
+### As Admin:
+- [ ] Go to Painel
+- [ ] Four stat cards are visible: Saldo, Receitas, Despesas, Próxima Assembleia
+- [ ] **Saldo (YTD):** equals Receitas minus Despesas for the current calendar year
+- [ ] **Receitas (YTD):** matches the sum of paid quota Transaction amounts for the current year in Livro de Caixa
+- [ ] **Despesas (YTD):** matches the sum of expense Transaction amounts (absolute value) for the current year in Livro de Caixa
+- [ ] **Próxima Assembleia:** shows the date of the next scheduled meeting, or "Nenhuma agendada" if none
+- [ ] If there are overdue quotas, the attention section below the stat cards lists them
+- [ ] The attention section does **not** duplicate the stat card information (no redundant "Em atraso" count card)
+
+### As Proprietário (Owner):
+- [ ] Log in as a proprietário
+- [ ] Two stat cards are visible: Próxima Quota and Próxima Assembleia
+- [ ] **Próxima Quota:** shows the amount and due date of their next unpaid quota (or "Em dia" if none pending)
+- [ ] **Próxima Assembleia:** shows the next scheduled meeting date
+
+---
+
+## 20. Finances — Soft Delete Cascade Checks
+
+These verify that deleting financial records cleans up their linked ledger entries.
+
+- [ ] Record a payment for a quota (section 3) — verify it appears in Livro de Caixa
+- [ ] Click "Anular pagamento" on that quota — verify the Transaction entry disappears from Livro de Caixa and the quota returns to "Pendente" / "Em atraso"
+- [ ] Create an expense and verify it appears in Livro de Caixa as a negative entry
+- [ ] Delete that expense — verify its Transaction entry also disappears from Livro de Caixa
+- [ ] Verify the deleted expense does **not** reappear after a page refresh (soft delete is persisted)
+
+---
+
+## 21. Cron Job — Nightly Processing
+
+This test requires access to the deployment environment (Vercel) or a local server with `CRON_SECRET` set.
+
+- [ ] In Vercel → Settings → Environment Variables, confirm `CRON_SECRET` is set
+- [ ] Trigger the cron endpoint manually:
+  ```
+  curl -X POST https://your-app.vercel.app/api/cron/process \
+    -H "Authorization: Bearer YOUR_CRON_SECRET"
+  ```
+- [ ] The response returns `{ "ok": true }` (not a 401 or 500)
+- [ ] Call without the `Authorization` header — the response returns a 401
+- [ ] After triggering with valid secret: any PENDING quotas past their due date now show as "Em atraso" (OVERDUE)
+- [ ] Any active recurring expense templates whose `lastGenerated` is before the current period now have a new expense generated — visible in Finanças → Despesas and Livro de Caixa
+
+---
+
 ## Notes
 
 Use this section to record anything unexpected during testing:
@@ -283,4 +344,4 @@ Use this section to record anything unexpected during testing:
 
 ---
 
-*Last updated: 2026-03-25*
+*Last updated: 2026-03-26*

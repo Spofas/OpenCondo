@@ -1,6 +1,6 @@
 # OpenCondo — Project Status & Architecture Guide
 
-**Last updated:** 2026-03-25
+**Last updated:** 2026-03-26
 **For:** Anyone following along, regardless of programming experience
 
 ---
