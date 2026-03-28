@@ -5,6 +5,8 @@ import { getUserMembershipWithCondo } from "@/lib/auth/get-membership";
 import { InviteManager } from "./invite-manager";
 import { UnitManager } from "./unit-manager";
 import { CondoInfoCard } from "./condo-info-card";
+import { NotificationPreferences } from "./notification-preferences";
+import { NOTIFICATION_DEFAULTS } from "@/lib/validators/notification-preferences";
 
 export default async function SettingsPage() {
   const session = await auth();
@@ -29,6 +31,25 @@ export default async function SettingsPage() {
     },
     orderBy: [{ floor: "asc" }, { identifier: "asc" }],
   });
+
+  // Get notification preferences for current user
+  const notifPref = await db.notificationPreference.findUnique({
+    where: {
+      userId_condominiumId: {
+        userId: session.user.id,
+        condominiumId: membership.condominiumId,
+      },
+    },
+  });
+  const notificationPreferences = notifPref
+    ? {
+        quotas: notifPref.quotas,
+        announcements: notifPref.announcements,
+        meetings: notifPref.meetings,
+        maintenance: notifPref.maintenance,
+        contracts: notifPref.contracts,
+      }
+    : { ...NOTIFICATION_DEFAULTS };
 
   // Get invites (only if admin)
   const invites =
@@ -128,6 +149,9 @@ export default async function SettingsPage() {
             ))}
           </div>
         </div>
+
+        {/* Notification preferences — all roles */}
+        <NotificationPreferences preferences={notificationPreferences} />
 
         {/* Unit management — admin only */}
         {membership.role === "ADMIN" && (

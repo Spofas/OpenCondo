@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { announcementSchema, type AnnouncementInput } from "@/lib/validators/announcement";
 import { revalidatePath } from "next/cache";
 import { getAdminContext } from "@/lib/auth/admin-context";
+import { sendAnnouncementNotification } from "@/lib/email";
 
 export async function createAnnouncement(input: AnnouncementInput) {
   const ctx = await getAdminContext();
@@ -16,6 +17,11 @@ export async function createAnnouncement(input: AnnouncementInput) {
 
   const { title, body, category, pinned } = parsed.data;
 
+  const condo = await db.condominium.findUnique({
+    where: { id: ctx.condominiumId },
+    select: { name: true },
+  });
+
   await db.announcement.create({
     data: {
       condominiumId: ctx.condominiumId,
@@ -26,6 +32,21 @@ export async function createAnnouncement(input: AnnouncementInput) {
       pinned: pinned || false,
     },
   });
+
+  const author = await db.user.findUnique({
+    where: { id: ctx.userId },
+    select: { name: true },
+  });
+
+  // Send email notifications (fire-and-forget)
+  sendAnnouncementNotification(
+    ctx.condominiumId,
+    condo?.name ?? "",
+    author?.name ?? "",
+    title,
+    category,
+    ctx.userId
+  ).catch(() => {});
 
   revalidatePath("/comunicacao/avisos");
   revalidatePath("/painel");

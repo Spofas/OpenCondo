@@ -6,6 +6,7 @@ import { db } from "@/lib/db";
 import { parseCsvUnits } from "@/lib/csv-import";
 import { revalidatePath } from "next/cache";
 import { sendInviteEmail } from "@/lib/email";
+import { notificationPreferencesSchema, NOTIFICATION_DEFAULTS } from "@/lib/validators/notification-preferences";
 
 export async function switchCondominium(condominiumId: string) {
   const session = await auth();
@@ -331,6 +332,62 @@ export async function updateUnitPermilagem(unitId: string, permilagem: number) {
   await db.unit.update({
     where: { id: unitId },
     data: { permilagem },
+  });
+
+  revalidatePath("/definicoes");
+  return { success: true };
+}
+
+/**
+ * Get notification preferences for the current user and active condominium.
+ */
+export async function getNotificationPreferences() {
+  const session = await auth();
+  if (!session?.user?.id) return null;
+
+  const cookieStore = await cookies();
+  const condominiumId = cookieStore.get("activeCondominiumId")?.value;
+  if (!condominiumId) return null;
+
+  const pref = await db.notificationPreference.findUnique({
+    where: { userId_condominiumId: { userId: session.user.id, condominiumId } },
+  });
+
+  if (!pref) {
+    return { ...NOTIFICATION_DEFAULTS };
+  }
+
+  return {
+    quotas: pref.quotas,
+    announcements: pref.announcements,
+    meetings: pref.meetings,
+    maintenance: pref.maintenance,
+    contracts: pref.contracts,
+  };
+}
+
+/**
+ * Save notification preferences for the current user and active condominium.
+ */
+export async function saveNotificationPreferences(data: Record<string, boolean>) {
+  const session = await auth();
+  if (!session?.user?.id) return { error: "Não autenticado" };
+
+  const cookieStore = await cookies();
+  const condominiumId = cookieStore.get("activeCondominiumId")?.value;
+  if (!condominiumId) return { error: "Nenhum condomínio selecionado" };
+
+  const parsed = notificationPreferencesSchema.safeParse(data);
+  if (!parsed.success) return { error: "Dados inválidos" };
+
+  await db.notificationPreference.upsert({
+    where: { userId_condominiumId: { userId: session.user.id, condominiumId } },
+    create: {
+      userId: session.user.id,
+      condominiumId,
+      ...parsed.data,
+    },
+    update: parsed.data,
   });
 
   revalidatePath("/definicoes");

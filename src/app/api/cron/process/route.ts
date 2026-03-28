@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { isDueThisPeriod } from "@/lib/cron-utils";
+import { sendBulkQuotaReminders } from "@/lib/email";
 
 /**
  * Nightly cron job — runs at 02:00 UTC via Vercel Cron (vercel.json).
@@ -77,6 +78,19 @@ export async function GET(request: NextRequest) {
   }
 
   results.expensesGenerated = expensesGenerated;
+
+  // 3. Send quota reminder emails (7 days before due)
+  const condominiums = await db.condominium.findMany({ select: { id: true } });
+  let remindersSent = 0;
+  for (const condo of condominiums) {
+    try {
+      await sendBulkQuotaReminders(condo.id, 7);
+      remindersSent++;
+    } catch {
+      // Continue with other condominiums
+    }
+  }
+  results.condosWithReminders = remindersSent;
 
   return NextResponse.json({ success: true, period: currentPeriod, ...results });
 }
