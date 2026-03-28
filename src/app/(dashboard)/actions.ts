@@ -148,6 +148,7 @@ export async function importUnitsFromCsv(condominiumId: string, csvText: string)
   let skipped = 0;
   let invited = 0;
   const importErrors: string[] = [...errors];
+  const invitedEmails = new Set<string>(); // Deduplicate invites per email
 
   for (const unit of units) {
     // Check if unit already exists
@@ -167,6 +168,8 @@ export async function importUnitsFromCsv(condominiumId: string, csvText: string)
 
     // Find owner by email if provided
     let ownerId: string | null = null;
+    let pendingOwnerEmail: string | null = null;
+
     if (unit.ownerEmail) {
       const owner = await db.user.findUnique({
         where: { email: unit.ownerEmail },
@@ -174,22 +177,28 @@ export async function importUnitsFromCsv(condominiumId: string, csvText: string)
       if (owner) {
         ownerId = owner.id;
       } else {
-        // Auto-invite unregistered owner
-        try {
-          const invite = await db.invite.create({
-            data: {
-              condominiumId,
-              role: "OWNER",
-              email: unit.ownerEmail,
-              expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-            },
-          });
-          if (condominium) {
-            sendInviteEmail(unit.ownerEmail, invite.token, condominium.name, "OWNER").catch(() => {});
+        // Mark unit with pending email for auto-linking on invite acceptance
+        pendingOwnerEmail = unit.ownerEmail;
+
+        // Send one invite per unique email
+        if (!invitedEmails.has(unit.ownerEmail)) {
+          try {
+            const invite = await db.invite.create({
+              data: {
+                condominiumId,
+                role: "OWNER",
+                email: unit.ownerEmail,
+                expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+              },
+            });
+            if (condominium) {
+              sendInviteEmail(unit.ownerEmail, invite.token, condominium.name, "OWNER").catch(() => {});
+            }
+            invitedEmails.add(unit.ownerEmail);
+            invited++;
+          } catch {
+            importErrors.push(`Erro ao convidar '${unit.ownerEmail}' para ${unit.identifier}`);
           }
-          invited++;
-        } catch {
-          importErrors.push(`Erro ao convidar '${unit.ownerEmail}' para ${unit.identifier}`);
         }
       }
     }
@@ -202,6 +211,7 @@ export async function importUnitsFromCsv(condominiumId: string, csvText: string)
         typology: unit.typology || null,
         permilagem: unit.permilagem,
         ownerId,
+        pendingOwnerEmail,
       },
     });
     created++;

@@ -180,8 +180,9 @@ model Unit {
   typology       String?      // e.g., "T2", "T3"
   permilagem     Int          @default(0)
   sortOrder      Int          @default(0)
-  ownerId        String?
-  tenantId       String?
+  ownerId           String?
+  tenantId          String?
+  pendingOwnerEmail String?   // Set during CSV import when owner isn't registered yet
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
 
