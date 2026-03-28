@@ -2,6 +2,10 @@
 
 Portuguese condominium management platform built with Next.js 16, Prisma, PostgreSQL, and Tailwind CSS.
 
+## Active branch
+
+All development happens on `claude/opencondo-development-Ch14I`. Do not create new branches — work on this branch, commit, and push here. PRs go from this branch into `develop` or `main`.
+
 ## Session start
 
 At the beginning of every session, read these two files before doing anything else:
