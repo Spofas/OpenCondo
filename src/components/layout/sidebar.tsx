@@ -25,6 +25,7 @@ import {
   Plus,
   CalendarDays,
   BookOpen,
+  Phone,
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils/cn";
@@ -71,6 +72,7 @@ const navigation: NavGroup[] = [
       { href: "/comunicacao/avisos", labelKey: "nav.announcements", icon: Megaphone },
       { href: "/comunicacao/manutencao", labelKey: "nav.maintenance", icon: Wrench },
       { href: "/comunicacao/documentos", labelKey: "nav.documents", icon: FileText },
+      { href: "/comunicacao/contactos", labelKey: "nav.contacts", icon: Phone },
     ],
   },
   {
