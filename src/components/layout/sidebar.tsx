@@ -16,8 +16,6 @@ import {
   ScrollText,
   FileSignature,
   Settings,
-  Menu,
-  X,
   LogOut,
   ChevronDown,
   ChevronRight,
@@ -121,7 +119,6 @@ export function Sidebar({
   const pathname = usePathname();
   const router = useRouter();
   const t = useTranslations();
-  const [mobileOpen, setMobileOpen] = useState(false);
   const [switcherOpen, setSwitcherOpen] = useState(false);
 
 
@@ -134,29 +131,9 @@ export function Sidebar({
 
   return (
     <>
-      {/* Mobile toggle */}
-      <button
-        onClick={() => setMobileOpen(!mobileOpen)}
-        className="fixed top-4 left-4 z-50 rounded-lg bg-white p-2 shadow-md lg:hidden"
-        aria-label="Menu"
-      >
-        {mobileOpen ? <X size={20} /> : <Menu size={20} />}
-      </button>
-
-      {/* Overlay */}
-      {mobileOpen && (
-        <div
-          className="fixed inset-0 z-40 bg-black/20 lg:hidden"
-          onClick={() => setMobileOpen(false)}
-        />
-      )}
-
-      {/* Sidebar */}
+      {/* Sidebar — desktop only (mobile uses bottom bar) */}
       <aside
-        className={cn(
-          "fixed inset-y-0 left-0 z-40 flex w-64 flex-col border-r border-border bg-sidebar transition-transform lg:translate-x-0",
-          mobileOpen ? "translate-x-0" : "-translate-x-full"
-        )}
+        className="fixed inset-y-0 left-0 z-40 hidden w-64 flex-col border-r border-border bg-sidebar lg:flex"
       >
         {/* Logo & Condominium Switcher */}
         <div className="border-b border-border px-6 py-4">
@@ -255,7 +232,7 @@ export function Sidebar({
                     <Link
                       key={item.href}
                       href={item.href}
-                      onClick={() => setMobileOpen(false)}
+
                       className={cn(
                         "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
                         isActive
@@ -277,7 +254,6 @@ export function Sidebar({
         <div className="border-t border-border">
           <Link
             href="/minha-conta"
-            onClick={() => setMobileOpen(false)}
             className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-secondary"
           >
             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">

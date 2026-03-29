@@ -53,7 +53,7 @@ export function ExpensePageClient({
 
   return (
     <div>
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Despesas</h1>
           <p className="text-sm text-muted-foreground">
@@ -72,18 +72,18 @@ export function ExpensePageClient({
         )}
 
         {isAdmin && activeTab === "recorrentes" && (
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2">
             <button
               onClick={handleGenerate}
               disabled={generating || recurringTemplates.filter((t) => t.isActive).length === 0}
-              className="flex items-center gap-2 rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted disabled:opacity-50"
+              className="flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm font-medium text-foreground hover:bg-muted disabled:opacity-50"
             >
               <RefreshCw size={16} className={generating ? "animate-spin" : ""} />
               {generating ? "A gerar..." : `Gerar ${currentPeriod}`}
             </button>
             <button
               onClick={() => setShowRecurringForm(true)}
-              className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+              className="flex items-center gap-2 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
             >
               <Plus size={16} />
               Novo modelo

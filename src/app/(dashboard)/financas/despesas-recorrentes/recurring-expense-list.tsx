@@ -71,7 +71,79 @@ export function RecurringExpenseList({
         </div>
       </div>
 
-      <div className="rounded-xl border border-border bg-card overflow-x-auto">
+      {/* Mobile cards */}
+      <div className="space-y-3 md:hidden">
+        {templates.map((t) => (
+          <div key={t.id} className={`rounded-xl border border-border bg-card p-4 ${!t.isActive ? "opacity-50" : ""}`}>
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0 flex-1">
+                <p className="font-medium text-foreground">{t.description}</p>
+                <div className="mt-1 flex flex-wrap items-center gap-2">
+                  <span className="rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-foreground">
+                    {t.category}
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    {FREQUENCY_LABELS[t.frequency] || t.frequency}
+                  </span>
+                </div>
+              </div>
+              <div className="text-right">
+                <p className="font-semibold text-foreground whitespace-nowrap">
+                  {formatCurrency(t.amount)}
+                </p>
+                <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${t.isActive ? "bg-green-100 text-green-700" : "bg-muted text-muted-foreground"}`}>
+                  {t.isActive ? "Ativo" : "Pausado"}
+                </span>
+              </div>
+            </div>
+            {t.lastGenerated && (
+              <p className="mt-2 text-xs text-muted-foreground">Último: {t.lastGenerated}</p>
+            )}
+            <div className="mt-2 flex justify-end gap-1">
+              <button
+                onClick={() => handleToggle(t.id)}
+                className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+                title={t.isActive ? "Pausar" : "Ativar"}
+              >
+                {t.isActive ? <Pause size={14} /> : <Play size={14} />}
+              </button>
+              <button
+                onClick={() => onEdit(t)}
+                className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+                title="Editar"
+              >
+                <Edit2 size={14} />
+              </button>
+              {confirmDelete === t.id ? (
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => handleDelete(t.id)}
+                    className="rounded-lg bg-destructive px-2 py-1 text-xs font-medium text-white hover:bg-destructive/90"
+                  >
+                    Sim
+                  </button>
+                  <button
+                    onClick={() => setConfirmDelete(null)}
+                    className="rounded-lg border border-border px-2 py-1 text-xs font-medium text-foreground hover:bg-muted"
+                  >
+                    Não
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setConfirmDelete(t.id)}
+                  className="rounded-lg p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                  title="Eliminar"
+                >
+                  <Trash2 size={14} />
+                </button>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="hidden md:block rounded-xl border border-border bg-card overflow-x-auto">
         <table className="w-full text-sm min-w-[600px]">
           <thead>
             <tr className="border-b border-border text-left text-muted-foreground">
