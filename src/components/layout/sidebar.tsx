@@ -46,7 +46,6 @@ const navigation: NavGroup[] = [
     labelKey: "",
     items: [
       { href: "/painel", labelKey: "nav.dashboard", icon: LayoutDashboard },
-      { href: "/calendario", labelKey: "nav.calendar", icon: CalendarDays },
     ],
   },
   {
@@ -55,11 +54,6 @@ const navigation: NavGroup[] = [
       { href: "/financas/quotas", labelKey: "nav.quotas", icon: Wallet },
       { href: "/financas/despesas", labelKey: "nav.expenses", icon: Receipt, roles: ["ADMIN"] },
       { href: "/financas/orcamento", labelKey: "nav.budget", icon: PieChart },
-    ],
-  },
-  {
-    labelKey: "nav.reports",
-    items: [
       { href: "/financas/conta-gerencia", labelKey: "nav.annualReport", icon: FileText, roles: ["ADMIN"] },
       { href: "/financas/livro-caixa", labelKey: "nav.cashBalance", icon: BookOpen, roles: ["ADMIN"] },
     ],
@@ -81,8 +75,9 @@ const navigation: NavGroup[] = [
     ],
   },
   {
-    labelKey: "",
+    labelKey: "nav.management",
     items: [
+      { href: "/calendario", labelKey: "nav.calendar", icon: CalendarDays },
       { href: "/contratos", labelKey: "nav.contracts", icon: FileSignature, roles: ["ADMIN"] },
       { href: "/definicoes", labelKey: "nav.settings", icon: Settings, roles: ["ADMIN"] },
     ],
