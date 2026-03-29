@@ -113,7 +113,7 @@ export function ExpensePageClient({
                 : "border-transparent text-muted-foreground hover:text-foreground"
             }`}
           >
-            Modelos recorrentes
+            Custos recorrentes
           </button>
         </div>
       )}

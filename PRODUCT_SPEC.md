@@ -169,12 +169,16 @@ OpenCondo is designed with these legal requirements as first-class features.
 - Support up to 500 condominiums with 20 units each (10,000 units) on a single instance
 
 ### 4.2 Security
-- HTTPS everywhere
-- Password hashing (bcrypt)
-- CSRF protection
-- Rate limiting on auth endpoints
-- Input sanitization (XSS, SQL injection prevention)
-- Role-based access control on every endpoint
+- HTTPS everywhere ✅
+- Password hashing (bcryptjs) ✅
+- Role-based access control on every server action and API route (`getAdminContext()`) ✅
+- Receipt download endpoint restricted to the owning unit (non-admins cannot access other units' receipts) ✅
+- Cron endpoint protected by `CRON_SECRET` bearer token ✅
+- Soft deletes on financial records (no accidental permanent data loss) ✅
+- CSRF protection — handled by NextAuth session cookies (SameSite) ✅
+- Input sanitization via Zod validation on all server actions ✅
+- Rate limiting on auth endpoints — **not yet implemented** (low risk at current scale; add before public launch)
+- CSV upload file-size and MIME-type validation — **not yet implemented** (upload UI does not exist yet)
 
 ### 4.3 Privacy (GDPR/RGPD)
 - EU-hosted infrastructure (Neon Frankfurt region)
@@ -281,12 +285,32 @@ Condominium
 ├── Quotas
 │   ├── id, unitId, period, amount, dueDate
 │   ├── status (PENDING | PAID | OVERDUE)
-│   └── paymentDate, paymentMethod, notes
+│   ├── paymentDate, paymentMethod, notes
+│   └── deletedAt (soft delete)
 │
 ├── Expenses (Despesas)
 │   ├── id, date, description, amount, category
-│   ├── isRecurring, recurrenceMonths
+│   ├── supplierId (optional), budgetItemId (optional)
+│   ├── receiptUrl (optional)
+│   └── deletedAt (soft delete — set with its linked Transaction together)
+│
+├── RecurringExpenses (Despesas Recorrentes)
+│   ├── id, description, amount, category
+│   ├── frequency (MENSAL | TRIMESTRAL | SEMESTRAL | ANUAL)
+│   ├── startDate, lastGenerated (prevents double-generation per period)
 │   └── supplierId (optional)
+│
+├── Transactions (Livro de Caixa — cash ledger)
+│   ├── id, date, description, amount
+│   │   (positive = income; negative = expense)
+│   ├── type (QUOTA_PAYMENT | EXPENSE | ADJUSTMENT)
+│   ├── quotaId (optional — set when recording a quota payment)
+│   ├── expenseId (optional — set when recording an expense)
+│   └── deletedAt (soft delete — cascades from parent quota/expense deletion)
+│
+├── Suppliers (Fornecedores)
+│   ├── id, name, nif (optional), email (optional), phone (optional)
+│   └── condominiumId
 │
 ├── Announcements (Avisos)
 │   ├── id, title, body, category, pinned
@@ -311,10 +335,10 @@ Condominium
 │       └── pdfUrl
 │
 ├── Contracts (Contratos)
-│   ├── id, supplier, description, type
-│   ├── startDate, endDate, renewalType (AUTO | MANUAL)
-│   ├── annualCost, paymentFrequency
-│   └── status (ACTIVE | EXPIRED | RENEWED | CANCELLED)
+│   ├── id, name, type, startDate, endDate
+│   ├── renewalType (AUTO | MANUAL), annualCost, paymentFrequency
+│   ├── status (ACTIVE | EXPIRED | RENEWED | CANCELLED)
+│   └── supplierId (optional) → Supplier
 │
 └── Invites
     ├── id, email, role, unitId (optional)
@@ -324,11 +348,13 @@ Condominium
 ### 5.4 API Design
 
 Server Actions (Next.js) for all mutations, React Server Components for data fetching. API routes for:
-- Auth (NextAuth)
-- PDF receipt generation (`/api/receipts/[quotaId]`)
-- Conta de gerência report generation (`/api/conta-gerencia`)
+- Auth (NextAuth) — `/api/auth/[...nextauth]`
+- PDF receipt generation — `/api/receipts/[quotaId]` (ownership-gated: non-admins can only access their own units)
+- Nightly cron job — `/api/cron/process` (protected by `CRON_SECRET` bearer token; registered in `vercel.json` at 02:00 UTC)
 
-All mutations validated with Zod schemas. Authorization checked per-action via `getAdminContext()`.
+The Conta de Gerência report is built server-side via `buildContaGerencia()` in `src/lib/conta-gerencia-calculations.ts` and rendered directly in the page — there is no separate API route for it.
+
+All mutations validated with Zod schemas. Authorization checked per-action via `getAdminContext()`. Every server page uses `requireMembership()` for auth + membership resolution.
 
 ---
 
@@ -369,10 +395,13 @@ All mutations validated with Zod schemas. Authorization checked per-action via `
 - [x] Calendar view
 
 ### Phase 5 — Polish & Launch (In Progress)
-- [x] CSV bulk import for units
-- [x] Seed data for development
-- [x] Deployment to production (Vercel + Neon)
-- [ ] Email notifications (announcements, maintenance updates, quota reminders)
+- [x] Seed data for development (realistic multi-user dataset with Transactions populated)
+- [x] Deployment to production (Vercel + Neon, two-environment setup with `develop` staging branch)
+- [x] Nightly cron job (overdue marking + recurring expense generation across all condos)
+- [x] Dashboard stat cards (admin: YTD Saldo/Receitas/Despesas/Próxima assembleia; owner: Próxima quota/Próxima assembleia)
+- [x] CSV parsing logic + duplicate detection (`src/lib/csv-import.ts`, tested) — **upload UI not yet built**
+- [ ] CSV bulk import UI (file upload → preview → confirm flow, likely at `/definicoes`)
+- [ ] Email notifications (announcements, maintenance updates, quota reminders) — needs `RESEND_API_KEY`
 - [ ] Receipt PDF polish
 - [ ] Mobile responsiveness polish
 - [ ] Landing page

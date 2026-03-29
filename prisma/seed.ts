@@ -6,6 +6,7 @@
  * - 6 units with permilagem totalling 1000
  * - 1 approved budget (2026) with 4 line items
  * - 12 months of quotas (mix of PAID, PENDING, OVERDUE)
+ * - Transaction records for all paid quotas and expenses (Livro de Caixa)
  * - 8 expenses across different categories
  * - 2 recurring expense templates
  * - 3 announcements (one pinned, different categories)
@@ -54,6 +55,7 @@ async function main() {
   await db.maintenanceUpdate.deleteMany();
   await db.maintenancePhoto.deleteMany();
   await db.maintenanceRequest.deleteMany();
+  await db.transaction.deleteMany();
   await db.quota.deleteMany();
   await db.expense.deleteMany();
   await db.recurringExpense.deleteMany();
@@ -250,6 +252,9 @@ async function main() {
   const monthlyTotal = 2000;
   let quotaCount = 0;
 
+  // Collect paid quota data so we can create Transaction records afterwards
+  const paidQuotas: { id: string; amount: number; paymentDate: Date; unitIdentifier: string; period: string }[] = [];
+
   for (let month = 1; month <= 12; month++) {
     const period = `2026-${String(month).padStart(2, "0")}`;
     const dueDate = new Date(2026, month - 1, 8); // Due on the 8th
@@ -281,7 +286,7 @@ async function main() {
         status = "PENDING";
       }
 
-      await db.quota.create({
+      const quota = await db.quota.create({
         data: {
           condominiumId: condo.id,
           unitId: unit.id,
@@ -294,6 +299,10 @@ async function main() {
         },
       });
       quotaCount++;
+
+      if (status === "PAID" && paymentDate) {
+        paidQuotas.push({ id: quota.id, amount, paymentDate, unitIdentifier: unit.identifier, period });
+      }
     }
   }
 
@@ -318,6 +327,44 @@ async function main() {
   }
 
   console.log(`  Created ${expenses.length} expenses.`);
+
+  // ─── Transactions (Livro de Caixa) ──────────────────────────────────────────
+  // Create ledger entries for all paid quotas
+  for (const q of paidQuotas) {
+    await db.transaction.create({
+      data: {
+        condominiumId: condo.id,
+        date: q.paymentDate,
+        amount: q.amount,
+        type: "QUOTA_PAYMENT",
+        description: `Quota ${q.period} — ${q.unitIdentifier}`,
+        quotaId: q.id,
+      },
+    });
+  }
+
+  // Create ledger entries for all expenses (negative = money out)
+  const createdExpenses = await db.expense.findMany({
+    where: { condominiumId: condo.id },
+    orderBy: { date: "asc" },
+  });
+
+  for (const e of createdExpenses) {
+    await db.transaction.create({
+      data: {
+        condominiumId: condo.id,
+        date: e.date,
+        amount: -Number(e.amount),
+        type: "EXPENSE",
+        description: e.description,
+        expenseId: e.id,
+      },
+    });
+  }
+
+  console.log(
+    `  Created ${paidQuotas.length} quota payment transactions + ${createdExpenses.length} expense transactions.`
+  );
 
   // ─── Recurring Expenses ─────────────────────────────────────────────────────
   await db.recurringExpense.create({

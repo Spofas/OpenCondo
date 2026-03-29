@@ -2,6 +2,16 @@
 
 Portuguese condominium management platform built with Next.js 16, Prisma, PostgreSQL, and Tailwind CSS.
 
+## Active branch
+
+All development happens on `claude/opencondo-development-Ch14I`. Do not create new branches — work on this branch, commit, and push here. PRs go from this branch into `develop` or `main`.
+
+## Session start
+
+At the beginning of every session, read these two files before doing anything else:
+- `PROJECT_STATUS.md` — current branch, build state, architecture, key patterns, gotchas, and what still needs building
+- `CHANGELOG.md` — what changed in the most recent sessions (read top-to-bottom, stop after the third entry)
+
 ## Quick Reference
 
 ```bash
@@ -168,11 +178,11 @@ Admin checks use `getAdminContext()` in server actions. View-level access is con
 |--------|---------|-------------|------------|
 | `main` | Stable, deployable code. Always working. | — | Production (Vercel + Neon `main`) |
 | `develop` | Integration branch for staging | `main` (via PR) | Staging (Vercel Preview + Neon `develop`) |
-| `claude/<feature>-<id>` | Individual feature work (AI sessions) | `develop` or `main` (via PR) | — |
+| `claude/opencondo-development-Ch14I` | All Claude development work | `develop` (via PR) | — |
 
 **Workflow:**
-1. Claude develops on `claude/<feature>-<id>` branches
-2. When a feature/phase is complete, Claude creates a **PR** → `develop` (or `main` for hotfixes)
+1. Claude develops on `claude/opencondo-development-Ch14I` (single branch, no new branches)
+2. When a feature/phase is complete, Claude creates a **PR** → `develop`
 3. The maintainer reviews, merges the PR on GitHub, and promotes `develop` → `main` when ready
 
 > Note: The remote only allows pushes to `claude/` branches. Merging into `develop` or `main` must be done by the maintainer (via GitHub PR merge).

@@ -1,7 +1,5 @@
 "use server";
 
-import { cookies } from "next/headers";
-import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import {
   quotaGenerateSchema,
@@ -16,31 +14,7 @@ import {
   statusAfterUndo,
 } from "@/lib/quota-calculations";
 import { revalidatePath } from "next/cache";
-
-async function getAdminContext() {
-  const session = await auth();
-  if (!session?.user?.id) return null;
-
-  const cookieStore = await cookies();
-  const condominiumId = cookieStore.get("activeCondominiumId")?.value;
-
-  const membership = condominiumId
-    ? await db.membership.findUnique({
-        where: {
-          userId_condominiumId: {
-            userId: session.user.id,
-            condominiumId,
-          },
-        },
-      })
-    : await db.membership.findFirst({
-        where: { userId: session.user.id, isActive: true },
-      });
-
-  if (!membership || membership.role !== "ADMIN") return null;
-
-  return { userId: session.user.id, condominiumId: membership.condominiumId };
-}
+import { getAdminContext } from "@/lib/auth/admin-context";
 
 /**
  * Generate quota records for all units across a range of months.
@@ -155,18 +129,18 @@ export async function recordPayment(quotaId: string, input: QuotaPaymentInput) {
     return { error: parsed.error.issues[0].message };
   }
 
-  const quota = await db.quota.findFirst({
-    where: { id: quotaId, condominiumId: ctx.condominiumId },
-    include: { unit: true },
-  });
+  const result = await db.$transaction(async (tx) => {
+    const quota = await tx.quota.findFirst({
+      where: { id: quotaId, condominiumId: ctx.condominiumId },
+      include: { unit: true },
+    });
 
-  if (!quota) return { error: "Quota não encontrada" };
-  if (quota.status === "PAID") return { error: "Quota já está paga" };
+    if (!quota) return { error: "Quota não encontrada" };
+    if (quota.status === "PAID") return { error: "Quota já está paga" };
 
-  const paymentDate = new Date(parsed.data.paymentDate);
+    const paymentDate = new Date(parsed.data.paymentDate);
 
-  await db.$transaction([
-    db.quota.update({
+    await tx.quota.update({
       where: { id: quotaId },
       data: {
         status: "PAID",
@@ -174,8 +148,9 @@ export async function recordPayment(quotaId: string, input: QuotaPaymentInput) {
         paymentMethod: parsed.data.paymentMethod,
         paymentNotes: parsed.data.paymentNotes || null,
       },
-    }),
-    db.transaction.create({
+    });
+
+    await tx.transaction.create({
       data: {
         condominiumId: ctx.condominiumId,
         date: paymentDate,
@@ -184,12 +159,16 @@ export async function recordPayment(quotaId: string, input: QuotaPaymentInput) {
         description: `Quota ${quota.period} — ${quota.unit.identifier}`,
         quotaId,
       },
-    }),
-  ]);
+    });
 
-  revalidatePath("/financas/quotas");
-  revalidatePath("/financas/livro-caixa");
-  return { success: true };
+    return { success: true as const };
+  });
+
+  if ("success" in result) {
+    revalidatePath("/financas/quotas");
+    revalidatePath("/financas/livro-caixa");
+  }
+  return result;
 }
 
 /**
@@ -218,7 +197,10 @@ export async function undoPayment(quotaId: string) {
         paymentNotes: null,
       },
     }),
-    db.transaction.deleteMany({ where: { quotaId } }),
+    db.transaction.updateMany({
+      where: { quotaId, deletedAt: null },
+      data: { deletedAt: new Date() },
+    }),
   ]);
 
   revalidatePath("/financas/quotas");
@@ -234,12 +216,14 @@ export async function deleteQuotasByPeriod(period: string) {
   const ctx = await getAdminContext();
   if (!ctx) return { error: "Sem permissão" };
 
-  const result = await db.quota.deleteMany({
+  const result = await db.quota.updateMany({
     where: {
       condominiumId: ctx.condominiumId,
       period,
       status: { in: ["PENDING", "OVERDUE"] },
+      deletedAt: null,
     },
+    data: { deletedAt: new Date() },
   });
 
   revalidatePath("/financas/quotas");
@@ -264,6 +248,7 @@ export async function markOverdueQuotas() {
       condominiumId: ctx.condominiumId,
       status: "PENDING",
       dueDate: { lt: now },
+      deletedAt: null,
     },
     data: { status: "OVERDUE" },
   });

@@ -16,6 +16,7 @@ export async function getUserMembership(userId: string) {
       })
     : db.membership.findFirst({
         where: { userId, isActive: true },
+        orderBy: { joinedAt: "asc" },
       });
 }
 
@@ -34,6 +35,7 @@ export async function getUserMembershipWithCondo(userId: string) {
       })
     : db.membership.findFirst({
         where: { userId, isActive: true },
+        orderBy: { joinedAt: "asc" },
         include: { condominium: true },
       });
 }

@@ -1,35 +1,9 @@
 "use server";
 
-import { cookies } from "next/headers";
-import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { expenseSchema, type ExpenseInput } from "@/lib/validators/expense";
 import { revalidatePath } from "next/cache";
-
-async function getAdminContext() {
-  const session = await auth();
-  if (!session?.user?.id) return null;
-
-  const cookieStore = await cookies();
-  const condominiumId = cookieStore.get("activeCondominiumId")?.value;
-
-  const membership = condominiumId
-    ? await db.membership.findUnique({
-        where: {
-          userId_condominiumId: {
-            userId: session.user.id,
-            condominiumId,
-          },
-        },
-      })
-    : await db.membership.findFirst({
-        where: { userId: session.user.id, isActive: true },
-      });
-
-  if (!membership || membership.role !== "ADMIN") return null;
-
-  return { userId: session.user.id, condominiumId: membership.condominiumId };
-}
+import { getAdminContext } from "@/lib/auth/admin-context";
 
 export async function createExpense(input: ExpenseInput) {
   const ctx = await getAdminContext();
@@ -120,14 +94,25 @@ export async function deleteExpense(expenseId: string) {
   if (!ctx) return { error: "Sem permissão" };
 
   const expense = await db.expense.findFirst({
-    where: { id: expenseId, condominiumId: ctx.condominiumId },
+    where: { id: expenseId, condominiumId: ctx.condominiumId, deletedAt: null },
   });
 
   if (!expense) return { error: "Despesa não encontrada" };
 
-  await db.expense.delete({ where: { id: expenseId } });
+  const now = new Date();
+  await db.$transaction(async (tx) => {
+    await tx.expense.update({
+      where: { id: expenseId },
+      data: { deletedAt: now },
+    });
+    await tx.transaction.updateMany({
+      where: { expenseId, deletedAt: null },
+      data: { deletedAt: now },
+    });
+  });
 
   revalidatePath("/financas/despesas");
+  revalidatePath("/financas/livro-caixa");
   revalidatePath("/painel");
   return { success: true };
 }

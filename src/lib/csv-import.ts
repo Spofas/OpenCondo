@@ -64,6 +64,7 @@ export function parseCsvUnits(csv: string): CsvParseResult {
 
   const units: CsvUnitRow[] = [];
   const errors: string[] = [];
+  const seenIdentifiers = new Map<string, number>(); // identifier → first line number
 
   for (let i = 1; i < lines.length; i++) {
     const cols = lines[i].split(delimiter).map((c) => c.trim().replace(/^['"]|['"]$/g, ""));
@@ -74,6 +75,14 @@ export function parseCsvUnits(csv: string): CsvParseResult {
       errors.push(`Linha ${lineNum}: identificador em falta`);
       continue;
     }
+
+    if (seenIdentifiers.has(identifier)) {
+      errors.push(
+        `Linha ${lineNum}: identificador '${identifier}' duplicado (já aparece na linha ${seenIdentifiers.get(identifier)})`
+      );
+      continue;
+    }
+    seenIdentifiers.set(identifier, lineNum);
 
     const floorRaw = colMap.floor >= 0 ? cols[colMap.floor] || "" : "";
     const floorParsed = floorRaw !== "" ? parseInt(floorRaw, 10) : NaN;

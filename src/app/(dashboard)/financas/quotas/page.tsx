@@ -1,16 +1,15 @@
-import { redirect } from "next/navigation";
-import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { getUserMembership } from "@/lib/auth/get-membership";
+import { requireMembership } from "@/lib/auth/require-membership";
+import { serializeQuota } from "@/lib/serializers";
 import { buildDebtorSummary } from "@/lib/debtor-calculations";
 import { QuotaPageClient } from "./quota-page-client";
 
-export default async function QuotasPage() {
-  const session = await auth();
-  if (!session?.user?.id) redirect("/login");
+interface PageProps {
+  searchParams: Promise<{ year?: string }>;
+}
 
-  const membership = await getUserMembership(session.user.id);
-  if (!membership) redirect("/iniciar");
+export default async function QuotasPage({ searchParams }: PageProps) {
+  const { session, membership } = await requireMembership();
 
   const isAdmin = membership.role === "ADMIN";
 
@@ -21,9 +20,14 @@ export default async function QuotasPage() {
       condominiumId: membership.condominiumId,
       status: "PENDING",
       dueDate: { lt: now },
+      deletedAt: null,
     },
     data: { status: "OVERDUE" },
   });
+
+  // Resolve selected year from URL (default: current year)
+  const params = await searchParams;
+  const selectedYear = parseInt(params.year ?? String(now.getFullYear()), 10);
 
   // Non-admin: only show quotas for units they own/rent
   let unitIdFilter: { in: string[] } | undefined;
@@ -38,17 +42,36 @@ export default async function QuotasPage() {
     unitIdFilter = { in: ownUnits.map((u) => u.id) };
   }
 
-  // Fetch quotas (filtered for non-admin)
-  const quotas = await db.quota.findMany({
+  // Fetch only the selected year's quotas — avoids loading all history on every render
+  const baseWhere = {
+    condominiumId: membership.condominiumId,
+    period: { startsWith: `${selectedYear}-` },
+    deletedAt: null,
+    ...(unitIdFilter ? { unitId: unitIdFilter } : {}),
+  };
+
+  // Available years (lightweight: only reads period column with distinct)
+  const allPeriods = await db.quota.findMany({
     where: {
       condominiumId: membership.condominiumId,
+      deletedAt: null,
       ...(unitIdFilter ? { unitId: unitIdFilter } : {}),
     },
+    select: { period: true },
+    distinct: ["period"],
+    orderBy: { period: "asc" },
+  });
+  const availableYears = [...new Set(allPeriods.map((p) => p.period.slice(0, 4)))]
+    .sort()
+    .reverse();
+
+  const quotas = await db.quota.findMany({
+    where: baseWhere,
     include: { unit: { select: { id: true, identifier: true, permilagem: true } } },
-    orderBy: [{ period: "desc" }, { unit: { floor: "asc" } }, { unit: { identifier: "asc" } }],
+    orderBy: [{ period: "asc" }, { unit: { floor: "asc" } }, { unit: { identifier: "asc" } }],
   });
 
-  // Fetch units for the generation form (admin only; non-admin doesn't see the form)
+  // Fetch units for the generation form (admin only)
   const units = await db.unit.findMany({
     where: { condominiumId: membership.condominiumId },
     orderBy: [{ floor: "asc" }, { identifier: "asc" }],
@@ -61,27 +84,16 @@ export default async function QuotasPage() {
     select: { quotaModel: true },
   });
 
-  const serializedQuotas = quotas.map((q) => ({
-    id: q.id,
-    unitId: q.unitId,
-    unitIdentifier: q.unit.identifier,
-    unitPermilagem: q.unit.permilagem,
-    period: q.period,
-    amount: Number(q.amount),
-    dueDate: q.dueDate.toISOString(),
-    status: q.status as "PENDING" | "PAID" | "OVERDUE",
-    paymentDate: q.paymentDate?.toISOString() ?? null,
-    paymentMethod: q.paymentMethod,
-    paymentNotes: q.paymentNotes,
-  }));
+  const serializedQuotas = quotas.map(serializeQuota);
 
-  // Build debtor summary for admin
+  // Build debtor summary for admin (always uses all unpaid quotas, not year-scoped)
   let debtorSummary = null;
   if (isAdmin) {
     const unpaidQuotas = await db.quota.findMany({
       where: {
         condominiumId: membership.condominiumId,
         status: { in: ["PENDING", "OVERDUE"] },
+        deletedAt: null,
       },
       include: {
         unit: {
@@ -117,6 +129,8 @@ export default async function QuotasPage() {
       defaultSplitMethod={condominium?.quotaModel ?? "PERMILAGEM"}
       isAdmin={isAdmin}
       debtorSummary={debtorSummary}
+      availableYears={availableYears}
+      selectedYear={String(selectedYear)}
     />
   );
 }

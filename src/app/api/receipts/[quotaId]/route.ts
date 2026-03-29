@@ -46,6 +46,20 @@ export async function GET(
     return NextResponse.json({ error: "Sem permissão" }, { status: 403 });
   }
 
+  // Non-admin users can only download receipts for their own units
+  if (membership.role !== "ADMIN") {
+    const ownUnit = await db.unit.findFirst({
+      where: {
+        id: quota.unitId,
+        OR: [{ ownerId: session.user.id }, { tenantId: session.user.id }],
+      },
+      select: { id: true },
+    });
+    if (!ownUnit) {
+      return NextResponse.json({ error: "Sem permissão" }, { status: 403 });
+    }
+  }
+
   if (quota.status !== "PAID" || !quota.paymentDate) {
     return NextResponse.json(
       { error: "Recibo disponível apenas para quotas pagas" },

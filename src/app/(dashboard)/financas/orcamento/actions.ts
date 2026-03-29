@@ -1,35 +1,9 @@
 "use server";
 
-import { cookies } from "next/headers";
-import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { budgetSchema, type BudgetInput } from "@/lib/validators/budget";
 import { revalidatePath } from "next/cache";
-
-async function getAdminContext() {
-  const session = await auth();
-  if (!session?.user?.id) return null;
-
-  const cookieStore = await cookies();
-  const condominiumId = cookieStore.get("activeCondominiumId")?.value;
-
-  const membership = condominiumId
-    ? await db.membership.findUnique({
-        where: {
-          userId_condominiumId: {
-            userId: session.user.id,
-            condominiumId,
-          },
-        },
-      })
-    : await db.membership.findFirst({
-        where: { userId: session.user.id, isActive: true },
-      });
-
-  if (!membership || membership.role !== "ADMIN") return null;
-
-  return { userId: session.user.id, condominiumId: membership.condominiumId };
-}
+import { getAdminContext } from "@/lib/auth/admin-context";
 
 export async function createBudget(input: BudgetInput) {
   const ctx = await getAdminContext();
@@ -113,23 +87,24 @@ export async function updateBudget(budgetId: string, input: BudgetInput) {
 
   const totalAmount = items.reduce((sum, item) => sum + item.plannedAmount, 0);
 
-  // Delete existing items and recreate
-  await db.budgetItem.deleteMany({ where: { budgetId } });
-
-  await db.budget.update({
-    where: { id: budgetId },
-    data: {
-      year,
-      totalAmount,
-      reserveFundPercentage,
-      items: {
-        create: items.map((item) => ({
-          category: item.category,
-          description: item.description || null,
-          plannedAmount: item.plannedAmount,
-        })),
+  // Delete existing items and recreate atomically
+  await db.$transaction(async (tx) => {
+    await tx.budgetItem.deleteMany({ where: { budgetId } });
+    await tx.budget.update({
+      where: { id: budgetId },
+      data: {
+        year,
+        totalAmount,
+        reserveFundPercentage,
+        items: {
+          create: items.map((item) => ({
+            category: item.category,
+            description: item.description || null,
+            plannedAmount: item.plannedAmount,
+          })),
+        },
       },
-    },
+    });
   });
 
   revalidatePath("/financas/orcamento");

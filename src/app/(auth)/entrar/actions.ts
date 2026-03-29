@@ -46,23 +46,41 @@ export async function joinWithInvite(token: string) {
     return { error: "Já é membro deste condomínio" };
   }
 
-  // Use transaction to create membership and mark invite as used
-  await db.$transaction([
-    db.membership.create({
+  // Use transaction to create membership, mark invite as used,
+  // and auto-assign units that were imported with this email as owner
+  await db.$transaction(async (tx) => {
+    await tx.membership.create({
       data: {
         userId: session.user.id,
         condominiumId: invite.condominiumId,
         role: invite.role,
       },
-    }),
-    db.invite.update({
+    });
+
+    await tx.invite.update({
       where: { id: invite.id },
       data: {
         usedAt: new Date(),
         usedByUserId: session.user.id,
       },
-    }),
-  ]);
+    });
+
+    // If the invite was email-restricted (e.g. from CSV import) and role is OWNER,
+    // auto-assign units that were imported with this email as pendingOwnerEmail.
+    if (invite.email && invite.role === "OWNER") {
+      await tx.unit.updateMany({
+        where: {
+          condominiumId: invite.condominiumId,
+          pendingOwnerEmail: invite.email,
+          ownerId: null,
+        },
+        data: {
+          ownerId: session.user.id,
+          pendingOwnerEmail: null,
+        },
+      });
+    }
+  });
 
   // Set active condominium cookie so the dashboard knows which condo to show
   const cookieStore = await cookies();

@@ -1,3 +1,9 @@
 {
-  "buildCommand": "pnpm prisma migrate deploy && pnpm build"
+  "buildCommand": "DATABASE_URL=$DIRECT_URL pnpm prisma migrate deploy && pnpm build",
+  "crons": [
+    {
+      "path": "/api/cron/process",
+      "schedule": "0 2 * * *"
+    }
+  ]
 }
