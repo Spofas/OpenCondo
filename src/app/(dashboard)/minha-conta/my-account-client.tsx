@@ -149,7 +149,10 @@ export function MyAccountClient({
         {/* Logout — visible on mobile where sidebar is hidden */}
         <div className="lg:hidden">
           <button
-            onClick={() => signOut({ callbackUrl: "/login" })}
+            onClick={async () => {
+              await signOut({ redirect: false });
+              window.location.href = "/login";
+            }}
             className="flex w-full items-center justify-center gap-2 rounded-xl border border-border bg-card px-4 py-3 text-sm font-medium text-destructive hover:bg-destructive/5 transition-colors"
           >
             <LogOut size={16} />

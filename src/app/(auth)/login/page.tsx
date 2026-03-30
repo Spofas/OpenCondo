@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -10,7 +9,6 @@ import { loginSchema, type LoginInput } from "@/lib/validators/auth";
 import { resolvePostLoginDestination } from "./actions";
 
 export default function LoginPage() {
-  const router = useRouter();
   const [serverError, setServerError] = useState("");
   const {
     register,
@@ -37,7 +35,8 @@ export default function LoginPage() {
     // Resolve destination server-side so the fresh session cookie is readable
     // and the activeCondominiumId cookie is set in the same round-trip.
     const destination = await resolvePostLoginDestination();
-    router.push(destination);
+    // Hard navigation ensures the proxy runs with the fresh session cookie
+    window.location.href = destination;
   }
 
   return (
