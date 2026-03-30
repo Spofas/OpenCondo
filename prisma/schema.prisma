@@ -684,3 +684,22 @@ model Supplier {
   contracts           Contract[]
   maintenanceRequests MaintenanceRequest[]
 }
+
+// ─── Email Queue ────────────────────────────────────────────────────────────
+
+model PendingEmail {
+  id          String    @id @default(cuid())
+  recipient   String
+  subject     String
+  html        String    @db.Text
+  type        String    // e.g. "INVITE", "ANNOUNCEMENT", "MEETING", "QUOTA_REMINDER"
+  referenceId String?   // optional link to related entity
+  retries     Int       @default(0)
+  maxRetries  Int       @default(3)
+  lastError   String?
+  sentAt      DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([sentAt, retries])
+}

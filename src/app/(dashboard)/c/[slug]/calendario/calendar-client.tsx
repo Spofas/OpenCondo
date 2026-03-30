@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter, usePathname } from "next/navigation";
 import {
   ChevronLeft,
   ChevronRight,
@@ -46,10 +47,18 @@ function getFirstDayOfWeek(year: number, month: number): number {
   return day === 0 ? 6 : day - 1;
 }
 
-export function CalendarClient({ events }: { events: CalendarEvent[] }) {
+interface CalendarClientProps {
+  events: CalendarEvent[];
+  initialMonth: number; // 0-indexed
+  initialYear: number;
+}
+
+export function CalendarClient({ events, initialMonth, initialYear }: CalendarClientProps) {
   const now = new Date();
-  const [year, setYear] = useState(now.getFullYear());
-  const [month, setMonth] = useState(now.getMonth());
+  const router = useRouter();
+  const pathname = usePathname();
+  const month = initialMonth;
+  const year = initialYear;
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
   const daysInMonth = getDaysInMonth(year, month);
@@ -64,30 +73,28 @@ export function CalendarClient({ events }: { events: CalendarEvent[] }) {
     eventsByDate.set(event.date, existing);
   }
 
+  function navigateToMonth(newMonth: number, newYear: number) {
+    router.push(`${pathname}?month=${newMonth + 1}&year=${newYear}`);
+  }
+
   function prevMonth() {
     if (month === 0) {
-      setYear(year - 1);
-      setMonth(11);
+      navigateToMonth(11, year - 1);
     } else {
-      setMonth(month - 1);
+      navigateToMonth(month - 1, year);
     }
-    setSelectedDate(null);
   }
 
   function nextMonth() {
     if (month === 11) {
-      setYear(year + 1);
-      setMonth(0);
+      navigateToMonth(0, year + 1);
     } else {
-      setMonth(month + 1);
+      navigateToMonth(month + 1, year);
     }
-    setSelectedDate(null);
   }
 
   function goToday() {
-    setYear(now.getFullYear());
-    setMonth(now.getMonth());
-    setSelectedDate(null);
+    navigateToMonth(now.getMonth(), now.getFullYear());
   }
 
   // Build calendar grid cells

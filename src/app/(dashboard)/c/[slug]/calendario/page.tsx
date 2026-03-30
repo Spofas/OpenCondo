@@ -2,14 +2,31 @@ import { db } from "@/lib/db";
 import { requireMembership } from "@/lib/auth/require-membership";
 import { CalendarClient, type CalendarEvent } from "./calendar-client";
 
-export default async function CalendarPage({ params }: { params: Promise<{ slug: string }> }) {
+interface PageProps {
+  params: Promise<{ slug: string }>;
+  searchParams: Promise<{ month?: string; year?: string }>;
+}
+
+export default async function CalendarPage({ params, searchParams }: PageProps) {
   const { slug } = await params;
   const { membership } = await requireMembership(slug);
+  const searchP = await searchParams;
 
   const condoId = membership.condominiumId;
   const now = new Date();
-  const yearStart = new Date(now.getFullYear(), 0, 1);
-  const yearEnd = new Date(now.getFullYear() + 1, 0, 1);
+
+  // Parse month/year from search params, default to current
+  const currentMonth = now.getMonth(); // 0-indexed
+  const currentYear = now.getFullYear();
+  const selectedMonth = searchP.month
+    ? Math.max(0, Math.min(11, parseInt(searchP.month, 10) - 1))
+    : currentMonth;
+  const selectedYear = searchP.year
+    ? parseInt(searchP.year, 10)
+    : currentYear;
+
+  const yearStart = new Date(selectedYear, 0, 1);
+  const yearEnd = new Date(selectedYear + 1, 0, 1);
 
   // Fetch events in parallel
   const [meetings, quotaDueDates, contracts] = await Promise.all([
@@ -85,5 +102,5 @@ export default async function CalendarPage({ params }: { params: Promise<{ slug:
     });
   }
 
-  return <CalendarClient events={events} />;
+  return <CalendarClient events={events} initialMonth={selectedMonth} initialYear={selectedYear} />;
 }
