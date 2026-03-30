@@ -1,6 +1,5 @@
 "use server";
 
-import { cookies } from "next/headers";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 
@@ -12,7 +11,7 @@ export async function joinWithInvite(token: string) {
 
   const invite = await db.invite.findUnique({
     where: { token },
-    include: { condominium: true },
+    include: { condominium: { select: { name: true, slug: true } } },
   });
 
   if (!invite) {
@@ -82,15 +81,9 @@ export async function joinWithInvite(token: string) {
     }
   });
 
-  // Set active condominium cookie so the dashboard knows which condo to show
-  const cookieStore = await cookies();
-  cookieStore.set("activeCondominiumId", invite.condominiumId, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    maxAge: 60 * 60 * 24 * 365,
-    path: "/",
-  });
-
-  return { success: true, condominiumName: invite.condominium.name };
+  return {
+    success: true,
+    condominiumName: invite.condominium.name,
+    slug: invite.condominium.slug,
+  };
 }

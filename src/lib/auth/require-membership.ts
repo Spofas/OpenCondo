@@ -1,32 +1,56 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
-import { getUserMembership, getUserMembershipWithCondo } from "./get-membership";
+import { db } from "@/lib/db";
 
 /**
- * Server-component helper that enforces authentication and condominium membership.
- * Redirects to /login if unauthenticated, to /iniciar if no active membership.
- * Use this at the top of every dashboard page.tsx instead of repeating the
- * auth + membership check inline.
+ * Server-component helper that enforces authentication and condominium membership
+ * for slug-based routes. Resolves the condominium from the slug and verifies membership.
  */
-export async function requireMembership() {
+export async function requireMembership(slug: string) {
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
 
-  const membership = await getUserMembership(session.user.id);
+  const condominium = await db.condominium.findUnique({
+    where: { slug },
+    select: { id: true },
+  });
+
+  if (!condominium) redirect("/iniciar");
+
+  const membership = await db.membership.findUnique({
+    where: {
+      userId_condominiumId: {
+        userId: session.user.id,
+        condominiumId: condominium.id,
+      },
+    },
+  });
+
   if (!membership) redirect("/iniciar");
 
-  return { session, membership };
+  return { session, membership, condominiumId: condominium.id };
 }
 
 /**
  * Same as requireMembership but includes the condominium record.
- * Use on pages that render condominium details directly.
  */
-export async function requireMembershipWithCondo() {
+export async function requireMembershipWithCondo(slug: string) {
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
 
-  const membership = await getUserMembershipWithCondo(session.user.id);
+  const condominium = await db.condominium.findUnique({ where: { slug } });
+  if (!condominium) redirect("/iniciar");
+
+  const membership = await db.membership.findUnique({
+    where: {
+      userId_condominiumId: {
+        userId: session.user.id,
+        condominiumId: condominium.id,
+      },
+    },
+    include: { condominium: true },
+  });
+
   if (!membership) redirect("/iniciar");
 
   return { session, membership };

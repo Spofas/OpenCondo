@@ -47,9 +47,9 @@ interface CategoryTab {
   key: CategoryKey;
   labelKey: string;
   icon: React.ElementType;
-  pathPrefix: string; // for active state detection
+  pathPrefix: string;
   items: NavItem[];
-  directHref?: string; // if set, tap goes here instead of opening sheet
+  directHref?: string;
 }
 
 const adminCategories: CategoryTab[] = [
@@ -93,7 +93,7 @@ const adminCategories: CategoryTab[] = [
     key: "gestao",
     labelKey: "nav.management",
     icon: Briefcase,
-    pathPrefix: "", // matches multiple paths, handled in isCategoryActive
+    pathPrefix: "",
     items: [
       { href: "/calendario", labelKey: "nav.calendar", icon: CalendarDays },
       { href: "/contratos", labelKey: "nav.contracts", icon: FileSignature },
@@ -103,32 +103,31 @@ const adminCategories: CategoryTab[] = [
   },
 ];
 
-export function MobileNav({ userRole }: { userRole: string }) {
+export function MobileNav({ userRole, slug }: { userRole: string; slug: string }) {
   const pathname = usePathname();
   const t = useTranslations();
   const [openSheet, setOpenSheet] = useState<CategoryKey | null>(null);
 
   const isAdmin = userRole === "ADMIN";
+  const prefix = `/c/${slug}`;
 
   function isActive(href: string) {
-    return pathname === href || (href !== "/painel" && pathname.startsWith(href));
+    const fullHref = `${prefix}${href}`;
+    return pathname === fullHref || (href !== "/painel" && pathname.startsWith(fullHref));
   }
 
   function isCategoryActive(cat: CategoryTab) {
     if (cat.pathPrefix) {
-      return pathname.startsWith(cat.pathPrefix);
+      return pathname.startsWith(`${prefix}${cat.pathPrefix}`);
     }
-    // Gestão: active if on any of its item paths
     return cat.items.some((item) => isActive(item.href));
   }
 
   function handleCategoryTap(cat: CategoryTab) {
     if (cat.directHref) {
-      // Close any open sheet and navigate
       setOpenSheet(null);
-      return; // Link handles navigation
+      return;
     }
-    // Toggle the sheet
     setOpenSheet(openSheet === cat.key ? null : cat.key);
   }
 
@@ -167,7 +166,7 @@ export function MobileNav({ userRole }: { userRole: string }) {
               return (
                 <Link
                   key={item.href}
-                  href={item.href}
+                  href={`${prefix}${item.href}`}
                   onClick={() => setOpenSheet(null)}
                   className={cn(
                     "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
@@ -192,11 +191,11 @@ export function MobileNav({ userRole }: { userRole: string }) {
             <>
               {/* Dashboard — direct link */}
               <Link
-                href="/painel"
+                href={`${prefix}/painel`}
                 onClick={() => setOpenSheet(null)}
                 className={cn(
                   "flex flex-1 flex-col items-center gap-0.5 py-2 text-[10px] font-medium transition-colors",
-                  pathname === "/painel" ? "text-primary" : "text-muted-foreground"
+                  pathname === `${prefix}/painel` ? "text-primary" : "text-muted-foreground"
                 )}
               >
                 <LayoutDashboard size={20} />
@@ -213,7 +212,7 @@ export function MobileNav({ userRole }: { userRole: string }) {
                   return (
                     <Link
                       key={cat.key}
-                      href={cat.directHref}
+                      href={`${prefix}${cat.directHref}`}
                       onClick={() => setOpenSheet(null)}
                       className={cn(
                         "flex flex-1 flex-col items-center gap-0.5 py-2 text-[10px] font-medium transition-colors",
@@ -249,7 +248,7 @@ export function MobileNav({ userRole }: { userRole: string }) {
               return (
                 <Link
                   key={item.href}
-                  href={item.href}
+                  href={`${prefix}${item.href}`}
                   className={cn(
                     "flex flex-1 flex-col items-center gap-0.5 py-2 text-[10px] font-medium transition-colors",
                     active ? "text-primary" : "text-muted-foreground"
@@ -262,7 +261,6 @@ export function MobileNav({ userRole }: { userRole: string }) {
             })
           )}
         </nav>
-        {/* Safe area for devices with home indicator */}
         <div className="h-[env(safe-area-inset-bottom)]" />
       </div>
     </>

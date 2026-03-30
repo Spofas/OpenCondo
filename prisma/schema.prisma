@@ -83,6 +83,7 @@ enum QuotaModel {
 model Condominium {
   id               String     @id @default(cuid())
   name             String
+  slug             String     @unique
   address          String
   postalCode       String?
   city             String?

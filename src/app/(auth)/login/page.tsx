@@ -6,6 +6,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { signIn } from "next-auth/react";
 import { loginSchema, type LoginInput } from "@/lib/validators/auth";
+import { resolvePostLoginDestination } from "./actions";
 
 export default function LoginPage() {
   const [serverError, setServerError] = useState("");
@@ -32,9 +33,9 @@ export default function LoginPage() {
         return;
       }
 
-      // Hard navigation so the proxy re-evaluates with the fresh session cookie.
-      // The dashboard layout handles activeCondominiumId fallback automatically.
-      window.location.href = "/painel";
+      // Resolve the user's default condo slug and navigate there
+      const destination = await resolvePostLoginDestination();
+      window.location.href = destination;
     } catch (err) {
       setServerError(
         err instanceof Error ? err.message : "Erro inesperado ao iniciar sessão"

@@ -27,7 +27,6 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils/cn";
-import { switchCondominium } from "@/app/(dashboard)/actions";
 
 interface NavItem {
   href: string;
@@ -93,6 +92,7 @@ const roleLabels: Record<string, string> = {
 interface MembershipInfo {
   condominiumId: string;
   condominiumName: string;
+  slug: string;
   role: string;
 }
 
@@ -100,7 +100,7 @@ interface SidebarProps {
   userName: string;
   userRole: string;
   condominiumName: string;
-  currentCondominiumId: string;
+  currentSlug: string;
   memberships: MembershipInfo[];
 }
 
@@ -108,7 +108,7 @@ export function Sidebar({
   userName,
   userRole,
   condominiumName,
-  currentCondominiumId,
+  currentSlug,
   memberships,
 }: SidebarProps) {
   const pathname = usePathname();
@@ -116,12 +116,11 @@ export function Sidebar({
   const t = useTranslations();
   const [switcherOpen, setSwitcherOpen] = useState(false);
 
+  const prefix = `/c/${currentSlug}`;
 
-
-  async function handleSwitchCondo(condominiumId: string) {
+  function handleSwitchCondo(slug: string) {
     setSwitcherOpen(false);
-    await switchCondominium(condominiumId);
-    router.refresh();
+    router.push(`/c/${slug}/painel`);
   }
 
   return (
@@ -169,10 +168,10 @@ export function Sidebar({
                 {memberships.map((m) => (
                   <button
                     key={m.condominiumId}
-                    onClick={() => handleSwitchCondo(m.condominiumId)}
+                    onClick={() => handleSwitchCondo(m.slug)}
                     className={cn(
                       "flex w-full items-center gap-2 px-3 py-2 text-left text-xs transition-colors hover:bg-secondary",
-                      m.condominiumId === currentCondominiumId &&
+                      m.slug === currentSlug &&
                         "bg-primary/5 font-medium"
                     )}
                   >
@@ -218,16 +217,16 @@ export function Sidebar({
                   </p>
                 )}
                 {visibleItems.map((item) => {
+                  const fullHref = `${prefix}${item.href}`;
                   const isActive =
-                    pathname === item.href ||
-                    (item.href !== "/painel" && pathname.startsWith(item.href));
+                    pathname === fullHref ||
+                    (item.href !== "/painel" && pathname.startsWith(fullHref));
                   const Icon = item.icon;
 
                   return (
                     <Link
                       key={item.href}
-                      href={item.href}
-
+                      href={fullHref}
                       className={cn(
                         "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
                         isActive
@@ -248,7 +247,7 @@ export function Sidebar({
         {/* User footer — Minha Conta link + logout */}
         <div className="border-t border-border">
           <Link
-            href="/minha-conta"
+            href={`${prefix}/minha-conta`}
             className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-secondary"
           >
             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">

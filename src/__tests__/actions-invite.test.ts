@@ -6,13 +6,6 @@ vi.mock("@/lib/auth", () => ({
   auth: () => mockAuth(),
 }));
 
-// Mock cookies
-vi.mock("next/headers", () => ({
-  cookies: () => ({
-    set: vi.fn(),
-  }),
-}));
-
 // Mock email
 vi.mock("@/lib/email", () => ({
   sendInviteEmail: vi.fn().mockResolvedValue(undefined),

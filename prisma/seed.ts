@@ -128,6 +128,7 @@ async function main() {
   const condo = await db.condominium.create({
     data: {
       name: "Edifício Aurora",
+      slug: "edificio-aurora",
       address: "Rua da Liberdade, 42",
       postalCode: "1250-142",
       city: "Lisboa",

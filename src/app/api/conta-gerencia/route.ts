@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { cookies } from "next/headers";
 import { buildContaGerencia } from "@/lib/conta-gerencia";
 import { generateContaGerencia } from "@/lib/pdf/conta-gerencia";
 
@@ -17,10 +16,9 @@ export async function GET(request: NextRequest) {
   }
   const year = parseInt(yearParam, 10);
 
-  const cookieStore = await cookies();
-  const condominiumId = cookieStore.get("activeCondominiumId")?.value;
+  const condominiumId = request.nextUrl.searchParams.get("condominiumId");
   if (!condominiumId) {
-    return NextResponse.json({ error: "Nenhum condomínio selecionado" }, { status: 400 });
+    return NextResponse.json({ error: "Condomínio não especificado" }, { status: 400 });
   }
 
   // Verify membership (admin only)

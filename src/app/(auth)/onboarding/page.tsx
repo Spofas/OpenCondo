@@ -69,7 +69,7 @@ export default function OnboardingPage() {
         return;
       }
 
-      window.location.href = "/painel";
+      window.location.href = `/c/${result.slug}/painel`;
     } catch (err) {
       console.error("Onboarding error:", err);
       setServerError("Erro inesperado. Verifique a consola do servidor.");
