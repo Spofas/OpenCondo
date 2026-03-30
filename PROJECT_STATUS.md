@@ -64,13 +64,17 @@ The login system has several interconnected pieces:
    - Compares the submitted password against the stored hash (bcryptjs can check a password against a hash without ever "unhashing" it — it's a one-way process)
    - Creates a **session** (a secure token stored in the browser that says "this person is logged in")
 
-3. **Route protection** (middleware): A "gatekeeper" that runs before any page loads. If you try to access `/painel` (the dashboard) without being logged in, you're automatically redirected to `/login`. This protects 7 route groups: dashboard, finances, communication, meetings, contracts, settings, and onboarding.
+3. **Route protection** (proxy): A "gatekeeper" (`src/proxy.ts`) that runs before any page loads. It handles two directions:
+   - **Unauthenticated users** trying to access protected pages (dashboard, finances, etc.) → redirected to `/login`
+   - **Authenticated users** visiting public pages (`/`, `/login`, `/registar`, `/recuperar-password`) → redirected to `/painel`
 
-4. **Session management**: We use JWT (JSON Web Tokens) — small encrypted tokens stored in cookies. The server can read them to know who you are without hitting the database on every page load. This is faster than looking up sessions in the database each time.
+   This means returning users with a valid session are taken straight to the dashboard without seeing the login form again.
+
+4. **Session management**: We use JWT (JSON Web Tokens) — small encrypted tokens stored in cookies. The server can read them to know who you are without hitting the database on every page load. This is faster than looking up sessions in the database each time. Sessions last 30 days by default.
 
 **Architecture decision — split auth config:**
-NextAuth runs in two places: the "edge" (a lightweight environment for the middleware/gatekeeper) and the server (for actual login logic). The edge can't use the database or password-hashing libraries. So we split the config:
-- `config.ts`: Lightweight rules (which pages need login) — runs on the edge
+NextAuth runs in two places: the "edge" (a lightweight environment for the proxy/gatekeeper) and the server (for actual login logic). The edge can't use the database or password-hashing libraries. So we split the config:
+- `config.ts`: Lightweight rules — runs on the edge (used by `proxy.ts`)
 - `index.ts`: Full login logic with database + bcrypt — runs on the server
 
 #### Condominium Onboarding (`/onboarding`)
@@ -182,14 +186,14 @@ src/
 │   ├── layout/sidebar.tsx        # Navigation sidebar
 │   └── providers/session-provider.tsx  # Makes login state available everywhere
 ├── lib/                          # Shared logic
-│   ├── auth/config.ts            # Auth rules (lightweight, for middleware)
+│   ├── auth/config.ts            # Auth rules (lightweight, for proxy)
 │   ├── auth/index.ts             # Auth logic (full, with database)
 │   ├── db/index.ts               # Database connection
 │   ├── validators/auth.ts        # Email/password validation rules
 │   ├── validators/condominium.ts # Building/unit validation rules
 │   └── validators/budget.ts      # Budget validation + category list
 ├── i18n/messages/pt.json         # All Portuguese text strings
-└── middleware.ts                  # Route gatekeeper
+├── proxy.ts                      # Route gatekeeper (auth redirects)
 ```
 
 **Why `(auth)` and `(dashboard)` in parentheses?**
@@ -442,6 +446,9 @@ A budget is the annual spending plan for the building — "we expect to spend �
 | 2026-03-18 | Dynamic field arrays for line items | React Hook Form's useFieldArray lets admins add/remove budget rows freely |
 | 2026-03-18 | Vercel + Neon for hosting | Vercel is built by the Next.js team (best optimization). Neon over Supabase because OpenCondo already has NextAuth (auth) and Prisma (ORM) — Supabase's bundled auth/client would be redundant and unused. Both scale from free tier to production. |
 | 2026-03-18 | Deployment guide created | `DEPLOYMENT_GUIDE.md` — step-by-step instructions for non-technical users to deploy on Vercel + Neon |
+| 2026-03-30 | Proxy-based auth routing | Authenticated users auto-redirect to `/painel` from public pages; unauthenticated users redirect to `/login`. Replaces the previous one-directional `authorized` callback. Uses Next.js 16 `proxy.ts` (renamed from `middleware.ts`). |
+| 2026-03-30 | Remove "Lembrar-me" checkbox | JWT sessions last 30 days by default — effectively always "remember me". The checkbox was cosmetic (never wired). Browser credential managers handle the "remember login" UX. |
+| 2026-03-30 | Mobile-first bottom navigation | Role-adaptive bottom nav bar replaces hamburger menu on mobile. Admin gets category-based tabs with sheets; Owner/Tenant gets 5 direct-link tabs. Desktop sidebar unchanged. |
 | 2026-03-25 | Soft deletes on Expense/Quota/Transaction | Recoverable deletions, audit trail, no orphaned financial data; hard deletes permanently destroy payment history |
 | 2026-03-25 | URL search param for quota year filter | Avoids loading full quota history on every render; bookmarkable and shareable links |
 | 2026-03-25 | requireMembership() centralized helper | Every server page repeated the same auth+membership boilerplate — extracted to `src/lib/auth/require-membership.ts` |
@@ -456,18 +463,14 @@ A budget is the annual spending plan for the building — "we expect to spend �
 This section exists so that if we start a fresh Claude Code session, I (Claude) can read this file
 and get back up to speed without needing the conversation history.
 
-### Current state (2026-03-25)
+### Current state (2026-03-30)
 - **Branch:** `claude/opencondo-development-Ch14I`
 - **Build status:** Passing (`next build` succeeds, all routes compile)
 - **Database:** Prisma Migrate in use (migration history committed). Latest migration: `20260324224329_add_soft_delete_fields` (adds `deletedAt` to `Expense`, `Quota`, `Transaction`).
-- **Test suite:** 363 tests passing (27 test files)
-  - 9 validator test files
-  - 4 pure logic unit test files (quota-calculations, debtor-calculations, conta-gerencia, cron-utils)
-  - 4 scenario test files (lifecycle, csv-import, recurring-expenses, edge-cases) with shared fixtures
-  - 3 server action mock tests (condominium, invites — fixed in this session)
-  - 2 auth validator tests
+- **Test suite:** 417 tests passing (31 test files)
 - **Latest features (2026-03-25):** Soft deletes on financial records, nightly cron, receipt ownership gate, year-scoped quota queries, centralized auth+serializer helpers.
-- **Latest features (2026-03-26):** Extracted `isDueThisPeriod` to `src/lib/cron-utils.ts` (testable without Next.js); added 20+ cron tests, tightened permilagem rounding bound, added conta-gerencia edge case tests (unbudgeted expenses, zero-spend budget lines); painel stat cards (YTD Saldo/Receitas/Despesas + Próxima assembleia).
+- **Latest features (2026-03-26):** Extracted `isDueThisPeriod` to `src/lib/cron-utils.ts` (testable without Next.js); added 20+ cron tests, tightened permilagem rounding bound, added conta-gerencia edge case tests; painel stat cards.
+- **Latest features (2026-03-30):** Mobile responsiveness overhaul (bottom nav, full-screen modals, card views for tables, responsive grids). Auth routing via proxy (authenticated users auto-redirect to dashboard). Removed non-functional "Lembrar-me" checkbox.
 - **Note:** `pnpm lint` is broken on Next.js 16.1.7 (`next lint` misparses args). The build catches type errors, so this is non-blocking.
 
 ### Gotchas & quirks discovered during development
@@ -475,8 +478,8 @@ and get back up to speed without needing the conversation history.
 2. **Prisma 7 missing package:** `@prisma/client-runtime-utils` is not auto-installed with `@prisma/client` — had to add it manually to `package.json`.
 3. **Zod v4 API change:** `.errors` is now `.issues` on ZodError objects. Use `error.issues[0].message` not `error.errors[0].message`.
 4. **Zod v4 + coerce:** `z.coerce.number()` outputs `unknown` type in Zod v4, which breaks `react-hook-form` type inference. Use `z.number()` instead and handle string→number conversion with `valueAsNumber` in the form's `register()` call.
-5. **NextAuth v5 edge/server split:** The middleware file CANNOT import Prisma or bcryptjs (edge runtime doesn't support them). Auth config is split into `config.ts` (edge-safe, no providers) and `index.ts` (server-only, with Credentials provider + DB).
-6. **Next.js 16 middleware deprecation:** Shows a warning about "middleware" being deprecated in favor of "proxy". Still works, but the warning is expected.
+5. **NextAuth v5 edge/server split:** The proxy file CANNOT import Prisma or bcryptjs (edge runtime doesn't support them). Auth config is split into `config.ts` (edge-safe, no providers) and `index.ts` (server-only, with Credentials provider + DB).
+6. **Next.js 16 proxy (formerly middleware):** Next.js 16 renamed `middleware.ts` to `proxy.ts`. The file at `src/proxy.ts` handles all auth routing (redirect unauthenticated users to login, redirect authenticated users away from public pages).
 7. **next.config.ts:** Uses `serverExternalPackages: ["@prisma/client", "bcryptjs"]` to prevent bundling issues.
 8. **Zod v4 `.default()` + React Hook Form:** Using `z.string().default("")` makes the Zod *input* type `string | undefined` but the *output* type `string`. Since `zodResolver` uses the input type and `useForm<T>` expects the output type, this causes a type mismatch. Fix: use `z.string()` (required) instead and provide default values in the form's `defaultValues`.
 9. **Prisma Decimal → JavaScript number:** Prisma's `Decimal` type (used for money) doesn't serialize to JSON automatically. Convert with `Number(value)` before passing to client components.
@@ -495,5 +498,5 @@ and get back up to speed without needing the conversation history.
 ### What still needs to be built (in order)
 1. **Bulk import UI** — CSV parsing logic exists (`src/lib/csv-import.ts`, with duplicate detection) but has no page/form yet. Needs a page at `/definicoes` or `/onboarding` with file upload + preview + confirm flow.
 2. **Email notifications** — Transactional emails for announcements, quota reminders, maintenance updates, meeting convocatória. Needs `RESEND_API_KEY` env var and email templates.
-3. **Mobile responsiveness** — Current UI is desktop-first; needs responsive tweaks for sidebar, tables, modals.
+3. **Mobile responsiveness polish** — Core mobile UI is done (bottom nav, card views, full-screen modals, responsive grids). May need fine-tuning based on preview testing.
 4. **Deployment** — See `DEPLOYMENT_GUIDE.md` for Vercel + Neon setup. Remember to set `CRON_SECRET` in env vars.
