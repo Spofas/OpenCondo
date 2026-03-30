@@ -152,7 +152,7 @@ export function QuotaList({
       </div>
 
       {/* Summary cards */}
-      <div className="mb-6 grid grid-cols-3 gap-4">
+      <div className="mb-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="rounded-xl border border-border bg-card p-4">
           <p className="text-xs text-muted-foreground">Pendente</p>
           <p className="mt-1 text-xl font-semibold text-amber-600">
@@ -238,6 +238,69 @@ export function QuotaList({
                 {/* Expanded: quota details per unit */}
                 {isExpanded && (
                   <div className="border-t border-border px-6 py-4 overflow-x-auto">
+                    {/* Mobile cards */}
+                    <div className="space-y-3 md:hidden">
+                      {periodQuotas.map((quota) => (
+                        <div key={quota.id} className="rounded-lg border border-border/50 bg-background p-3">
+                          <div className="flex items-center justify-between">
+                            <span className="font-medium text-foreground">{quota.unitIdentifier}</span>
+                            {getStatusBadge(quota.status)}
+                          </div>
+                          <div className="mt-2 flex items-center justify-between text-sm">
+                            <span className="text-muted-foreground">
+                              {new Date(quota.dueDate).toLocaleDateString("pt-PT")}
+                            </span>
+                            <span className="font-medium text-foreground">
+                              €{quota.amount.toLocaleString("pt-PT", { minimumFractionDigits: 2 })}
+                            </span>
+                          </div>
+                          {quota.status === "PAID" && quota.paymentDate && (
+                            <p className="mt-1 text-xs text-muted-foreground">
+                              Pago {new Date(quota.paymentDate).toLocaleDateString("pt-PT")} · {getPaymentMethodLabel(quota.paymentMethod)}
+                            </p>
+                          )}
+                          {isAdmin && (
+                            <div className="mt-2 flex justify-end gap-1">
+                              {quota.status !== "PAID" ? (
+                                <button
+                                  onClick={() => setPayingQuota(quota)}
+                                  className="inline-flex items-center gap-1 rounded-lg bg-green-600 px-2.5 py-1 text-xs font-medium text-white hover:bg-green-700"
+                                >
+                                  <CheckCircle size={12} />
+                                  Pagar
+                                </button>
+                              ) : (
+                                <>
+                                  <a
+                                    href={`/api/receipts/${quota.id}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-1 rounded-lg border border-border px-2.5 py-1 text-xs font-medium text-primary hover:bg-primary/10"
+                                  >
+                                    <Download size={12} />
+                                    Recibo
+                                  </a>
+                                  <button
+                                    onClick={() => {
+                                      import("./actions").then(({ undoPayment }) =>
+                                        undoPayment(quota.id)
+                                      );
+                                    }}
+                                    className="inline-flex items-center gap-1 rounded-lg border border-border px-2.5 py-1 text-xs font-medium text-muted-foreground hover:bg-muted"
+                                  >
+                                    <Undo2 size={12} />
+                                    Anular
+                                  </button>
+                                </>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Desktop table */}
+                    <div className="hidden md:block">
                     <table className="w-full text-sm min-w-[600px]">
                       <thead>
                         <tr className="border-b border-border text-left text-muted-foreground">
@@ -332,6 +395,7 @@ export function QuotaList({
                         ))}
                       </tbody>
                     </table>
+                    </div>
 
                     {/* Period actions (admin only) */}
                     {isAdmin && (

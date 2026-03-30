@@ -1,16 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { signIn } from "next-auth/react";
 import { loginSchema, type LoginInput } from "@/lib/validators/auth";
-import { resolvePostLoginDestination } from "./actions";
 
 export default function LoginPage() {
-  const router = useRouter();
   const [serverError, setServerError] = useState("");
   const {
     register,
@@ -23,21 +20,26 @@ export default function LoginPage() {
   async function onSubmit(data: LoginInput) {
     setServerError("");
 
-    const result = await signIn("credentials", {
-      email: data.email,
-      password: data.password,
-      redirect: false,
-    });
+    try {
+      const result = await signIn("credentials", {
+        email: data.email,
+        password: data.password,
+        redirect: false,
+      });
 
-    if (result?.error) {
-      setServerError("Email ou palavra-passe incorretos");
-      return;
+      if (result?.error) {
+        setServerError("Email ou palavra-passe incorretos");
+        return;
+      }
+
+      // Hard navigation so the proxy re-evaluates with the fresh session cookie.
+      // The dashboard layout handles activeCondominiumId fallback automatically.
+      window.location.href = "/painel";
+    } catch (err) {
+      setServerError(
+        err instanceof Error ? err.message : "Erro inesperado ao iniciar sessão"
+      );
     }
-
-    // Resolve destination server-side so the fresh session cookie is readable
-    // and the activeCondominiumId cookie is set in the same round-trip.
-    const destination = await resolvePostLoginDestination();
-    router.push(destination);
   }
 
   return (
@@ -96,11 +98,7 @@ export default function LoginPage() {
               )}
             </div>
 
-            <div className="flex items-center justify-between">
-              <label className="flex items-center gap-2 text-sm">
-                <input type="checkbox" className="rounded border-border" />
-                Lembrar-me
-              </label>
+            <div className="flex items-center justify-end">
               <Link href="/recuperar-password" className="text-sm text-primary hover:underline">
                 Esqueceu a palavra-passe?
               </Link>

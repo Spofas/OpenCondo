@@ -1,6 +1,8 @@
 import { db } from "@/lib/db";
 import { requireMembershipWithCondo } from "@/lib/auth/require-membership";
 import { MyAccountClient } from "./my-account-client";
+import { NotificationPreferences } from "../definicoes/notification-preferences";
+import { NOTIFICATION_DEFAULTS } from "@/lib/validators/notification-preferences";
 
 export default async function MyAccountPage() {
   const { session, membership } = await requireMembershipWithCondo();
@@ -63,6 +65,25 @@ export default async function MyAccountPage() {
     paymentMethod: q.paymentMethod,
   }));
 
+  // Get notification preferences
+  const notifPref = await db.notificationPreference.findUnique({
+    where: {
+      userId_condominiumId: {
+        userId: session.user.id,
+        condominiumId: condoId,
+      },
+    },
+  });
+  const notificationPreferences = notifPref
+    ? {
+        quotas: notifPref.quotas,
+        announcements: notifPref.announcements,
+        meetings: notifPref.meetings,
+        maintenance: notifPref.maintenance,
+        contracts: notifPref.contracts,
+      }
+    : { ...NOTIFICATION_DEFAULTS };
+
   const serializedUnits = [...ownedUnits, ...rentedUnits].map((u) => ({
     id: u.id,
     identifier: u.identifier,
@@ -73,14 +94,17 @@ export default async function MyAccountPage() {
   }));
 
   return (
-    <MyAccountClient
-      userName={session.user.name || ""}
-      userEmail={session.user.email || ""}
-      condominiumName={membership.condominium.name}
-      role={membership.role}
-      units={serializedUnits}
-      quotas={serializedQuotas}
-      summary={{ pendingAmount, overdueAmount, paidAmount }}
-    />
+    <div className="space-y-6">
+      <MyAccountClient
+        userName={session.user.name || ""}
+        userEmail={session.user.email || ""}
+        condominiumName={membership.condominium.name}
+        role={membership.role}
+        units={serializedUnits}
+        quotas={serializedQuotas}
+        summary={{ pendingAmount, overdueAmount, paidAmount }}
+      />
+      <NotificationPreferences preferences={notificationPreferences} />
+    </div>
   );
 }

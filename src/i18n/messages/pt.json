@@ -53,10 +53,12 @@
     "meetings": "Assembleias",
     "meetingsList": "Reuniões",
     "minutes": "Atas",
+    "contacts": "Contactos",
     "contracts": "Contratos",
     "myAccount": "Minha conta",
     "settings": "Definições de Condomínio",
-    "ledger": "Livro de caixa"
+    "ledger": "Livro de caixa",
+    "management": "Gestão"
   },
   "dashboard": {
     "title": "Painel",
@@ -296,6 +298,19 @@
     "members": "Membros",
     "inviteMember": "Convidar membro",
     "profile": "Perfil",
-    "notifications": "Notificações"
+    "notifications": "Notificações",
+    "notificationPreferences": "Preferências de notificação",
+    "notificationDescription": "Escolha quais notificações pretende receber por email",
+    "preferencesUpdated": "Preferências atualizadas"
+  },
+  "import": {
+    "title": "Importar frações",
+    "uploadFile": "Carregar ficheiro CSV",
+    "fileLoaded": "Ficheiro carregado — clique para substituir",
+    "orPaste": "Ou colar diretamente",
+    "preview": "Pré-visualizar",
+    "importing": "A importar...",
+    "alreadyExists": "já existe",
+    "warnings": "Avisos"
   }
 }

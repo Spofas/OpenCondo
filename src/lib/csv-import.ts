@@ -19,7 +19,13 @@ export interface CsvParseResult {
   errors: string[];
 }
 
+const MAX_CSV_SIZE = 5 * 1024 * 1024; // 5 MB
+
 export function parseCsvUnits(csv: string): CsvParseResult {
+  if (csv.length > MAX_CSV_SIZE) {
+    return { units: [], errors: ["Ficheiro CSV demasiado grande (máximo 5 MB)"] };
+  }
+
   const lines = csv
     .split(/\r?\n/)
     .map((line) => line.trim())

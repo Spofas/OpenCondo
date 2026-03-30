@@ -23,17 +23,18 @@ model User {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  memberships         Membership[]
-  ownedUnits          Unit[]           @relation("UnitOwner")
-  tenantUnits         Unit[]           @relation("UnitTenant")
-  announcements       Announcement[]
-  maintenanceRequests MaintenanceRequest[]
-  announcementReads   AnnouncementRead[]
-  meetingAttendances  MeetingAttendee[]
-  ataApprovals        AtaApproval[]
-  accounts            Account[]
-  sessions            Session[]
-  usedInvites         Invite[]
+  memberships             Membership[]
+  ownedUnits              Unit[]           @relation("UnitOwner")
+  tenantUnits             Unit[]           @relation("UnitTenant")
+  announcements           Announcement[]
+  maintenanceRequests     MaintenanceRequest[]
+  announcementReads       AnnouncementRead[]
+  meetingAttendances      MeetingAttendee[]
+  ataApprovals            AtaApproval[]
+  accounts                Account[]
+  sessions                Session[]
+  usedInvites             Invite[]
+  notificationPreferences NotificationPreference[]
 }
 
 model Account {
@@ -92,20 +93,21 @@ model Condominium {
   createdAt        DateTime   @default(now())
   updatedAt        DateTime   @updatedAt
 
-  units               Unit[]
-  memberships         Membership[]
-  budgets             Budget[]
-  expenses            Expense[]
-  quotas              Quota[]
-  announcements       Announcement[]
-  maintenanceRequests MaintenanceRequest[]
-  documents           Document[]
-  meetings            Meeting[]
-  contracts           Contract[]
-  suppliers           Supplier[]
-  invites             Invite[]
-  recurringExpenses   RecurringExpense[]
-  transactions        Transaction[]
+  units                   Unit[]
+  memberships             Membership[]
+  budgets                 Budget[]
+  expenses                Expense[]
+  quotas                  Quota[]
+  announcements           Announcement[]
+  maintenanceRequests     MaintenanceRequest[]
+  documents               Document[]
+  meetings                Meeting[]
+  contracts               Contract[]
+  suppliers               Supplier[]
+  invites                 Invite[]
+  recurringExpenses       RecurringExpense[]
+  transactions            Transaction[]
+  notificationPreferences NotificationPreference[]
 }
 
 // ─── Membership (User <-> Condominium) ───────────────────────────────────────
@@ -148,6 +150,26 @@ model Invite {
   usedByUser   User?        @relation(fields: [usedByUserId], references: [id], onDelete: SetNull)
 }
 
+// ─── Notification Preferences ────────────────────────────────────────────────
+
+model NotificationPreference {
+  id             String  @id @default(cuid())
+  userId         String
+  condominiumId  String
+  quotas         Boolean @default(true)
+  announcements  Boolean @default(true)
+  meetings       Boolean @default(true)
+  maintenance    Boolean @default(false)
+  contracts      Boolean @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  condominium  Condominium  @relation(fields: [condominiumId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, condominiumId])
+}
+
 // ─── Units (Frações) ─────────────────────────────────────────────────────────
 
 model Unit {
@@ -158,8 +180,9 @@ model Unit {
   typology       String?      // e.g., "T2", "T3"
   permilagem     Int          @default(0)
   sortOrder      Int          @default(0)
-  ownerId        String?
-  tenantId       String?
+  ownerId           String?
+  tenantId          String?
+  pendingOwnerEmail String?   // Set during CSV import when owner isn't registered yet
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
 
@@ -651,6 +674,7 @@ model Supplier {
   email          String?
   category       String?
   notes          String?
+  visibility     String  @default("ADMIN_ONLY") // "ADMIN_ONLY" or "ALL"
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 

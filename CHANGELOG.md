@@ -6,6 +6,40 @@ All notable changes to OpenCondo are recorded here in reverse-chronological orde
 
 ## [Unreleased]
 
+### 2026-03-30 — Mobile responsiveness and auth routing
+
+**Mobile UI overhaul:**
+- Role-adaptive bottom navigation bar: admin gets category-based tabs (Finanças, Comunicação, Assembleias, Gestão) with per-section sheets; Owner/Tenant gets 5 direct-link tabs
+- Sticky mobile header with condominium name and switcher
+- Desktop sidebar reorganized into matching 4 groups (Finanças, Comunicação, Assembleias, Gestão)
+- Tables replaced with card views on mobile: quotas, expenses, recurring expenses, budget items, documents, livro-caixa, minha-conta quota history
+- Large form modals go full-screen on mobile (expense, announcement, document, meeting, contract, budget, quota generation, maintenance, recurring expense)
+- Responsive grid fixes: conta-gerencia, minha-conta, contactos, livro-caixa, expense page headers
+- Livro-caixa rows reversed (most recent first)
+- Logout button added to Minha Conta page (mobile only, since sidebar is hidden)
+
+**Auth routing (architectural):**
+- Updated `src/proxy.ts` to handle bidirectional auth redirects:
+  - Authenticated users visiting `/`, `/login`, `/registar`, `/recuperar-password` → redirected to `/painel`
+  - Unauthenticated users visiting protected pages → redirected to `/login`
+- Previously only handled the unauthenticated → login direction; returning users had to log in again even with a valid session
+- Simplified `authorized` callback in `auth/config.ts` (routing logic moved to proxy)
+
+**Login/logout flow fixes:**
+- Switched login and logout to hard navigation (`window.location.href`) instead of client-side `router.push` — ensures the proxy re-evaluates the session cookie on each transition
+- Removed server action `resolvePostLoginDestination()` from login flow — dashboard layout handles `activeCondominiumId` fallback automatically
+- Added try/catch to surface `signIn()` errors instead of silent failure (react-hook-form's `handleSubmit` swallows exceptions)
+
+**UI cleanup:**
+- Removed non-functional "Lembrar-me" (Remember me) checkbox from login page — JWT sessions last 30 days by default; browser credential managers handle the UX
+
+**Docs:**
+- Added auth routing and mobile navigation sections to MANUAL_TESTS.md
+- Added preview deployment NEXTAUTH_URL guidance to DEPLOYMENT_GUIDE.md
+- Removed completed items (mobile responsiveness, email notifications) from "still needs building" in PROJECT_STATUS.md
+
+---
+
 ### 2026-03-26 — Test coverage improvements and painel stat cards
 
 **Tests:**

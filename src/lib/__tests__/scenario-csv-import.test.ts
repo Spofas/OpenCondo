@@ -88,6 +88,45 @@ describe("Scenario: CSV → quota split round-trip", () => {
   });
 });
 
+describe("Scenario: CSV import with owner emails for invite flow", () => {
+  it("captures owner emails for units", () => {
+    const csv = `identificador;piso;tipologia;permilagem;email
+R/C Esq;0;T2;150;joao@email.pt
+1.º Dto;1;T3;180;maria@email.pt
+2.º Esq;2;T1;120;`;
+    const result = parseCsvUnits(csv);
+    expect(result.units).toHaveLength(3);
+    expect(result.units[0].ownerEmail).toBe("joao@email.pt");
+    expect(result.units[1].ownerEmail).toBe("maria@email.pt");
+    expect(result.units[2].ownerEmail).toBeUndefined();
+  });
+
+  it("multiple units can share the same owner email", () => {
+    const csv = `identificador;piso;permilagem;email
+R/C Esq;0;150;joao@email.pt
+R/C Dto;0;150;joao@email.pt
+1.º Esq;1;180;maria@email.pt`;
+    const result = parseCsvUnits(csv);
+    expect(result.units).toHaveLength(3);
+    const joaoUnits = result.units.filter((u) => u.ownerEmail === "joao@email.pt");
+    expect(joaoUnits).toHaveLength(2);
+  });
+
+  it("collects unique owner emails for invite deduplication", () => {
+    const csv = `identificador;piso;permilagem;email
+R/C Esq;0;100;joao@email.pt
+R/C Dto;0;100;joao@email.pt
+1.º Esq;1;100;maria@email.pt
+1.º Dto;1;100;pedro@email.pt
+2.º Esq;2;100;pedro@email.pt`;
+    const result = parseCsvUnits(csv);
+    const uniqueEmails = new Set(
+      result.units.map((u) => u.ownerEmail).filter(Boolean)
+    );
+    expect(uniqueEmails.size).toBe(3);
+  });
+});
+
 describe("Scenario: CSV error handling", () => {
   it("rejects file with only header (no data rows)", () => {
     const result = parseCsvUnits("identificador;piso;permilagem");

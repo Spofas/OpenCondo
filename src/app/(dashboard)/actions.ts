@@ -6,6 +6,7 @@ import { db } from "@/lib/db";
 import { parseCsvUnits } from "@/lib/csv-import";
 import { revalidatePath } from "next/cache";
 import { sendInviteEmail } from "@/lib/email";
+import { notificationPreferencesSchema, NOTIFICATION_DEFAULTS } from "@/lib/validators/notification-preferences";
 
 export async function switchCondominium(condominiumId: string) {
   const session = await auth();
@@ -137,9 +138,17 @@ export async function importUnitsFromCsv(condominiumId: string, csvText: string)
     return { error: errors.length > 0 ? errors.join("; ") : "Nenhuma fração encontrada no CSV" };
   }
 
+  // Get condominium name for invite emails
+  const condominium = await db.condominium.findUnique({
+    where: { id: condominiumId },
+    select: { name: true },
+  });
+
   let created = 0;
   let skipped = 0;
+  let invited = 0;
   const importErrors: string[] = [...errors];
+  const invitedEmails = new Set<string>(); // Deduplicate invites per email
 
   for (const unit of units) {
     // Check if unit already exists
@@ -159,6 +168,8 @@ export async function importUnitsFromCsv(condominiumId: string, csvText: string)
 
     // Find owner by email if provided
     let ownerId: string | null = null;
+    let pendingOwnerEmail: string | null = null;
+
     if (unit.ownerEmail) {
       const owner = await db.user.findUnique({
         where: { email: unit.ownerEmail },
@@ -166,7 +177,29 @@ export async function importUnitsFromCsv(condominiumId: string, csvText: string)
       if (owner) {
         ownerId = owner.id;
       } else {
-        importErrors.push(`Proprietário '${unit.ownerEmail}' não encontrado para ${unit.identifier}`);
+        // Mark unit with pending email for auto-linking on invite acceptance
+        pendingOwnerEmail = unit.ownerEmail;
+
+        // Send one invite per unique email
+        if (!invitedEmails.has(unit.ownerEmail)) {
+          try {
+            const invite = await db.invite.create({
+              data: {
+                condominiumId,
+                role: "OWNER",
+                email: unit.ownerEmail,
+                expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+              },
+            });
+            if (condominium) {
+              sendInviteEmail(unit.ownerEmail, invite.token, condominium.name, "OWNER").catch(() => {});
+            }
+            invitedEmails.add(unit.ownerEmail);
+            invited++;
+          } catch {
+            importErrors.push(`Erro ao convidar '${unit.ownerEmail}' para ${unit.identifier}`);
+          }
+        }
       }
     }
 
@@ -178,18 +211,27 @@ export async function importUnitsFromCsv(condominiumId: string, csvText: string)
         typology: unit.typology || null,
         permilagem: unit.permilagem,
         ownerId,
+        pendingOwnerEmail,
       },
     });
     created++;
   }
 
   revalidatePath("/definicoes");
+
+  // Build summary message
+  const parts: string[] = [];
+  parts.push(`${created} fração${created !== 1 ? "ões" : ""} importada${created !== 1 ? "s" : ""}`);
+  if (skipped > 0) parts.push(`${skipped} já existente${skipped !== 1 ? "s" : ""}`);
+  if (invited > 0) parts.push(`${invited} convite${invited !== 1 ? "s" : ""} enviado${invited !== 1 ? "s" : ""}`);
+
   return {
     success: true,
     created,
     skipped,
+    invited,
     errors: importErrors,
-    message: `${created} fração${created !== 1 ? "ões" : ""} importada${created !== 1 ? "s" : ""}${skipped > 0 ? ` (${skipped} já existente${skipped !== 1 ? "s" : ""})` : ""}`,
+    message: parts.join(", "),
   };
 }
 
@@ -331,6 +373,62 @@ export async function updateUnitPermilagem(unitId: string, permilagem: number) {
   await db.unit.update({
     where: { id: unitId },
     data: { permilagem },
+  });
+
+  revalidatePath("/definicoes");
+  return { success: true };
+}
+
+/**
+ * Get notification preferences for the current user and active condominium.
+ */
+export async function getNotificationPreferences() {
+  const session = await auth();
+  if (!session?.user?.id) return null;
+
+  const cookieStore = await cookies();
+  const condominiumId = cookieStore.get("activeCondominiumId")?.value;
+  if (!condominiumId) return null;
+
+  const pref = await db.notificationPreference.findUnique({
+    where: { userId_condominiumId: { userId: session.user.id, condominiumId } },
+  });
+
+  if (!pref) {
+    return { ...NOTIFICATION_DEFAULTS };
+  }
+
+  return {
+    quotas: pref.quotas,
+    announcements: pref.announcements,
+    meetings: pref.meetings,
+    maintenance: pref.maintenance,
+    contracts: pref.contracts,
+  };
+}
+
+/**
+ * Save notification preferences for the current user and active condominium.
+ */
+export async function saveNotificationPreferences(data: Record<string, boolean>) {
+  const session = await auth();
+  if (!session?.user?.id) return { error: "Não autenticado" };
+
+  const cookieStore = await cookies();
+  const condominiumId = cookieStore.get("activeCondominiumId")?.value;
+  if (!condominiumId) return { error: "Nenhum condomínio selecionado" };
+
+  const parsed = notificationPreferencesSchema.safeParse(data);
+  if (!parsed.success) return { error: "Dados inválidos" };
+
+  await db.notificationPreference.upsert({
+    where: { userId_condominiumId: { userId: session.user.id, condominiumId } },
+    create: {
+      userId: session.user.id,
+      condominiumId,
+      ...parsed.data,
+    },
+    update: parsed.data,
   });
 
   revalidatePath("/definicoes");

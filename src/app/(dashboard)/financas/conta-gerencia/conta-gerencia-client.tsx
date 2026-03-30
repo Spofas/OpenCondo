@@ -35,7 +35,7 @@ export function ContaGerenciaClient({
 
   return (
     <div>
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Conta de gerência</h1>
           <p className="text-sm text-muted-foreground">
@@ -207,11 +207,11 @@ export function ContaGerenciaClient({
 
           {/* Budget variance */}
           {r.budgetLines.length > 0 && (
-            <div className="rounded-xl border border-border bg-card p-6">
-              <h2 className="mb-4 text-lg font-semibold text-card-foreground">
+            <div className="rounded-xl border border-border bg-card overflow-hidden">
+              <h2 className="mb-4 px-6 pt-6 text-lg font-semibold text-card-foreground">
                 Orçamento vs. Realizado
               </h2>
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto px-6 pb-6">
                 <table className="w-full text-sm min-w-[500px]">
                   <thead>
                     <tr className="border-b border-border text-left text-muted-foreground">
@@ -274,7 +274,7 @@ export function ContaGerenciaClient({
             <h2 className="mb-4 text-lg font-semibold text-card-foreground">
               Fundo de reserva
             </h2>
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <Stat label="Percentagem" value={`${r.reserveFundPercentage}%`} />
               <Stat
                 label="Contribuições"
@@ -290,12 +290,12 @@ export function ContaGerenciaClient({
 
           {/* Unit debts */}
           {r.unitDebts.length > 0 && (
-            <div className="rounded-xl border border-border bg-card p-6">
-              <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-card-foreground">
+            <div className="rounded-xl border border-border bg-card overflow-hidden">
+              <h2 className="mb-4 px-6 pt-6 flex items-center gap-2 text-lg font-semibold text-card-foreground">
                 <AlertTriangle size={18} className="text-red-500" />
                 Dívidas por fração
               </h2>
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto px-6 pb-6">
                 <table className="w-full text-sm min-w-[450px]">
                   <thead>
                     <tr className="border-b border-border text-left text-muted-foreground">
