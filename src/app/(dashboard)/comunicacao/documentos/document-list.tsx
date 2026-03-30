@@ -97,7 +97,74 @@ export function DocumentList({
           </div>
         </div>
       ) : (
-        <div className="rounded-xl border border-border bg-card overflow-x-auto">
+        <>
+        {/* Mobile cards */}
+        <div className="space-y-3 md:hidden">
+          {filtered.map((doc) => (
+            <div key={doc.id} className="rounded-xl border border-border bg-card p-4">
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <p className="font-medium text-foreground">{doc.name}</p>
+                    {doc.visibility === "ADMIN_ONLY" && (
+                      <Lock size={12} className="text-muted-foreground" />
+                    )}
+                  </div>
+                  <span className={`mt-1 inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${CATEGORY_COLORS[doc.category] || "bg-muted text-foreground"}`}>
+                    {CATEGORY_LABELS[doc.category]}
+                  </span>
+                </div>
+                {isAdmin && (
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => onEdit(doc)}
+                      className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+                    >
+                      <Edit2 size={14} />
+                    </button>
+                    {confirmDelete === doc.id ? (
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => handleDelete(doc.id)}
+                          className="rounded-lg bg-destructive px-2 py-1 text-xs font-medium text-white hover:bg-destructive/90"
+                        >
+                          Sim
+                        </button>
+                        <button
+                          onClick={() => setConfirmDelete(null)}
+                          className="rounded-lg border border-border px-2 py-1 text-xs font-medium text-foreground hover:bg-muted"
+                        >
+                          Não
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => setConfirmDelete(doc.id)}
+                        className="rounded-lg p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+              <div className="mt-2 flex items-center justify-between text-xs text-muted-foreground">
+                <span>{new Date(doc.createdAt).toLocaleDateString("pt-PT")}</span>
+                <a
+                  href={doc.fileUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1 text-primary hover:underline"
+                >
+                  {doc.fileName}
+                  <ExternalLink size={12} />
+                </a>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="hidden md:block rounded-xl border border-border bg-card overflow-x-auto">
           <table className="w-full text-sm min-w-[600px]">
             <thead>
               <tr className="border-b border-border text-left text-muted-foreground">
@@ -191,6 +258,7 @@ export function DocumentList({
             </tbody>
           </table>
         </div>
+        </>
       )}
     </>
   );

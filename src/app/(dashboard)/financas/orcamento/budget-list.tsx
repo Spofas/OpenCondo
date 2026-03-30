@@ -135,8 +135,25 @@ export function BudgetList({
               {/* Expanded content */}
               {isExpanded && (
                 <div className="border-t border-border px-6 py-4">
-                  {/* Items table */}
-                  <table className="w-full text-sm">
+                  {/* Mobile cards */}
+                  <div className="space-y-2 md:hidden">
+                    {budget.items.map((item) => (
+                      <div key={item.id} className="flex items-center justify-between rounded-lg border border-border/50 bg-background p-3">
+                        <div className="min-w-0 flex-1">
+                          <p className="font-medium text-foreground">{item.category}</p>
+                          {item.description && (
+                            <p className="text-xs text-muted-foreground">{item.description}</p>
+                          )}
+                        </div>
+                        <p className="ml-3 font-medium text-foreground whitespace-nowrap">
+                          €{item.plannedAmount.toLocaleString("pt-PT", { minimumFractionDigits: 2 })}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Items table (desktop) */}
+                  <table className="hidden md:table w-full text-sm">
                     <thead>
                       <tr className="border-b border-border text-left text-muted-foreground">
                         <th className="pb-2 font-medium">Categoria</th>

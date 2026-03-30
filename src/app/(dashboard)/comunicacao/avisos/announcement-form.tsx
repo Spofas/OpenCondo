@@ -62,8 +62,8 @@ export function AnnouncementForm({ onClose, existingAnnouncement }: Announcement
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/50 p-4 pt-16">
-      <div className="w-full max-w-lg rounded-xl border border-border bg-card shadow-lg">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-card md:bg-black/50 md:flex md:items-start md:justify-center md:p-4 md:pt-16">
+      <div className="w-full md:max-w-lg md:rounded-xl md:border md:border-border bg-card md:shadow-lg">
         <div className="flex items-center justify-between border-b border-border px-6 py-4">
           <h2 className="text-lg font-semibold text-card-foreground">
             {isEditing ? "Editar aviso" : "Novo aviso"}

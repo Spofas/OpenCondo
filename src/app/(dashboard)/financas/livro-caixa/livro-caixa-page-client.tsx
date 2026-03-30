@@ -118,34 +118,35 @@ export function LivroCaixaPageClient({
     router.push(`/financas/livro-caixa?from=${filterFrom}&to=${filterTo}`);
   }
 
-  // Compute running balance rows
+  // Compute running balance rows (chronological), then reverse for display (most recent first)
   let running = openingBalance;
-  const rows = entries.map((e) => {
+  const rowsChronological = entries.map((e) => {
     running += e.amount;
     return { ...e, runningBalance: running };
   });
   const closingBalance = running;
+  const rows = [...rowsChronological].reverse();
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Livro de caixa</h1>
           <p className="text-sm text-muted-foreground">
             Registo cronológico de todas as entradas e saídas
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <button
             onClick={() => setShowOpeningForm(true)}
-            className="rounded-lg border border-border bg-background px-4 py-2 text-sm font-medium text-foreground hover:bg-secondary"
+            className="rounded-lg border border-border bg-background px-3 py-2 text-sm font-medium text-foreground hover:bg-secondary"
           >
             {hasOpeningBalance ? "Editar saldo inicial" : "Definir saldo inicial"}
           </button>
           <button
             onClick={() => setShowAdjustmentForm(true)}
-            className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+            className="rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
           >
             + Ajuste manual
           </button>
@@ -218,8 +219,8 @@ export function LivroCaixaPageClient({
           </span>
         </div>
 
-        {/* Column headers */}
-        <div className="grid grid-cols-[120px_1fr_150px_100px_120px] gap-4 border-b border-border px-4 py-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+        {/* Column headers — desktop */}
+        <div className="hidden md:grid grid-cols-[120px_1fr_150px_100px_120px] gap-4 border-b border-border px-4 py-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
           <span>Data</span>
           <span>Descrição</span>
           <span>Tipo</span>
@@ -232,66 +233,138 @@ export function LivroCaixaPageClient({
             Sem movimentos neste período
           </div>
         ) : (
-          rows.map((row) => (
-            <div
-              key={row.id}
-              className="grid grid-cols-[120px_1fr_150px_100px_120px] items-center gap-4 border-b border-border px-4 py-3 text-sm last:border-0 hover:bg-muted/20"
-            >
-              <span className="text-muted-foreground">{formatDate(row.date)}</span>
-              <span className="truncate font-medium text-foreground">
-                {row.description}
-              </span>
-              <span>
-                <span
-                  className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
-                    TYPE_COLORS[row.type] ?? "bg-secondary text-secondary-foreground"
-                  }`}
-                >
-                  {TYPE_LABELS[row.type] ?? row.type}
-                </span>
-              </span>
-              <span
-                className={`text-right font-medium tabular-nums ${
-                  row.amount >= 0 ? "text-green-600" : "text-red-600"
-                }`}
-              >
-                {row.amount >= 0 ? "+" : ""}
-                {formatCurrency(row.amount)}
-              </span>
-              <div className="flex items-center justify-end gap-2">
-                <span className="font-semibold tabular-nums text-foreground">
-                  {formatCurrency(row.runningBalance)}
-                </span>
-                {row.type === "ADJUSTMENT" && (
-                  <>
-                    {deletingId === row.id ? (
-                      <div className="flex gap-1">
-                        <button
-                          onClick={() => handleDeleteAdjustment(row.id)}
-                          className="rounded px-2 py-0.5 text-xs font-medium text-red-600 hover:bg-red-50"
-                        >
-                          Sim
-                        </button>
-                        <button
-                          onClick={() => setDeletingId(null)}
-                          className="rounded px-2 py-0.5 text-xs text-muted-foreground hover:bg-secondary"
-                        >
-                          Não
-                        </button>
-                      </div>
-                    ) : (
-                      <button
-                        onClick={() => setDeletingId(row.id)}
-                        className="text-xs text-muted-foreground hover:text-red-600"
+          <>
+            {/* Mobile card view */}
+            <div className="divide-y divide-border md:hidden">
+              {rows.map((row) => (
+                <div key={row.id} className="px-4 py-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="text-xs text-muted-foreground whitespace-nowrap">
+                        {formatDate(row.date)}
+                      </span>
+                      <span
+                        className={`inline-flex shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                          TYPE_COLORS[row.type] ?? "bg-secondary text-secondary-foreground"
+                        }`}
                       >
-                        ×
-                      </button>
-                    )}
-                  </>
-                )}
-              </div>
+                        {TYPE_LABELS[row.type] ?? row.type}
+                      </span>
+                    </div>
+                    <span
+                      className={`text-sm font-medium tabular-nums whitespace-nowrap ${
+                        row.amount >= 0 ? "text-green-600" : "text-red-600"
+                      }`}
+                    >
+                      {row.amount >= 0 ? "+" : ""}
+                      {formatCurrency(row.amount)}
+                    </span>
+                  </div>
+                  <div className="mt-1 flex items-center justify-between gap-2">
+                    <span className="text-sm font-medium text-foreground truncate">
+                      {row.description}
+                    </span>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <span className="text-xs font-semibold tabular-nums text-muted-foreground">
+                        {formatCurrency(row.runningBalance)}
+                      </span>
+                      {row.type === "ADJUSTMENT" && (
+                        <>
+                          {deletingId === row.id ? (
+                            <div className="flex gap-1">
+                              <button
+                                onClick={() => handleDeleteAdjustment(row.id)}
+                                className="rounded px-1.5 py-0.5 text-xs font-medium text-red-600 hover:bg-red-50"
+                              >
+                                Sim
+                              </button>
+                              <button
+                                onClick={() => setDeletingId(null)}
+                                className="rounded px-1.5 py-0.5 text-xs text-muted-foreground hover:bg-secondary"
+                              >
+                                Não
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => setDeletingId(row.id)}
+                              className="text-xs text-muted-foreground hover:text-red-600"
+                            >
+                              ×
+                            </button>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
-          ))
+
+            {/* Desktop grid view */}
+            <div className="hidden md:block">
+              {rows.map((row) => (
+                <div
+                  key={row.id}
+                  className="grid grid-cols-[120px_1fr_150px_100px_120px] items-center gap-4 border-b border-border px-4 py-3 text-sm last:border-0 hover:bg-muted/20"
+                >
+                  <span className="text-muted-foreground">{formatDate(row.date)}</span>
+                  <span className="truncate font-medium text-foreground">
+                    {row.description}
+                  </span>
+                  <span>
+                    <span
+                      className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
+                        TYPE_COLORS[row.type] ?? "bg-secondary text-secondary-foreground"
+                      }`}
+                    >
+                      {TYPE_LABELS[row.type] ?? row.type}
+                    </span>
+                  </span>
+                  <span
+                    className={`text-right font-medium tabular-nums ${
+                      row.amount >= 0 ? "text-green-600" : "text-red-600"
+                    }`}
+                  >
+                    {row.amount >= 0 ? "+" : ""}
+                    {formatCurrency(row.amount)}
+                  </span>
+                  <div className="flex items-center justify-end gap-2">
+                    <span className="font-semibold tabular-nums text-foreground">
+                      {formatCurrency(row.runningBalance)}
+                    </span>
+                    {row.type === "ADJUSTMENT" && (
+                      <>
+                        {deletingId === row.id ? (
+                          <div className="flex gap-1">
+                            <button
+                              onClick={() => handleDeleteAdjustment(row.id)}
+                              className="rounded px-2 py-0.5 text-xs font-medium text-red-600 hover:bg-red-50"
+                            >
+                              Sim
+                            </button>
+                            <button
+                              onClick={() => setDeletingId(null)}
+                              className="rounded px-2 py-0.5 text-xs text-muted-foreground hover:bg-secondary"
+                            >
+                              Não
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => setDeletingId(row.id)}
+                            className="text-xs text-muted-foreground hover:text-red-600"
+                          >
+                            ×
+                          </button>
+                        )}
+                      </>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
         )}
 
         {/* Closing balance row */}

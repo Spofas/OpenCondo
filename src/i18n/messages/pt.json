@@ -53,10 +53,12 @@
     "meetings": "Assembleias",
     "meetingsList": "Reuniões",
     "minutes": "Atas",
+    "contacts": "Contactos",
     "contracts": "Contratos",
     "myAccount": "Minha conta",
     "settings": "Definições de Condomínio",
-    "ledger": "Livro de caixa"
+    "ledger": "Livro de caixa",
+    "management": "Gestão"
   },
   "dashboard": {
     "title": "Painel",

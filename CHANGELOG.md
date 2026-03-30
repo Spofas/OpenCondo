@@ -6,6 +6,30 @@ All notable changes to OpenCondo are recorded here in reverse-chronological orde
 
 ## [Unreleased]
 
+### 2026-03-30 — Mobile responsiveness and auth routing
+
+**Mobile UI overhaul:**
+- Role-adaptive bottom navigation bar: admin gets category-based tabs (Finanças, Comunicação, Assembleias, Gestão) with per-section sheets; Owner/Tenant gets 5 direct-link tabs
+- Sticky mobile header with condominium name and switcher
+- Desktop sidebar reorganized into matching 4 groups (Finanças, Comunicação, Assembleias, Gestão)
+- Tables replaced with card views on mobile: quotas, expenses, recurring expenses, budget items, documents, livro-caixa, minha-conta quota history
+- Large form modals go full-screen on mobile (expense, announcement, document, meeting, contract, budget, quota generation, maintenance, recurring expense)
+- Responsive grid fixes: conta-gerencia, minha-conta, contactos, livro-caixa, expense page headers
+- Livro-caixa rows reversed (most recent first)
+- Logout button added to Minha Conta page (mobile only, since sidebar is hidden)
+
+**Auth routing (architectural):**
+- Updated `src/proxy.ts` to handle bidirectional auth redirects:
+  - Authenticated users visiting `/`, `/login`, `/registar`, `/recuperar-password` → redirected to `/painel`
+  - Unauthenticated users visiting protected pages → redirected to `/login`
+- Previously only handled the unauthenticated → login direction; returning users had to log in again even with a valid session
+- Simplified `authorized` callback in `auth/config.ts` (routing logic moved to proxy)
+
+**UI cleanup:**
+- Removed non-functional "Lembrar-me" (Remember me) checkbox from login page — JWT sessions last 30 days by default; browser credential managers handle the UX
+
+---
+
 ### 2026-03-26 — Test coverage improvements and painel stat cards
 
 **Tests:**
