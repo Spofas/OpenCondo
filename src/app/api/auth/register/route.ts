@@ -2,9 +2,22 @@ import { NextResponse } from "next/server";
 import { hash } from "bcryptjs";
 import { db } from "@/lib/db";
 import { registerSchema } from "@/lib/validators/auth";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 export async function POST(request: Request) {
   try {
+    const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+    const { allowed, remaining } = checkRateLimit(`register:${ip}`, {
+      maxRequests: 5,
+      windowMs: 15 * 60 * 1000, // 5 attempts per 15 minutes
+    });
+    if (!allowed) {
+      return NextResponse.json(
+        { error: "Demasiadas tentativas. Tente novamente mais tarde." },
+        { status: 429, headers: { "X-RateLimit-Remaining": String(remaining) } }
+      );
+    }
+
     const body = await request.json();
     const parsed = registerSchema.safeParse(body);
 
