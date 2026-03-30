@@ -12,12 +12,9 @@ import {
   type AtaInput,
 } from "@/lib/validators/meeting";
 import { revalidatePath } from "next/cache";
-import { getAdminContext } from "@/lib/auth/admin-context";
+import { withAdmin } from "@/lib/auth/admin-context";
 
-export async function createMeeting(input: MeetingInput) {
-  const ctx = await getAdminContext();
-  if (!ctx) return { error: "Sem permissão" };
-
+export const createMeeting = withAdmin(async (ctx, input: MeetingInput) => {
   const parsed = meetingSchema.safeParse(input);
   if (!parsed.success) {
     return { error: parsed.error.issues[0].message };
@@ -45,12 +42,9 @@ export async function createMeeting(input: MeetingInput) {
   revalidatePath("/assembleia/reunioes");
   revalidatePath("/painel");
   return { success: true };
-}
+});
 
-export async function updateMeetingStatus(meetingId: string, status: string) {
-  const ctx = await getAdminContext();
-  if (!ctx) return { error: "Sem permissão" };
-
+export const updateMeetingStatus = withAdmin(async (ctx, meetingId: string, status: string) => {
   const meeting = await db.meeting.findFirst({
     where: { id: meetingId, condominiumId: ctx.condominiumId },
   });
@@ -65,12 +59,9 @@ export async function updateMeetingStatus(meetingId: string, status: string) {
   revalidatePath("/assembleia/reunioes");
   revalidatePath("/painel");
   return { success: true };
-}
+});
 
-export async function saveAttendance(meetingId: string, input: AttendanceInput) {
-  const ctx = await getAdminContext();
-  if (!ctx) return { error: "Sem permissão" };
-
+export const saveAttendance = withAdmin(async (ctx, meetingId: string, input: AttendanceInput) => {
   const parsed = attendanceSchema.safeParse(input);
   if (!parsed.success) {
     return { error: parsed.error.issues[0].message };
@@ -123,12 +114,9 @@ export async function saveAttendance(meetingId: string, input: AttendanceInput) 
 
   revalidatePath("/assembleia/reunioes");
   return { success: true };
-}
+});
 
-export async function recordVotes(meetingId: string, input: VoteInput) {
-  const ctx = await getAdminContext();
-  if (!ctx) return { error: "Sem permissão" };
-
+export const recordVotes = withAdmin(async (ctx, meetingId: string, input: VoteInput) => {
   const parsed = voteSchema.safeParse(input);
   if (!parsed.success) {
     return { error: parsed.error.issues[0].message };
@@ -178,12 +166,9 @@ export async function recordVotes(meetingId: string, input: VoteInput) {
 
   revalidatePath("/assembleia/reunioes");
   return { success: true };
-}
+});
 
-export async function saveAta(meetingId: string, input: AtaInput) {
-  const ctx = await getAdminContext();
-  if (!ctx) return { error: "Sem permissão" };
-
+export const saveAta = withAdmin(async (ctx, meetingId: string, input: AtaInput) => {
   const parsed = ataSchema.safeParse(input);
   if (!parsed.success) {
     return { error: parsed.error.issues[0].message };
@@ -213,12 +198,9 @@ export async function saveAta(meetingId: string, input: AtaInput) {
   revalidatePath("/assembleia/reunioes");
   revalidatePath("/assembleia/atas");
   return { success: true };
-}
+});
 
-export async function deleteMeeting(meetingId: string) {
-  const ctx = await getAdminContext();
-  if (!ctx) return { error: "Sem permissão" };
-
+export const deleteMeeting = withAdmin(async (ctx, meetingId: string) => {
   const meeting = await db.meeting.findFirst({
     where: { id: meetingId, condominiumId: ctx.condominiumId },
   });
@@ -231,4 +213,4 @@ export async function deleteMeeting(meetingId: string) {
   revalidatePath("/assembleia/atas");
   revalidatePath("/painel");
   return { success: true };
-}
+});

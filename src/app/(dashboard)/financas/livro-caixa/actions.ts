@@ -1,7 +1,5 @@
 "use server";
 
-import { cookies } from "next/headers";
-import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import {
   openingBalanceSchema,
@@ -10,40 +8,13 @@ import {
   type AdjustmentInput,
 } from "@/lib/validators/ledger";
 import { revalidatePath } from "next/cache";
-
-async function getAdminContext() {
-  const session = await auth();
-  if (!session?.user?.id) return null;
-
-  const cookieStore = await cookies();
-  const condominiumId = cookieStore.get("activeCondominiumId")?.value;
-
-  const membership = condominiumId
-    ? await db.membership.findUnique({
-        where: {
-          userId_condominiumId: {
-            userId: session.user.id,
-            condominiumId,
-          },
-        },
-      })
-    : await db.membership.findFirst({
-        where: { userId: session.user.id, isActive: true },
-      });
-
-  if (!membership || membership.role !== "ADMIN") return null;
-
-  return { userId: session.user.id, condominiumId: membership.condominiumId };
-}
+import { withAdmin } from "@/lib/auth/admin-context";
 
 /**
  * Set or update the opening balance for this condominium.
  * Only one OPENING_BALANCE entry is allowed per condo.
  */
-export async function setOpeningBalance(input: OpeningBalanceInput) {
-  const ctx = await getAdminContext();
-  if (!ctx) return { error: "Sem permissão" };
-
+export const setOpeningBalance = withAdmin(async (ctx, input: OpeningBalanceInput) => {
   const parsed = openingBalanceSchema.safeParse(input);
   if (!parsed.success) return { error: parsed.error.issues[0].message };
 
@@ -73,15 +44,12 @@ export async function setOpeningBalance(input: OpeningBalanceInput) {
 
   revalidatePath("/financas/livro-caixa");
   return { success: true };
-}
+});
 
 /**
  * Add a manual adjustment (positive or negative).
  */
-export async function addAdjustment(input: AdjustmentInput) {
-  const ctx = await getAdminContext();
-  if (!ctx) return { error: "Sem permissão" };
-
+export const addAdjustment = withAdmin(async (ctx, input: AdjustmentInput) => {
   const parsed = adjustmentSchema.safeParse(input);
   if (!parsed.success) return { error: parsed.error.issues[0].message };
 
@@ -99,16 +67,13 @@ export async function addAdjustment(input: AdjustmentInput) {
 
   revalidatePath("/financas/livro-caixa");
   return { success: true };
-}
+});
 
 /**
  * Delete a manual adjustment. OPENING_BALANCE, QUOTA_PAYMENT, and EXPENSE
  * transactions cannot be deleted here — only ADJUSTMENT entries.
  */
-export async function deleteAdjustment(transactionId: string) {
-  const ctx = await getAdminContext();
-  if (!ctx) return { error: "Sem permissão" };
-
+export const deleteAdjustment = withAdmin(async (ctx, transactionId: string) => {
   const tx = await db.transaction.findFirst({
     where: { id: transactionId, condominiumId: ctx.condominiumId },
   });
@@ -121,4 +86,4 @@ export async function deleteAdjustment(transactionId: string) {
 
   revalidatePath("/financas/livro-caixa");
   return { success: true };
-}
+});

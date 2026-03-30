@@ -1,17 +1,11 @@
-import { redirect } from "next/navigation";
-import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { getUserMembershipWithCondo } from "@/lib/auth/get-membership";
+import { requireMembershipWithCondo } from "@/lib/auth/require-membership";
 import { InviteManager } from "./invite-manager";
 import { UnitManager } from "./unit-manager";
 import { CondoInfoCard } from "./condo-info-card";
 
 export default async function SettingsPage() {
-  const session = await auth();
-  if (!session?.user?.id) redirect("/login");
-
-  const membership = await getUserMembershipWithCondo(session.user.id);
-  if (!membership) redirect("/iniciar");
+  const { membership } = await requireMembershipWithCondo();
 
   // Get members of this condominium
   const members = await db.membership.findMany({

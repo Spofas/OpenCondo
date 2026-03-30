@@ -35,10 +35,10 @@ export function RecurringExpensePageClient({
     setMessage("");
     setError("");
     const result = await generateRecurringExpenses(currentPeriod);
-    if (result.error) {
+    if (!result.success) {
       setError(result.error);
-    } else if (result.message) {
-      setMessage(result.message);
+    } else if ("message" in result) {
+      setMessage(result.message as string);
     }
     setGenerating(false);
   }

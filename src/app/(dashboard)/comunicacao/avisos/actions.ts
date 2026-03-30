@@ -3,12 +3,9 @@
 import { db } from "@/lib/db";
 import { announcementSchema, type AnnouncementInput } from "@/lib/validators/announcement";
 import { revalidatePath } from "next/cache";
-import { getAdminContext } from "@/lib/auth/admin-context";
+import { withAdmin } from "@/lib/auth/admin-context";
 
-export async function createAnnouncement(input: AnnouncementInput) {
-  const ctx = await getAdminContext();
-  if (!ctx) return { error: "Sem permissão" };
-
+export const createAnnouncement = withAdmin(async (ctx, input: AnnouncementInput) => {
   const parsed = announcementSchema.safeParse(input);
   if (!parsed.success) {
     return { error: parsed.error.issues[0].message };
@@ -30,12 +27,9 @@ export async function createAnnouncement(input: AnnouncementInput) {
   revalidatePath("/comunicacao/avisos");
   revalidatePath("/painel");
   return { success: true };
-}
+});
 
-export async function updateAnnouncement(announcementId: string, input: AnnouncementInput) {
-  const ctx = await getAdminContext();
-  if (!ctx) return { error: "Sem permissão" };
-
+export const updateAnnouncement = withAdmin(async (ctx, announcementId: string, input: AnnouncementInput) => {
   const parsed = announcementSchema.safeParse(input);
   if (!parsed.success) {
     return { error: parsed.error.issues[0].message };
@@ -61,12 +55,9 @@ export async function updateAnnouncement(announcementId: string, input: Announce
 
   revalidatePath("/comunicacao/avisos");
   return { success: true };
-}
+});
 
-export async function deleteAnnouncement(announcementId: string) {
-  const ctx = await getAdminContext();
-  if (!ctx) return { error: "Sem permissão" };
-
+export const deleteAnnouncement = withAdmin(async (ctx, announcementId: string) => {
   const announcement = await db.announcement.findFirst({
     where: { id: announcementId, condominiumId: ctx.condominiumId },
   });
@@ -78,12 +69,9 @@ export async function deleteAnnouncement(announcementId: string) {
   revalidatePath("/comunicacao/avisos");
   revalidatePath("/painel");
   return { success: true };
-}
+});
 
-export async function togglePin(announcementId: string) {
-  const ctx = await getAdminContext();
-  if (!ctx) return { error: "Sem permissão" };
-
+export const togglePin = withAdmin(async (ctx, announcementId: string) => {
   const announcement = await db.announcement.findFirst({
     where: { id: announcementId, condominiumId: ctx.condominiumId },
   });
@@ -97,4 +85,4 @@ export async function togglePin(announcementId: string) {
 
   revalidatePath("/comunicacao/avisos");
   return { success: true };
-}
+});

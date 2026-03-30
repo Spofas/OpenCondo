@@ -3,12 +3,9 @@
 import { db } from "@/lib/db";
 import { contractSchema, type ContractInput } from "@/lib/validators/contract";
 import { revalidatePath } from "next/cache";
-import { getAdminContext } from "@/lib/auth/admin-context";
+import { withAdmin } from "@/lib/auth/admin-context";
 
-export async function createContract(input: ContractInput) {
-  const ctx = await getAdminContext();
-  if (!ctx) return { error: "Sem permissão" };
-
+export const createContract = withAdmin(async (ctx, input: ContractInput) => {
   const parsed = contractSchema.safeParse(input);
   if (!parsed.success) {
     return { error: parsed.error.issues[0].message };
@@ -58,12 +55,9 @@ export async function createContract(input: ContractInput) {
 
   revalidatePath("/contratos");
   return { success: true };
-}
+});
 
-export async function updateContract(contractId: string, input: ContractInput) {
-  const ctx = await getAdminContext();
-  if (!ctx) return { error: "Sem permissão" };
-
+export const updateContract = withAdmin(async (ctx, contractId: string, input: ContractInput) => {
   const parsed = contractSchema.safeParse(input);
   if (!parsed.success) {
     return { error: parsed.error.issues[0].message };
@@ -102,12 +96,9 @@ export async function updateContract(contractId: string, input: ContractInput) {
 
   revalidatePath("/contratos");
   return { success: true };
-}
+});
 
-export async function updateContractStatus(contractId: string, status: string) {
-  const ctx = await getAdminContext();
-  if (!ctx) return { error: "Sem permissão" };
-
+export const updateContractStatus = withAdmin(async (ctx, contractId: string, status: string) => {
   const contract = await db.contract.findFirst({
     where: { id: contractId, condominiumId: ctx.condominiumId },
   });
@@ -123,12 +114,9 @@ export async function updateContractStatus(contractId: string, status: string) {
 
   revalidatePath("/contratos");
   return { success: true };
-}
+});
 
-export async function deleteContract(contractId: string) {
-  const ctx = await getAdminContext();
-  if (!ctx) return { error: "Sem permissão" };
-
+export const deleteContract = withAdmin(async (ctx, contractId: string) => {
   const contract = await db.contract.findFirst({
     where: { id: contractId, condominiumId: ctx.condominiumId },
   });
@@ -139,4 +127,4 @@ export async function deleteContract(contractId: string) {
 
   revalidatePath("/contratos");
   return { success: true };
-}
+});

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useOptimistic, useTransition } from "react";
 import { Megaphone, Pin, Edit2, Trash2, Eye } from "lucide-react";
 import { deleteAnnouncement, togglePin } from "./actions";
 import { CATEGORY_LABELS } from "@/lib/validators/announcement";
@@ -27,21 +27,42 @@ export function AnnouncementList({
 }) {
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [actionError, setActionError] = useState("");
+  const [, startTransition] = useTransition();
+
+  type OptimisticAction =
+    | { type: "delete"; id: string }
+    | { type: "togglePin"; id: string };
+
+  const [optimisticAnnouncements, addOptimistic] = useOptimistic(
+    announcements,
+    (state, action: OptimisticAction) => {
+      if (action.type === "delete") return state.filter((a) => a.id !== action.id);
+      if (action.type === "togglePin")
+        return state.map((a) => (a.id === action.id ? { ...a, pinned: !a.pinned } : a));
+      return state;
+    }
+  );
 
   async function handleDelete(id: string) {
     setActionError("");
-    const result = await deleteAnnouncement(id);
-    if (result.error) setActionError(result.error);
     setConfirmDelete(null);
+    startTransition(async () => {
+      addOptimistic({ type: "delete", id });
+      const result = await deleteAnnouncement(id);
+      if (result.error) setActionError(result.error);
+    });
   }
 
   async function handleTogglePin(id: string) {
     setActionError("");
-    const result = await togglePin(id);
-    if (result.error) setActionError(result.error);
+    startTransition(async () => {
+      addOptimistic({ type: "togglePin", id });
+      const result = await togglePin(id);
+      if (result.error) setActionError(result.error);
+    });
   }
 
-  if (announcements.length === 0) {
+  if (optimisticAnnouncements.length === 0) {
     return (
       <div className="rounded-xl border border-border bg-card">
         <div className="flex h-64 flex-col items-center justify-center gap-3 text-muted-foreground">
@@ -54,7 +75,7 @@ export function AnnouncementList({
   }
 
   // Pinned first, then by date
-  const sorted = [...announcements].sort((a, b) => {
+  const sorted = [...optimisticAnnouncements].sort((a, b) => {
     if (a.pinned && !b.pinned) return -1;
     if (!a.pinned && b.pinned) return 1;
     return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();

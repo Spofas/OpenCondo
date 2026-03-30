@@ -29,6 +29,9 @@ interface Props {
   hasOpeningBalance: boolean;
   from: string;
   to: string;
+  page: number;
+  totalPages: number;
+  totalEntries: number;
 }
 
 const TYPE_LABELS: Record<string, string> = {
@@ -63,6 +66,9 @@ export function LivroCaixaPageClient({
   hasOpeningBalance,
   from,
   to,
+  page,
+  totalPages,
+  totalEntries,
 }: Props) {
   const router = useRouter();
   const [showOpeningForm, setShowOpeningForm] = useState(false);
@@ -115,7 +121,11 @@ export function LivroCaixaPageClient({
 
   function handleFilter(e: React.FormEvent) {
     e.preventDefault();
-    router.push(`/financas/livro-caixa?from=${filterFrom}&to=${filterTo}`);
+    router.push(`/financas/livro-caixa?from=${filterFrom}&to=${filterTo}&page=1`);
+  }
+
+  function navigateToPage(p: number) {
+    router.push(`/financas/livro-caixa?from=${filterFrom}&to=${filterTo}&page=${p}`);
   }
 
   // Compute running balance rows
@@ -308,6 +318,31 @@ export function LivroCaixaPageClient({
           </span>
         </div>
       </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between rounded-xl border border-border bg-card px-4 py-3">
+          <span className="text-sm text-muted-foreground">
+            {totalEntries} movimento{totalEntries !== 1 ? "s" : ""} · Página {page} de {totalPages}
+          </span>
+          <div className="flex gap-1">
+            <button
+              onClick={() => navigateToPage(page - 1)}
+              disabled={page <= 1}
+              className="rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-foreground hover:bg-secondary disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              Anterior
+            </button>
+            <button
+              onClick={() => navigateToPage(page + 1)}
+              disabled={page >= totalPages}
+              className="rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-foreground hover:bg-secondary disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              Seguinte
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Opening balance modal */}
       {showOpeningForm && (

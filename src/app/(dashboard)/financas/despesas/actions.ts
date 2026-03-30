@@ -3,12 +3,9 @@
 import { db } from "@/lib/db";
 import { expenseSchema, type ExpenseInput } from "@/lib/validators/expense";
 import { revalidatePath } from "next/cache";
-import { getAdminContext } from "@/lib/auth/admin-context";
+import { withAdmin } from "@/lib/auth/admin-context";
 
-export async function createExpense(input: ExpenseInput) {
-  const ctx = await getAdminContext();
-  if (!ctx) return { error: "Sem permissão" };
-
+export const createExpense = withAdmin(async (ctx, input: ExpenseInput) => {
   const parsed = expenseSchema.safeParse(input);
   if (!parsed.success) {
     return { error: parsed.error.issues[0].message };
@@ -43,12 +40,9 @@ export async function createExpense(input: ExpenseInput) {
   revalidatePath("/financas/livro-caixa");
   revalidatePath("/painel");
   return { success: true };
-}
+});
 
-export async function updateExpense(expenseId: string, input: ExpenseInput) {
-  const ctx = await getAdminContext();
-  if (!ctx) return { error: "Sem permissão" };
-
+export const updateExpense = withAdmin(async (ctx, expenseId: string, input: ExpenseInput) => {
   const parsed = expenseSchema.safeParse(input);
   if (!parsed.success) {
     return { error: parsed.error.issues[0].message };
@@ -87,12 +81,9 @@ export async function updateExpense(expenseId: string, input: ExpenseInput) {
   revalidatePath("/financas/livro-caixa");
   revalidatePath("/painel");
   return { success: true };
-}
+});
 
-export async function deleteExpense(expenseId: string) {
-  const ctx = await getAdminContext();
-  if (!ctx) return { error: "Sem permissão" };
-
+export const deleteExpense = withAdmin(async (ctx, expenseId: string) => {
   const expense = await db.expense.findFirst({
     where: { id: expenseId, condominiumId: ctx.condominiumId, deletedAt: null },
   });
@@ -115,4 +106,4 @@ export async function deleteExpense(expenseId: string) {
   revalidatePath("/financas/livro-caixa");
   revalidatePath("/painel");
   return { success: true };
-}
+});
