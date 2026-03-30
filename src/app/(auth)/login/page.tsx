@@ -20,20 +20,26 @@ export default function LoginPage() {
   async function onSubmit(data: LoginInput) {
     setServerError("");
 
-    const result = await signIn("credentials", {
-      email: data.email,
-      password: data.password,
-      redirect: false,
-    });
+    try {
+      const result = await signIn("credentials", {
+        email: data.email,
+        password: data.password,
+        redirect: false,
+      });
 
-    if (result?.error) {
-      setServerError("Email ou palavra-passe incorretos");
-      return;
+      if (result?.error) {
+        setServerError("Email ou palavra-passe incorretos");
+        return;
+      }
+
+      // Hard navigation so the proxy re-evaluates with the fresh session cookie.
+      // The dashboard layout handles activeCondominiumId fallback automatically.
+      window.location.href = "/painel";
+    } catch (err) {
+      setServerError(
+        err instanceof Error ? err.message : "Erro inesperado ao iniciar sessão"
+      );
     }
-
-    // Hard navigation so the proxy re-evaluates with the fresh session cookie.
-    // The dashboard layout handles activeCondominiumId fallback automatically.
-    window.location.href = "/painel";
   }
 
   return (
