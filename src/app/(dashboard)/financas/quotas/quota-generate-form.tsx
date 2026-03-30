@@ -73,14 +73,14 @@ export function QuotaGenerateForm({
 
     const result = await generateQuotas(data);
 
-    if (result.error) {
+    if (!result.success) {
       setError(result.error);
       setIsSubmitting(false);
       return;
     }
 
-    if (result.message) {
-      setSuccessMsg(result.message);
+    if ("message" in result) {
+      setSuccessMsg(result.message as string);
     }
 
     // Close after a short delay so user can see success message

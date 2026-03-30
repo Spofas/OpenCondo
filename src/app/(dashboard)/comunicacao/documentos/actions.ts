@@ -3,12 +3,9 @@
 import { db } from "@/lib/db";
 import { documentSchema, type DocumentInput } from "@/lib/validators/document";
 import { revalidatePath } from "next/cache";
-import { getAdminContext } from "@/lib/auth/admin-context";
+import { withAdmin } from "@/lib/auth/admin-context";
 
-export async function createDocument(input: DocumentInput) {
-  const ctx = await getAdminContext();
-  if (!ctx) return { error: "Sem permissão" };
-
+export const createDocument = withAdmin(async (ctx, input: DocumentInput) => {
   const parsed = documentSchema.safeParse(input);
   if (!parsed.success) {
     return { error: parsed.error.issues[0].message };
@@ -30,12 +27,9 @@ export async function createDocument(input: DocumentInput) {
 
   revalidatePath("/comunicacao/documentos");
   return { success: true };
-}
+});
 
-export async function updateDocument(documentId: string, input: DocumentInput) {
-  const ctx = await getAdminContext();
-  if (!ctx) return { error: "Sem permissão" };
-
+export const updateDocument = withAdmin(async (ctx, documentId: string, input: DocumentInput) => {
   const parsed = documentSchema.safeParse(input);
   if (!parsed.success) {
     return { error: parsed.error.issues[0].message };
@@ -63,12 +57,9 @@ export async function updateDocument(documentId: string, input: DocumentInput) {
 
   revalidatePath("/comunicacao/documentos");
   return { success: true };
-}
+});
 
-export async function deleteDocument(documentId: string) {
-  const ctx = await getAdminContext();
-  if (!ctx) return { error: "Sem permissão" };
-
+export const deleteDocument = withAdmin(async (ctx, documentId: string) => {
   const doc = await db.document.findFirst({
     where: { id: documentId, condominiumId: ctx.condominiumId },
   });
@@ -79,4 +70,4 @@ export async function deleteDocument(documentId: string) {
 
   revalidatePath("/comunicacao/documentos");
   return { success: true };
-}
+});

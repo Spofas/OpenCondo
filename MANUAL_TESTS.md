@@ -332,6 +332,28 @@ This test requires access to the deployment environment (Vercel) or a local serv
 
 ---
 
+## 22. Auth Routing (Proxy)
+
+- [ ] Visit `/login` while authenticated → should redirect to `/painel`
+- [ ] Visit `/registar` while authenticated → should redirect to `/painel`
+- [ ] Visit `/` while authenticated → should redirect to `/painel`
+- [ ] Visit `/painel` while unauthenticated → should redirect to `/login`
+- [ ] Log out, then refresh `/login` → should stay on `/login` (not redirect to `/painel`)
+- [ ] Log in with valid credentials → should navigate to `/painel` automatically
+
+---
+
+## 23. Mobile Navigation
+
+- [ ] Bottom navigation bar visible on mobile, hidden on desktop
+- [ ] Admin sees category-based tabs (Finanças, Comunicação, Assembleias, Gestão)
+- [ ] Owner/Tenant sees direct-link tabs (Dashboard, Quotas, Avisos, Reuniões, Minha Conta)
+- [ ] Tapping a category tab opens a sheet with section links
+- [ ] Mobile header shows condominium name
+- [ ] Logout button visible on Minha Conta page (mobile only)
+
+---
+
 ## Notes
 
 Use this section to record anything unexpected during testing:
@@ -344,4 +366,4 @@ Use this section to record anything unexpected during testing:
 
 ---
 
-*Last updated: 2026-03-26*
+*Last updated: 2026-03-30*

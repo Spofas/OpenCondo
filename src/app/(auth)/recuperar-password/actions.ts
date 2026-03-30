@@ -2,8 +2,10 @@
 
 import { randomBytes } from "crypto";
 import { hash } from "bcryptjs";
+import { headers } from "next/headers";
 import { db } from "@/lib/db";
 import { sendPasswordResetEmail } from "@/lib/email";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 /**
  * Generate a password reset token for the given email.
@@ -11,6 +13,16 @@ import { sendPasswordResetEmail } from "@/lib/email";
  * directly so it can be displayed in the UI.
  */
 export async function requestPasswordReset(email: string) {
+  const headerStore = await headers();
+  const ip = headerStore.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+  const { allowed } = checkRateLimit(`reset:${ip}`, {
+    maxRequests: 3,
+    windowMs: 15 * 60 * 1000, // 3 attempts per 15 minutes
+  });
+  if (!allowed) {
+    return { success: true }; // Silent — don't reveal rate limiting to attackers
+  }
+
   const user = await db.user.findUnique({ where: { email } });
 
   // Always return success to avoid leaking which emails are registered.

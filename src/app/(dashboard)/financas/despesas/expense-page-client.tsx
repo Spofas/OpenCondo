@@ -46,8 +46,8 @@ export function ExpensePageClient({
     setMessage("");
     setGenError("");
     const result = await generateRecurringExpenses(currentPeriod);
-    if (result.error) setGenError(result.error);
-    else if (result.message) setMessage(result.message);
+    if (!result.success) setGenError(result.error);
+    else if ("message" in result) setMessage(result.message as string);
     setGenerating(false);
   }
 

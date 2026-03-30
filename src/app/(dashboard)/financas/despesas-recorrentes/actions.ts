@@ -7,12 +7,9 @@ import {
   FREQUENCY_MONTHS,
 } from "@/lib/validators/recurring-expense";
 import { revalidatePath } from "next/cache";
-import { getAdminContext } from "@/lib/auth/admin-context";
+import { withAdmin } from "@/lib/auth/admin-context";
 
-export async function createRecurringExpense(input: RecurringExpenseInput) {
-  const ctx = await getAdminContext();
-  if (!ctx) return { error: "Sem permissão" };
-
+export const createRecurringExpense = withAdmin(async (ctx, input: RecurringExpenseInput) => {
   const parsed = recurringExpenseSchema.safeParse(input);
   if (!parsed.success) {
     return { error: parsed.error.issues[0].message };
@@ -30,15 +27,9 @@ export async function createRecurringExpense(input: RecurringExpenseInput) {
 
   revalidatePath("/financas/despesas-recorrentes");
   return { success: true };
-}
+});
 
-export async function updateRecurringExpense(
-  id: string,
-  input: RecurringExpenseInput
-) {
-  const ctx = await getAdminContext();
-  if (!ctx) return { error: "Sem permissão" };
-
+export const updateRecurringExpense = withAdmin(async (ctx, id: string, input: RecurringExpenseInput) => {
   const parsed = recurringExpenseSchema.safeParse(input);
   if (!parsed.success) {
     return { error: parsed.error.issues[0].message };
@@ -61,12 +52,9 @@ export async function updateRecurringExpense(
 
   revalidatePath("/financas/despesas-recorrentes");
   return { success: true };
-}
+});
 
-export async function toggleRecurringExpense(id: string) {
-  const ctx = await getAdminContext();
-  if (!ctx) return { error: "Sem permissão" };
-
+export const toggleRecurringExpense = withAdmin(async (ctx, id: string) => {
   const existing = await db.recurringExpense.findFirst({
     where: { id, condominiumId: ctx.condominiumId },
   });
@@ -79,12 +67,9 @@ export async function toggleRecurringExpense(id: string) {
 
   revalidatePath("/financas/despesas-recorrentes");
   return { success: true };
-}
+});
 
-export async function deleteRecurringExpense(id: string) {
-  const ctx = await getAdminContext();
-  if (!ctx) return { error: "Sem permissão" };
-
+export const deleteRecurringExpense = withAdmin(async (ctx, id: string) => {
   const existing = await db.recurringExpense.findFirst({
     where: { id, condominiumId: ctx.condominiumId },
   });
@@ -94,16 +79,13 @@ export async function deleteRecurringExpense(id: string) {
 
   revalidatePath("/financas/despesas-recorrentes");
   return { success: true };
-}
+});
 
 /**
  * Generate actual expenses for the given month from active recurring templates.
  * Only generates if not already generated for the period (checks lastGenerated).
  */
-export async function generateRecurringExpenses(period: string) {
-  const ctx = await getAdminContext();
-  if (!ctx) return { error: "Sem permissão" };
-
+export const generateRecurringExpenses = withAdmin(async (ctx, period: string) => {
   // Validate period format YYYY-MM
   if (!/^\d{4}-\d{2}$/.test(period)) {
     return { error: "Período inválido (YYYY-MM)" };
@@ -170,4 +152,4 @@ export async function generateRecurringExpenses(period: string) {
     skipped,
     message: `${generated} despesa${generated !== 1 ? "s" : ""} gerada${generated !== 1 ? "s" : ""} para ${period}`,
   };
-}
+});

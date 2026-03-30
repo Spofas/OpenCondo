@@ -1,15 +1,9 @@
-import { redirect } from "next/navigation";
-import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { getUserMembership } from "@/lib/auth/get-membership";
+import { requireMembership } from "@/lib/auth/require-membership";
 import { CalendarClient, type CalendarEvent } from "./calendar-client";
 
 export default async function CalendarPage() {
-  const session = await auth();
-  if (!session?.user?.id) redirect("/login");
-
-  const membership = await getUserMembership(session.user.id);
-  if (!membership) redirect("/iniciar");
+  const { membership } = await requireMembership();
 
   const condoId = membership.condominiumId;
   const now = new Date();
