@@ -495,6 +495,10 @@ and get back up to speed without needing the conversation history.
 - **Serializers** in `lib/serializers.ts` — call `serializeExpense(e)`, `serializeTransaction(t)`, etc. to convert Prisma Decimals and Dates before passing to client components
 - **Soft deletes** — all `Expense`, `Quota`, `Transaction` writes filter `deletedAt: null`; deletions set `deletedAt = now()` instead of removing rows; cascades handled manually in actions (delete expense → also soft-delete its Transaction)
 
-### What still needs to be built (in order)
-1. **Bulk import UI** — CSV parsing logic exists (`src/lib/csv-import.ts`, with duplicate detection) but has no page/form yet. Needs a page at `/definicoes` or `/onboarding` with file upload + preview + confirm flow.
-2. **Deployment** — See `DEPLOYMENT_GUIDE.md` for Vercel + Neon setup. Remember to set `CRON_SECRET` in env vars.
+### What's been completed but was previously listed as pending
+- **Bulk import UI** — ✅ Complete. File upload + text paste + preview + confirm flow in `/definicoes` (unit-manager.tsx). Auto-invites unregistered owners during import.
+- **Email notifications** — ✅ Complete. Transactional emails for announcements, meetings, quota reminders via Resend. Per-user notification preferences on Minha Conta page. `RESEND_API_KEY` configured in all Vercel environments.
+- **Mobile responsiveness** — ✅ Complete. Bottom nav, card views, full-screen modals, responsive grids.
+
+### What still needs to be built
+1. **Deployment to production** — Staging is live at `staging.opencondo.app`. Production (`main`) deploy pending final review. See `DEPLOYMENT_GUIDE.md` for Vercel + Neon setup.
