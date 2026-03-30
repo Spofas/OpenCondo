@@ -6,6 +6,54 @@ All notable changes to OpenCondo are recorded here in reverse-chronological orde
 
 ## [Unreleased]
 
+### 2026-03-30 — Slug-based URL routing, optimistic UI, and infrastructure
+
+**Slug-based URL routing (architectural):**
+- Migrated all 18 dashboard pages from cookie-based condominium selection to URL path segments: `/c/[slug]/painel`, `/c/[slug]/financas/quotas`, etc.
+- New `CondominiumProvider` React context (`src/lib/condominium-context.tsx`) provides `slug` and `condominiumId` to all client components via `useCondominium()` hook
+- `requireMembership(slug)` server helper resolves condominium from URL slug and verifies membership — replaces cookie-reading pattern
+- `withAdmin`/`withMember` HOFs now accept `condominiumId` as first argument — all ~30 client components updated to pass it from context
+- All 11 feature `actions.ts` files updated with `revalidatePath('/c/')` broad revalidation
+- Legacy catch-all redirect at `src/app/(dashboard)/[...path]/page.tsx` redirects old bookmarked URLs to slug-based routes
+- Slug generation with Portuguese transliteration (ã→a, ç→c, etc.) in `src/lib/utils/slug.ts`
+- Migration `20260330000001_add_condominium_slug`: adds column, backfills from name, handles duplicates, unique index
+- Navigation components (sidebar, mobile header, mobile nav) updated with slug-aware links and condo switching via `router.push`
+- Auth flow (login, onboarding, invite acceptance) returns slug-based URLs
+
+**Shared ModalForm component:**
+- Extracted common modal wrapper (overlay, header, error display, footer) into `src/components/ui/modal-form.tsx`
+- Announcement form refactored as demonstration; 7 remaining forms can follow the same pattern
+
+**Database email retry queue:**
+- New `PendingEmail` model — stores to, subject, html, retries, sentAt, errorMessage
+- `queueEmail()` inserts into queue; `processPendingEmails()` sends batches of 50 with up to 3 retries
+- Non-urgent notifications (announcements, meetings, quota reminders) now queued instead of sent inline
+- Login-critical emails (password reset, invite) still sent directly
+- Cron route (`/api/cron/process`) processes the queue nightly
+- Migration `20260330000002_add_pending_email_queue`
+
+**Calendar URL pagination:**
+- Month/year stored in URL query params (`?month=3&year=2026`) instead of local state
+- Bookmarkable, shareable, survives page refreshes
+
+**Optimistic updates (useOptimistic + useTransition):**
+- 9 list components: contract-list, document-list, maintenance-list, contact-list, recurring-expense-list (delete + toggle), budget-list, meeting-list, announcement-list, expense-list
+
+**Suspense with skeletons:**
+- 6 heavy data pages wrapped in `<Suspense>` with skeleton fallbacks: quotas, livro-caixa, devedores, conta-gerência, reuniões, definições
+
+**Preview deployment fixes:**
+- Added `trustHost: true` to NextAuth config (`src/lib/auth/config.ts`) — required for preview deployments without `NEXTAUTH_URL`
+- Removed server action call (`resolvePostLoginDestination`) after `signIn()` — session cookie timing issue on Vercel; login now navigates to `/painel` and the catch-all redirect resolves the slug server-side
+
+**Tests:**
+- 444 tests passing (33 test files, up from 417/31)
+- New: `src/lib/utils/__tests__/slug.test.ts` (17 tests — slug generation, Portuguese transliteration, uniqueness)
+- New: `src/lib/__tests__/email-queue.test.ts` (10 tests — queue/process/retry logic)
+- Updated: 3 existing test files adapted for slug migration (removed cookie mocks, added condominiumId-first args)
+
+---
+
 ### 2026-03-30 — Mobile responsiveness and auth routing
 
 **Mobile UI overhaul:**
