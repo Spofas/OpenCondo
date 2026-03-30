@@ -118,13 +118,14 @@ export function LivroCaixaPageClient({
     router.push(`/financas/livro-caixa?from=${filterFrom}&to=${filterTo}`);
   }
 
-  // Compute running balance rows
+  // Compute running balance rows (chronological), then reverse for display (most recent first)
   let running = openingBalance;
-  const rows = entries.map((e) => {
+  const rowsChronological = entries.map((e) => {
     running += e.amount;
     return { ...e, runningBalance: running };
   });
   const closingBalance = running;
+  const rows = [...rowsChronological].reverse();
 
   return (
     <div className="space-y-6">
