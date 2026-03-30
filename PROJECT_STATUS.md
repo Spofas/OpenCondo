@@ -1,6 +1,6 @@
 # OpenCondo — Project Status & Architecture Guide
 
-**Last updated:** 2026-03-26
+**Last updated:** 2026-03-30
 **For:** Anyone following along, regardless of programming experience
 
 ---
@@ -158,40 +158,45 @@ src/
 │   ├── (auth)/                   # Auth-related pages (no sidebar)
 │   │   ├── login/                # Login form
 │   │   ├── registar/             # Registration form
+│   │   ├── entrar/               # Invite acceptance flow
 │   │   └── onboarding/           # Condominium setup wizard
-│   │       ├── page.tsx          # The wizard UI (client-side)
-│   │       ├── actions.ts        # Server logic (database writes)
-│   │       └── layout.tsx        # Guards (redirect if already set up)
 │   ├── (dashboard)/              # All authenticated pages (with sidebar)
-│   │   ├── layout.tsx            # Checks login + condominium, shows sidebar
-│   │   ├── actions.ts            # Shared actions (condo switching, invites)
-│   │   ├── painel/               # Dashboard overview
-│   │   ├── financas/
-│   │   │   ├── orcamento/        # Budget management (COMPLETE)
-│   │   │   │   ├── page.tsx      # Server component — fetches budgets from DB
-│   │   │   │   ├── actions.ts    # Server actions (create, update, approve, delete)
-│   │   │   │   ├── budget-form.tsx        # Modal form with dynamic line items
-│   │   │   │   ├── budget-list.tsx        # Expandable budget cards
-│   │   │   │   └── budget-page-client.tsx # Client wrapper (manages modal state)
-│   │   │   ├── quotas/           # Quota management (placeholder)
-│   │   │   └── despesas/         # Expense tracking (placeholder)
-│   │   ├── comunicacao/          # Announcements, maintenance, documents
-│   │   ├── assembleia/           # Meetings, minutes
-│   │   ├── contratos/            # Contract management
-│   │   └── definicoes/           # Settings
-│   └── api/auth/                 # API endpoints
-│       ├── register/             # POST: create new account
-│       └── [...nextauth]/        # NextAuth magic route (handles login/logout)
+│   │   ├── c/[slug]/             # Slug-based multi-tenant routing
+│   │   │   ├── layout.tsx        # Resolves slug → condominium, wraps in CondominiumProvider
+│   │   │   ├── painel/           # Dashboard overview
+│   │   │   ├── financas/
+│   │   │   │   ├── orcamento/    # Budget management
+│   │   │   │   ├── quotas/       # Quota management
+│   │   │   │   ├── despesas/     # Expense tracking + recurring expenses
+│   │   │   │   ├── livro-caixa/  # Cash book
+│   │   │   │   ├── devedores/    # Debtor tracking
+│   │   │   │   └── conta-gerencia/ # Annual financial report
+│   │   │   ├── comunicacao/      # Announcements, maintenance, documents
+│   │   │   ├── assembleia/       # Meetings, minutes, calendar
+│   │   │   ├── contratos/        # Contract management
+│   │   │   ├── minha-conta/      # User settings
+│   │   │   └── definicoes/       # Condominium settings
+│   │   ├── actions.ts            # Shared actions (invites)
+│   │   └── [...path]/page.tsx    # Legacy catch-all redirect (old URLs → /c/{slug}/...)
+│   └── api/                      # API endpoints
+│       ├── cron/process/         # Nightly cron (overdue quotas, recurring expenses, email queue)
+│       └── conta-gerencia/       # PDF export
 ├── components/                   # Reusable UI pieces
-│   ├── layout/sidebar.tsx        # Navigation sidebar
-│   └── providers/session-provider.tsx  # Makes login state available everywhere
+│   ├── layout/sidebar.tsx        # Navigation sidebar (slug-aware links)
+│   └── ui/modal-form.tsx         # Shared modal form wrapper
 ├── lib/                          # Shared logic
-│   ├── auth/config.ts            # Auth rules (lightweight, for proxy)
+│   ├── auth/config.ts            # Auth rules (edge-safe, trustHost)
 │   ├── auth/index.ts             # Auth logic (full, with database)
+│   ├── auth/admin-context.ts     # withAdmin/withMember HOF wrappers
+│   ├── auth/require-membership.ts # requireMembership(slug) — server page helper
+│   ├── condominium-context.tsx   # React context: CondominiumProvider + useCondominium()
 │   ├── db/index.ts               # Database connection
-│   ├── validators/auth.ts        # Email/password validation rules
-│   ├── validators/condominium.ts # Building/unit validation rules
-│   └── validators/budget.ts      # Budget validation + category list
+│   ├── email.ts                  # Direct sends (login, invite) + queued notifications
+│   ├── email-queue.ts            # PendingEmail queue (batch processing, retry logic)
+│   ├── utils/slug.ts             # Slug generation (nameToSlug, generateUniqueSlug)
+│   ├── validators/               # Zod schemas (auth, condominium, budget, quota, expense, etc.)
+│   ├── serializers.ts            # Prisma Decimal→number, Date→string conversions
+│   └── *-calculations.ts         # Pure business logic (quota, debtor, conta-gerencia, cron)
 ├── i18n/messages/pt.json         # All Portuguese text strings
 ├── proxy.ts                      # Route gatekeeper (auth redirects)
 ```
