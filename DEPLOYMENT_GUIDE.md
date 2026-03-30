@@ -85,10 +85,13 @@ Click **Environment Variables** and add these one at a time:
 | `DATABASE_URL` | Your Neon connection string from Step 2 | The string you saved earlier |
 | `NEXTAUTH_URL` | `https://your-project-name.vercel.app` | Vercel will show you the URL after the first deploy — you can update this after |
 | `NEXTAUTH_SECRET` | A random secret string | See below how to generate one |
+| `CRON_SECRET` | A random secret string | See below how to generate one |
 
-**How to generate NEXTAUTH_SECRET:**
+**How to generate NEXTAUTH_SECRET and CRON_SECRET:**
 
-Go to [generate-secret.vercel.app/32](https://generate-secret.vercel.app/32) in your browser. It will show a random string. Copy it and paste it as the value for `NEXTAUTH_SECRET`.
+Go to [generate-secret.vercel.app/32](https://generate-secret.vercel.app/32) in your browser. It will show a random string. Copy it and paste it as the value. Generate a **separate value** for each secret — do not reuse the same string for both.
+
+`CRON_SECRET` protects the nightly background job (`/api/cron/process`) that marks overdue quotas and generates recurring expenses. Vercel sends this secret automatically when it triggers the cron — you just need to set the same value in both Vercel's environment variables and this field.
 
 ### Deploy
 
@@ -193,7 +196,7 @@ When you're ready for real users, here's what to upgrade:
 
 ### "Build failed" on Vercel
 - Click on the failed deployment to see the full error log
-- Most common cause: a missing or incorrect environment variable. Make sure all 3 are set.
+- Most common cause: a missing or incorrect environment variable. Make sure all 4 are set.
 
 ### "Cannot connect to database"
 - Check that `DATABASE_URL` in Vercel matches your Neon connection string exactly
@@ -214,4 +217,4 @@ When you're ready for real users, here's what to upgrade:
 
 ---
 
-*Last updated: 2026-03-20*
+*Last updated: 2026-03-25*

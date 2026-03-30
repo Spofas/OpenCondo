@@ -3,6 +3,8 @@ import { cookies } from "next/headers";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { Sidebar } from "@/components/layout/sidebar";
+import { MobileNav } from "@/components/layout/mobile-nav";
+import { MobileHeader } from "@/components/layout/mobile-header";
 
 export default async function DashboardLayout({
   children,
@@ -49,8 +51,18 @@ export default async function DashboardLayout({
           role: m.role,
         }))}
       />
+      <MobileHeader
+        condominiumName={activeMembership.condominium.name}
+        currentCondominiumId={activeMembership.condominiumId}
+        memberships={allMemberships.map((m) => ({
+          condominiumId: m.condominiumId,
+          condominiumName: m.condominium.name,
+          role: m.role,
+        }))}
+      />
+      <MobileNav userRole={activeMembership.role} />
       <main className="lg:pl-64">
-        <div className="mx-auto max-w-6xl px-4 pb-8 pt-16 sm:px-6 sm:pt-8 lg:px-8">
+        <div className="mx-auto max-w-6xl px-4 pb-24 pt-4 sm:px-6 lg:px-8 lg:pb-8 lg:pt-8">
           {children}
         </div>
       </main>

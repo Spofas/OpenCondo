@@ -13,6 +13,16 @@ vi.mock("next/headers", () => ({
   }),
 }));
 
+// Mock email
+vi.mock("@/lib/email", () => ({
+  sendInviteEmail: vi.fn().mockResolvedValue(undefined),
+}));
+
+// Mock revalidatePath
+vi.mock("next/cache", () => ({
+  revalidatePath: vi.fn(),
+}));
+
 // Mock db
 const mockInviteFindUnique = vi.fn();
 const mockInviteCreate = vi.fn();
@@ -20,6 +30,8 @@ const mockInviteFindMany = vi.fn();
 const mockInviteUpdate = vi.fn();
 const mockMembershipFindUnique = vi.fn();
 const mockMembershipCreate = vi.fn();
+const mockCondominiumFindUnique = vi.fn();
+const mockUnitUpdateMany = vi.fn();
 const mockDbTransaction = vi.fn();
 
 vi.mock("@/lib/db", () => ({
@@ -33,6 +45,12 @@ vi.mock("@/lib/db", () => ({
     membership: {
       findUnique: (...args: unknown[]) => mockMembershipFindUnique(...args),
       create: (...args: unknown[]) => mockMembershipCreate(...args),
+    },
+    condominium: {
+      findUnique: (...args: unknown[]) => mockCondominiumFindUnique(...args),
+    },
+    unit: {
+      updateMany: (...args: unknown[]) => mockUnitUpdateMany(...args),
     },
     $transaction: (...args: unknown[]) => mockDbTransaction(...args),
   },
@@ -120,10 +138,107 @@ describe("joinWithInvite", () => {
       condominium: { name: "Edifício Aurora" },
     });
     mockMembershipFindUnique.mockResolvedValue(null);
-    mockDbTransaction.mockResolvedValue(undefined);
+    // Transaction now receives a callback — execute it with mock tx
+    mockDbTransaction.mockImplementation(async (fn) => {
+      await fn({
+        membership: { create: mockMembershipCreate },
+        invite: { update: mockInviteUpdate },
+        unit: { updateMany: mockUnitUpdateMany },
+      });
+    });
 
     const result = await joinWithInvite("valid-token");
     expect(result).toEqual({ success: true, condominiumName: "Edifício Aurora" });
+    expect(mockMembershipCreate).toHaveBeenCalled();
+    expect(mockInviteUpdate).toHaveBeenCalled();
+  });
+
+  it("auto-assigns units with pendingOwnerEmail on OWNER invite acceptance", async () => {
+    mockAuth.mockResolvedValue({ user: { id: "user-1", email: "joao@email.pt" } });
+    mockInviteFindUnique.mockResolvedValue({
+      id: "inv-1",
+      usedAt: null,
+      expiresAt: new Date(Date.now() + 86400000),
+      email: "joao@email.pt",
+      condominiumId: "condo-1",
+      role: "OWNER",
+      condominium: { name: "Edifício Aurora" },
+    });
+    mockMembershipFindUnique.mockResolvedValue(null);
+    mockDbTransaction.mockImplementation(async (fn) => {
+      await fn({
+        membership: { create: mockMembershipCreate },
+        invite: { update: mockInviteUpdate },
+        unit: { updateMany: mockUnitUpdateMany },
+      });
+    });
+
+    await joinWithInvite("valid-token");
+
+    // Should auto-assign units with matching pendingOwnerEmail
+    expect(mockUnitUpdateMany).toHaveBeenCalledWith({
+      where: {
+        condominiumId: "condo-1",
+        pendingOwnerEmail: "joao@email.pt",
+        ownerId: null,
+      },
+      data: {
+        ownerId: "user-1",
+        pendingOwnerEmail: null,
+      },
+    });
+  });
+
+  it("does NOT auto-assign units for TENANT invites", async () => {
+    mockAuth.mockResolvedValue({ user: { id: "user-1", email: "joao@email.pt" } });
+    mockInviteFindUnique.mockResolvedValue({
+      id: "inv-1",
+      usedAt: null,
+      expiresAt: new Date(Date.now() + 86400000),
+      email: "joao@email.pt",
+      condominiumId: "condo-1",
+      role: "TENANT",
+      condominium: { name: "Edifício Aurora" },
+    });
+    mockMembershipFindUnique.mockResolvedValue(null);
+    mockDbTransaction.mockImplementation(async (fn) => {
+      await fn({
+        membership: { create: mockMembershipCreate },
+        invite: { update: mockInviteUpdate },
+        unit: { updateMany: mockUnitUpdateMany },
+      });
+    });
+
+    await joinWithInvite("valid-token");
+
+    // Should NOT call unit.updateMany for TENANT role
+    expect(mockUnitUpdateMany).not.toHaveBeenCalled();
+  });
+
+  it("does NOT auto-assign units for invites without email restriction", async () => {
+    mockAuth.mockResolvedValue({ user: { id: "user-1", email: "joao@email.pt" } });
+    mockInviteFindUnique.mockResolvedValue({
+      id: "inv-1",
+      usedAt: null,
+      expiresAt: new Date(Date.now() + 86400000),
+      email: null, // not email-restricted
+      condominiumId: "condo-1",
+      role: "OWNER",
+      condominium: { name: "Edifício Aurora" },
+    });
+    mockMembershipFindUnique.mockResolvedValue(null);
+    mockDbTransaction.mockImplementation(async (fn) => {
+      await fn({
+        membership: { create: mockMembershipCreate },
+        invite: { update: mockInviteUpdate },
+        unit: { updateMany: mockUnitUpdateMany },
+      });
+    });
+
+    await joinWithInvite("valid-token");
+
+    // Should NOT call unit.updateMany when invite has no email
+    expect(mockUnitUpdateMany).not.toHaveBeenCalled();
   });
 });
 
@@ -147,6 +262,7 @@ describe("createInvite", () => {
   it("creates invite and returns token", async () => {
     mockAuth.mockResolvedValue({ user: { id: "user-1" } });
     mockMembershipFindUnique.mockResolvedValue({ role: "ADMIN" });
+    mockCondominiumFindUnique.mockResolvedValue({ name: "Edifício Teste" });
     mockInviteCreate.mockResolvedValue({ token: "abc-123" });
 
     const result = await createInvite({ condominiumId: "c1", role: "OWNER" });

@@ -2,6 +2,16 @@
 
 Portuguese condominium management platform built with Next.js 16, Prisma, PostgreSQL, and Tailwind CSS.
 
+## Active branch
+
+All development happens on `claude/opencondo-development-Ch14I`. Do not create new branches — work on this branch, commit, and push here. PRs go from this branch into `develop` or `main`.
+
+## Session start
+
+At the beginning of every session, read these two files before doing anything else:
+- `PROJECT_STATUS.md` — current branch, build state, architecture, key patterns, gotchas, and what still needs building
+- `CHANGELOG.md` — what changed in the most recent sessions (read top-to-bottom, stop after the third entry)
+
 ## Quick Reference
 
 ```bash
@@ -164,17 +174,45 @@ Admin checks use `getAdminContext()` in server actions. View-level access is con
 
 ### Branch strategy
 
-| Branch | Purpose | Merges into |
-|--------|---------|-------------|
-| `main` | Stable, deployable code. Always working. | — |
-| `claude/<feature>-<id>` | Individual feature work (AI sessions) | `main` (via PR) |
+| Branch | Purpose | Merges into | Deploys to |
+|--------|---------|-------------|------------|
+| `main` | Stable, deployable code. Always working. | — | Production (Vercel + Neon `main`) |
+| `develop` | Integration branch for staging | `main` (via PR) | Staging (Vercel Preview + Neon `develop`) |
+| `claude/opencondo-development-Ch14I` | All Claude development work | `develop` (via PR) | — |
 
 **Workflow:**
-1. Claude develops on `claude/<feature>-<id>` branches
-2. When a feature/phase is complete, Claude creates a **PR** → `main`
-3. The maintainer reviews and merges the PR on GitHub
+1. Claude develops on `claude/opencondo-development-Ch14I` (single branch, no new branches)
+2. When a feature/phase is complete, Claude creates a **PR** → `develop`
+3. The maintainer reviews, merges the PR on GitHub, and promotes `develop` → `main` when ready
 
-> Note: The remote only allows pushes to `claude/` branches. Merging into `main` must be done by the maintainer (via GitHub PR merge).
+> Note: The remote only allows pushes to `claude/` branches. Merging into `develop` or `main` must be done by the maintainer (via GitHub PR merge).
+
+### Multi-environment setup (Neon + Vercel)
+
+The project runs two live environments backed by separate databases:
+
+| Environment | Git branch | Vercel env | Neon branch | URL |
+|-------------|------------|------------|-------------|-----|
+| Production | `main` | Production | `main` | `opencondo.app` |
+| Staging | `develop` | Preview | `develop` | `staging.opencondo.app` |
+
+**Neon database branching:**
+- Neon supports git-like DB branching — the `develop` branch is an isolated copy of production
+- Schema migrations run independently on each branch
+- To create the staging DB branch: Neon Console → Branches → "New branch" from `main`, name it `develop`
+
+**Vercel environment variables:**
+- `DATABASE_URL` is set **twice** — once per Vercel environment scope:
+  - **Production** scope → Neon `main` branch connection string
+  - **Preview** scope → Neon `develop` branch connection string
+- All other env vars (`NEXTAUTH_SECRET`, `NEXTAUTH_URL`, etc.) should also be scoped appropriately
+- `NEXTAUTH_URL` for Preview should point to `staging.opencondo.app` (or the preview URL)
+
+**Migration workflow across environments:**
+- Migrations applied to `develop` branch DB when staging deploys
+- Migrations applied to `main` branch DB when production deploys
+- Vercel runs `prisma migrate deploy` automatically before each build (`vercel.json`)
+- Test migrations on staging first before merging to `main`
 
 ### Conventional Commits
 

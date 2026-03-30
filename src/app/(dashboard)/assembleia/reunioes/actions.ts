@@ -13,6 +13,7 @@ import {
 } from "@/lib/validators/meeting";
 import { revalidatePath } from "next/cache";
 import { getAdminContext } from "@/lib/auth/admin-context";
+import { sendMeetingNotification } from "@/lib/email";
 
 export async function createMeeting(input: MeetingInput) {
   const ctx = await getAdminContext();
@@ -25,6 +26,11 @@ export async function createMeeting(input: MeetingInput) {
 
   const { date, time, location, type, agendaItems } = parsed.data;
   const dateTime = new Date(`${date}T${time}`);
+
+  const condo = await db.condominium.findUnique({
+    where: { id: ctx.condominiumId },
+    select: { name: true },
+  });
 
   await db.meeting.create({
     data: {
@@ -41,6 +47,15 @@ export async function createMeeting(input: MeetingInput) {
       },
     },
   });
+
+  // Send email notifications (fire-and-forget)
+  sendMeetingNotification(
+    ctx.condominiumId,
+    condo?.name ?? "",
+    dateTime,
+    location,
+    type as "ORDINARIA" | "EXTRAORDINARIA"
+  ).catch(() => {});
 
   revalidatePath("/assembleia/reunioes");
   revalidatePath("/painel");

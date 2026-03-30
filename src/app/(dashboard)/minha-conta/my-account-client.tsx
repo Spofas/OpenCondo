@@ -11,7 +11,9 @@ import {
   Download,
   ChevronDown,
   ChevronUp,
+  LogOut,
 } from "lucide-react";
+import { signOut } from "next-auth/react";
 
 interface UnitInfo {
   id: string;
@@ -144,6 +146,20 @@ export function MyAccountClient({
           </div>
         </div>
 
+        {/* Logout — visible on mobile where sidebar is hidden */}
+        <div className="lg:hidden">
+          <button
+            onClick={async () => {
+              await signOut({ redirect: false });
+              window.location.href = "/login";
+            }}
+            className="flex w-full items-center justify-center gap-2 rounded-xl border border-border bg-card px-4 py-3 text-sm font-medium text-destructive hover:bg-destructive/5 transition-colors"
+          >
+            <LogOut size={16} />
+            Terminar sessão
+          </button>
+        </div>
+
         {/* Units */}
         {units.length > 0 && (
           <div className="rounded-xl border border-border bg-card p-6">
@@ -179,7 +195,7 @@ export function MyAccountClient({
         )}
 
         {/* Financial summary */}
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="rounded-xl border border-border bg-card p-4">
             <p className="text-xs text-muted-foreground">Pendente</p>
             <p className="mt-1 text-xl font-semibold text-amber-600">
@@ -215,7 +231,44 @@ export function MyAccountClient({
             </div>
           ) : (
             <>
-              <div className="overflow-x-auto">
+              {/* Mobile cards */}
+              <div className="space-y-3 md:hidden">
+                {displayQuotas.map((q) => (
+                  <div key={q.id} className="rounded-lg border border-border/50 bg-background p-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium text-foreground">{q.unitIdentifier}</span>
+                        <span className="text-xs text-muted-foreground">{formatPeriod(q.period)}</span>
+                      </div>
+                      <StatusBadge status={q.status} />
+                    </div>
+                    <div className="mt-2 flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">
+                        {q.status === "PAID" && q.paymentDate
+                          ? `Pago ${new Date(q.paymentDate).toLocaleDateString("pt-PT")}`
+                          : `Vence ${new Date(q.dueDate).toLocaleDateString("pt-PT")}`}
+                      </span>
+                      <span className="font-medium text-foreground">{formatCurrency(q.amount)}</span>
+                    </div>
+                    {q.status === "PAID" && (
+                      <div className="mt-2 flex justify-end">
+                        <a
+                          href={`/api/receipts/${q.id}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 rounded-lg border border-border px-2 py-1 text-xs font-medium text-primary hover:bg-primary/10"
+                        >
+                          <Download size={12} />
+                          Recibo
+                        </a>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              {/* Desktop table */}
+              <div className="hidden md:block overflow-x-auto">
                 <table className="w-full text-sm min-w-[500px]">
                   <thead>
                     <tr className="border-b border-border text-left text-muted-foreground">
@@ -299,6 +352,7 @@ export function MyAccountClient({
             </>
           )}
         </div>
+
       </div>
     </div>
   );

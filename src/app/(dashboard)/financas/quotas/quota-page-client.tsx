@@ -4,6 +4,8 @@ import { useState } from "react";
 import { Plus } from "lucide-react";
 import { QuotaList } from "./quota-list";
 import { QuotaGenerateForm } from "./quota-generate-form";
+import { DebtorClient } from "../devedores/debtor-client";
+import type { DebtorSummary } from "@/lib/debtor-calculations";
 
 export interface QuotaData {
   id: string;
@@ -25,17 +27,26 @@ export interface UnitData {
   permilagem: number;
 }
 
+type Tab = "quotas" | "devedores";
+
 export function QuotaPageClient({
   quotas,
   units,
   defaultSplitMethod,
   isAdmin,
+  debtorSummary,
+  availableYears,
+  selectedYear,
 }: {
   quotas: QuotaData[];
   units: UnitData[];
   defaultSplitMethod: "PERMILAGEM" | "EQUAL";
   isAdmin: boolean;
+  debtorSummary: DebtorSummary | null;
+  availableYears: string[];
+  selectedYear: string;
 }) {
+  const [activeTab, setActiveTab] = useState<Tab>("quotas");
   const [showForm, setShowForm] = useState(false);
 
   return (
@@ -47,7 +58,7 @@ export function QuotaPageClient({
             Gestão de quotas de condomínio
           </p>
         </div>
-        {isAdmin && (
+        {isAdmin && activeTab === "quotas" && (
           <button
             onClick={() => setShowForm(true)}
             className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
@@ -58,7 +69,44 @@ export function QuotaPageClient({
         )}
       </div>
 
-      <QuotaList quotas={quotas} isAdmin={isAdmin} />
+      {/* Tabs — only shown to admin since debtors is admin-only */}
+      {isAdmin && (
+        <div className="mb-6 flex gap-1 border-b border-border">
+          <button
+            onClick={() => setActiveTab("quotas")}
+            className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-px ${
+              activeTab === "quotas"
+                ? "border-primary text-primary"
+                : "border-transparent text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            Quotas
+          </button>
+          <button
+            onClick={() => setActiveTab("devedores")}
+            className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-px ${
+              activeTab === "devedores"
+                ? "border-primary text-primary"
+                : "border-transparent text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            Devedores
+          </button>
+        </div>
+      )}
+
+      {activeTab === "quotas" && (
+        <QuotaList
+          quotas={quotas}
+          isAdmin={isAdmin}
+          availableYears={availableYears}
+          selectedYear={selectedYear}
+        />
+      )}
+
+      {activeTab === "devedores" && debtorSummary && (
+        <DebtorClient summary={debtorSummary} hideTitle />
+      )}
 
       {showForm && (
         <QuotaGenerateForm

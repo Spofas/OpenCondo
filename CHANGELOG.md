@@ -6,6 +6,80 @@ All notable changes to OpenCondo are recorded here in reverse-chronological orde
 
 ## [Unreleased]
 
+### 2026-03-30 — Mobile responsiveness and auth routing
+
+**Mobile UI overhaul:**
+- Role-adaptive bottom navigation bar: admin gets category-based tabs (Finanças, Comunicação, Assembleias, Gestão) with per-section sheets; Owner/Tenant gets 5 direct-link tabs
+- Sticky mobile header with condominium name and switcher
+- Desktop sidebar reorganized into matching 4 groups (Finanças, Comunicação, Assembleias, Gestão)
+- Tables replaced with card views on mobile: quotas, expenses, recurring expenses, budget items, documents, livro-caixa, minha-conta quota history
+- Large form modals go full-screen on mobile (expense, announcement, document, meeting, contract, budget, quota generation, maintenance, recurring expense)
+- Responsive grid fixes: conta-gerencia, minha-conta, contactos, livro-caixa, expense page headers
+- Livro-caixa rows reversed (most recent first)
+- Logout button added to Minha Conta page (mobile only, since sidebar is hidden)
+
+**Auth routing (architectural):**
+- Updated `src/proxy.ts` to handle bidirectional auth redirects:
+  - Authenticated users visiting `/`, `/login`, `/registar`, `/recuperar-password` → redirected to `/painel`
+  - Unauthenticated users visiting protected pages → redirected to `/login`
+- Previously only handled the unauthenticated → login direction; returning users had to log in again even with a valid session
+- Simplified `authorized` callback in `auth/config.ts` (routing logic moved to proxy)
+
+**UI cleanup:**
+- Removed non-functional "Lembrar-me" (Remember me) checkbox from login page — JWT sessions last 30 days by default; browser credential managers handle the UX
+
+---
+
+### 2026-03-26 — Test coverage improvements and painel stat cards
+
+**Tests:**
+- Extracted `isDueThisPeriod` from the cron route into `src/lib/cron-utils.ts` — pure function, no Next.js dependency, now fully testable
+- Added `src/lib/__tests__/cron-utils.test.ts`: 20+ tests covering MENSAL/TRIMESTRAL/SEMESTRAL/ANUAL/PONTUAL, unknown frequency strings, and agreement with the FREQUENCY_MONTHS-based logic used in scenario tests
+- Tightened `splitByPermilagem` rounding test: `toBeCloseTo(total, 0)` (±0.5 tolerance) replaced with `Math.abs(sum - total) < 0.06` (tight — at most 6 units × €0.005)
+- Added `conta-gerencia` edge case: unbudgeted expenses count in `totalExpenses`, `expensesByCategory`, and `netBalance` but do not appear in `budgetLines`
+- Added `conta-gerencia` edge case: budget lines with no actual spend show `actual: 0` and `variance` equal to the full planned amount
+- Total: 363 tests passing across 27 test files
+
+**Dashboard (painel):**
+- Admin stat cards: Saldo YTD, Receitas YTD, Despesas YTD, Próxima assembleia
+- Owner stat cards: Próxima quota (amount + due date), Próxima assembleia
+- Removed "Em atraso" stat card (covered by attention items section)
+- Removed duplicate upcoming-meeting attention alert (covered by stat card)
+
+**Docs:**
+- Fixed seed to populate `Transaction` records so Livro de Caixa is non-empty
+- Added `CRON_SECRET` to the DEPLOYMENT_GUIDE env vars table
+
+---
+
+### 2026-03-25 — Security, data integrity, and architecture hardening
+
+**Security:**
+- `api/receipts/[quotaId]` — non-admin users can now only download receipts for units they own or rent; previously any condo member could access any receipt
+- CSV import duplicate identifier detection now reports the conflicting line numbers
+
+**Data integrity:**
+- Soft deletes on `Expense`, `Quota`, `Transaction` — records are now flagged with `deletedAt` instead of being permanently removed (migration `20260324224329_add_soft_delete_fields`)
+- Budget update wrapped in `db.$transaction` — items are replaced atomically; no partial state if the operation fails
+- Soft-delete cascades implemented in server actions: deleting an expense also soft-deletes its linked Transaction; undoing a quota payment soft-deletes the payment Transaction
+
+**Performance:**
+- Quotas page now accepts a `?year=` search param — only the selected year's quotas are fetched from the database instead of all historical data
+- Year selector in the quota list navigates via URL instead of filtering all quotas client-side
+
+**Architecture:**
+- New `src/lib/auth/require-membership.ts` — `requireMembership()` centralises the auth + membership boilerplate used by every server page
+- New `src/lib/serializers.ts` — `serializeExpense()`, `serializeTransaction()`, `serializeQuota()`, `serializeRecurringExpense()` centralise Decimal→number and Date→string conversions
+- `findFirst` membership fallback (multi-condo users) now uses `orderBy: { joinedAt: "asc" }` for deterministic results
+- All Prisma queries that read soft-deletable models now filter `deletedAt: null`
+
+**Ops:**
+- New `/api/cron/process` route — nightly job (02:00 UTC via Vercel Cron) marks overdue quotas and generates recurring expenses across all condominiums; protected by `CRON_SECRET` env var
+- `vercel.json` updated to register the cron schedule
+
+**Tests:**
+- Fixed `actions-invite.test.ts` — added missing `db.condominium` mock so the "creates invite and returns token" test no longer throws on `findUnique`
+
 ### 2026-03-19 — Database seed for manual testing
 
 Created `prisma/seed.ts` with realistic data covering all modules:

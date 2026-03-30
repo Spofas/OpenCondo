@@ -23,28 +23,10 @@ export const authConfig: NextAuthConfig = {
       }
       return session;
     },
-    authorized({ auth, request: { nextUrl } }) {
-      const isLoggedIn = !!auth?.user;
-      const protectedPaths = [
-        "/painel",
-        "/financas",
-        "/comunicacao",
-        "/assembleia",
-        "/contratos",
-        "/definicoes",
-        "/onboarding",
-        "/iniciar",
-      ];
-      const isProtected = protectedPaths.some((p) =>
-        nextUrl.pathname.startsWith(p)
-      );
-
-      if (isProtected) {
-        if (isLoggedIn) return true;
-        return false;
-      }
-
-      return true;
+    authorized({ auth }) {
+      // Auth routing is handled by middleware.ts — this callback
+      // only needs to confirm the user object exists for protected routes.
+      return !!auth?.user;
     },
   },
 };

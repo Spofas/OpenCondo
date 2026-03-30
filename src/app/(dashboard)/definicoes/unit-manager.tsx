@@ -1,13 +1,14 @@
 "use client";
 
-import { useState } from "react";
-import { Upload, Home, X } from "lucide-react";
+import { useState, useRef } from "react";
+import { Upload, Home, X, FileUp, Eye } from "lucide-react";
 import {
   importUnitsFromCsv,
   assignUnitMember,
   updateUnitPermilagem,
   updateUnitIdentifier,
 } from "../actions";
+import { parseCsvUnits, type CsvUnitRow } from "@/lib/csv-import";
 
 interface UnitInfo {
   id: string;
@@ -27,6 +28,8 @@ interface MemberInfo {
   userEmail: string;
 }
 
+type ImportStep = "input" | "preview";
+
 export function UnitManager({
   condominiumId,
   units,
@@ -37,17 +40,52 @@ export function UnitManager({
   members: MemberInfo[];
 }) {
   const [showImport, setShowImport] = useState(false);
+  const [importStep, setImportStep] = useState<ImportStep>("input");
   const [csvText, setCsvText] = useState("");
+  const [previewRows, setPreviewRows] = useState<CsvUnitRow[]>([]);
+  const [parseErrors, setParseErrors] = useState<string[]>([]);
   const [importing, setImporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [permilagemErrors, setPermilagemErrors] = useState<Record<string, string>>({});
   const [identifierErrors, setIdentifierErrors] = useState<Record<string, string>>({});
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   function showMsg(type: "error" | "success", msg: string) {
     if (type === "error") { setError(msg); setSuccess(null); }
     else { setSuccess(msg); setError(null); }
     setTimeout(() => { setError(null); setSuccess(null); }, 4000);
+  }
+
+  function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const text = ev.target?.result as string;
+      setCsvText(text);
+    };
+    reader.readAsText(file);
+    // Reset file input so same file can be re-selected
+    e.target.value = "";
+  }
+
+  function handlePreview() {
+    if (!csvText.trim()) return;
+    const { units: parsed, errors } = parseCsvUnits(csvText);
+    setPreviewRows(parsed);
+    setParseErrors(errors);
+    if (parsed.length === 0 && errors.length > 0) {
+      showMsg("error", errors.join("; "));
+      return;
+    }
+    setImportStep("preview");
+  }
+
+  function handleCancelPreview() {
+    setImportStep("input");
+    setPreviewRows([]);
+    setParseErrors([]);
   }
 
   async function handleImport() {
@@ -59,6 +97,7 @@ export function UnitManager({
     else {
       showMsg("success", result.message || "Importação concluída");
       setCsvText(""); setShowImport(false);
+      setImportStep("input"); setPreviewRows([]); setParseErrors([]);
     }
   }
 
@@ -124,34 +163,130 @@ export function UnitManager({
       {/* CSV Import */}
       {showImport && (
         <div className="mb-6 rounded-lg border border-border bg-muted/30 p-4">
-          <h3 className="mb-2 text-sm font-medium text-foreground">Importar frações via CSV</h3>
-          <p className="mb-3 text-xs text-muted-foreground">
-            Formato: identificador;piso;tipologia;permilagem;email
-            <br />
-            Exemplo: R/C Esq;0;T2;150;joao@email.pt
-          </p>
-          <textarea
-            rows={5}
-            value={csvText}
-            onChange={(e) => setCsvText(e.target.value)}
-            placeholder={"R/C Esq;0;T2;150;joao@email.pt\n1.º Dto;1;T3;180;"}
-            className="mb-3 w-full resize-none rounded-lg border border-input bg-background px-3 py-2 font-mono text-xs text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary"
-          />
-          <div className="flex gap-2">
-            <button
-              onClick={handleImport}
-              disabled={importing || !csvText.trim()}
-              className="rounded-lg bg-primary px-4 py-2 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors"
-            >
-              {importing ? "A importar..." : "Importar"}
-            </button>
-            <button
-              onClick={() => { setShowImport(false); setCsvText(""); }}
-              className="rounded-lg border border-border px-4 py-2 text-xs font-medium text-foreground hover:bg-muted transition-colors"
-            >
-              Cancelar
-            </button>
-          </div>
+          {importStep === "input" && (
+            <>
+              <h3 className="mb-2 text-sm font-medium text-foreground">Importar frações via CSV</h3>
+              <p className="mb-3 text-xs text-muted-foreground">
+                Formato: identificador;piso;tipologia;permilagem;email
+                <br />
+                Exemplo: R/C Esq;0;T2;150;joao@email.pt
+              </p>
+
+              {/* File upload */}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".csv,.txt"
+                onChange={handleFileSelect}
+                className="hidden"
+              />
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="mb-3 flex w-full items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border px-4 py-4 text-xs text-muted-foreground hover:border-primary hover:text-primary transition-colors"
+              >
+                <FileUp size={16} />
+                {csvText.trim() ? "Ficheiro carregado — clique para substituir" : "Carregar ficheiro CSV"}
+              </button>
+
+              {/* Or paste */}
+              <p className="mb-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                Ou colar diretamente
+              </p>
+              <textarea
+                rows={5}
+                value={csvText}
+                onChange={(e) => setCsvText(e.target.value)}
+                placeholder={"identificador;piso;tipologia;permilagem;email\nR/C Esq;0;T2;150;joao@email.pt\n1.º Dto;1;T3;180;"}
+                className="mb-3 w-full resize-none rounded-lg border border-input bg-background px-3 py-2 font-mono text-xs text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+              />
+              <div className="flex gap-2">
+                <button
+                  onClick={handlePreview}
+                  disabled={!csvText.trim()}
+                  className="flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors"
+                >
+                  <Eye size={14} />
+                  Pré-visualizar
+                </button>
+                <button
+                  onClick={() => { setShowImport(false); setCsvText(""); setImportStep("input"); }}
+                  className="rounded-lg border border-border px-4 py-2 text-xs font-medium text-foreground hover:bg-muted transition-colors"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </>
+          )}
+
+          {importStep === "preview" && (
+            <>
+              <h3 className="mb-2 text-sm font-medium text-foreground">
+                Pré-visualização — {previewRows.length} fração{previewRows.length !== 1 ? "ões" : ""}
+              </h3>
+
+              {parseErrors.length > 0 && (
+                <div className="mb-3 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700">
+                  <p className="font-medium mb-1">Avisos ({parseErrors.length}):</p>
+                  <ul className="list-disc pl-4 space-y-0.5">
+                    {parseErrors.map((err, i) => <li key={i}>{err}</li>)}
+                  </ul>
+                </div>
+              )}
+
+              {previewRows.length > 0 && (
+                <div className="mb-3 overflow-x-auto rounded-lg border border-border">
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr className="border-b border-border bg-muted/50 text-left text-muted-foreground">
+                        <th className="px-3 py-2 font-medium">Identificação</th>
+                        <th className="px-3 py-2 font-medium">Piso</th>
+                        <th className="px-3 py-2 font-medium">Tipologia</th>
+                        <th className="px-3 py-2 font-medium">Permilagem</th>
+                        <th className="px-3 py-2 font-medium">Email proprietário</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {previewRows.map((row, i) => {
+                        const exists = units.some((u) => u.identifier === row.identifier);
+                        return (
+                          <tr key={i} className={`border-b border-border/50 ${exists ? "bg-amber-50/50" : ""}`}>
+                            <td className="px-3 py-1.5 font-medium">
+                              {row.identifier}
+                              {exists && (
+                                <span className="ml-1.5 text-[10px] text-amber-600">(já existe)</span>
+                              )}
+                            </td>
+                            <td className="px-3 py-1.5 text-muted-foreground">
+                              {row.floor === null ? "—" : row.floor === 0 ? "R/C" : `${row.floor}.º`}
+                            </td>
+                            <td className="px-3 py-1.5 text-muted-foreground">{row.typology || "—"}</td>
+                            <td className="px-3 py-1.5">{row.permilagem}‰</td>
+                            <td className="px-3 py-1.5 text-muted-foreground">{row.ownerEmail || "—"}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleImport}
+                  disabled={importing || previewRows.length === 0}
+                  className="rounded-lg bg-primary px-4 py-2 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors"
+                >
+                  {importing ? "A importar..." : `Importar ${previewRows.length} fração${previewRows.length !== 1 ? "ões" : ""}`}
+                </button>
+                <button
+                  onClick={handleCancelPreview}
+                  className="rounded-lg border border-border px-4 py-2 text-xs font-medium text-foreground hover:bg-muted transition-colors"
+                >
+                  Voltar
+                </button>
+              </div>
+            </>
+          )}
         </div>
       )}
 
