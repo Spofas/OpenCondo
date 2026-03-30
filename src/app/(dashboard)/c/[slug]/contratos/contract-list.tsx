@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useOptimistic, useTransition } from "react";
 import { FileSignature, Edit2, Trash2, AlertTriangle } from "lucide-react";
 import { deleteContract, updateContractStatus } from "./actions";
 import { useCondominium } from "@/lib/condominium-context";
@@ -34,12 +34,25 @@ export function ContractList({
   const { condominiumId } = useCondominium();
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [actionError, setActionError] = useState("");
+  const [, startTransition] = useTransition();
+
+  type OptimisticAction = { type: "delete"; id: string };
+
+  const [optimisticContracts, addOptimistic] = useOptimistic(
+    contracts,
+    (state, action: OptimisticAction) => {
+      if (action.type === "delete") return state.filter((item) => item.id !== action.id);
+      return state;
+    }
+  );
 
   async function handleDelete(id: string) {
-    setActionError("");
-    const result = await deleteContract(condominiumId, id);
-    if (result.error) setActionError(result.error);
     setConfirmDelete(null);
+    startTransition(async () => {
+      addOptimistic({ type: "delete", id });
+      const result = await deleteContract(condominiumId, id);
+      if (result.error) setActionError(result.error);
+    });
   }
 
   async function handleStatusChange(id: string, status: string) {
@@ -48,7 +61,7 @@ export function ContractList({
     if (result.error) setActionError(result.error);
   }
 
-  if (contracts.length === 0) {
+  if (optimisticContracts.length === 0) {
     return (
       <div className="rounded-xl border border-border bg-card">
         <div className="flex h-64 flex-col items-center justify-center gap-3 text-muted-foreground">
@@ -63,7 +76,7 @@ export function ContractList({
   }
 
   // Summary
-  const activeContracts = contracts.filter((c) => c.status === "ATIVO");
+  const activeContracts = optimisticContracts.filter((c) => c.status === "ATIVO");
   const totalAnnualCost = activeContracts.reduce(
     (sum, c) => sum + c.annualCost,
     0
@@ -124,7 +137,7 @@ export function ContractList({
 
       {/* Contract list */}
       <div className="space-y-4">
-        {contracts.map((contract) => (
+        {optimisticContracts.map((contract) => (
           <div
             key={contract.id}
             className="rounded-xl border border-border bg-card p-5"

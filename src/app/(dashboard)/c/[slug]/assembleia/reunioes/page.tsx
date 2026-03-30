@@ -1,14 +1,41 @@
+import { Suspense } from "react";
 import { db } from "@/lib/db";
 import { requireMembership } from "@/lib/auth/require-membership";
 import { MeetingPageClient } from "./meeting-page-client";
 
-export default async function MeetingsPage({ params }: { params: Promise<{ slug: string }> }) {
-  const { slug } = await params;
-  const { membership } = await requireMembership(slug);
+function MeetingsSkeleton() {
+  return (
+    <div className="space-y-4 animate-pulse">
+      <div className="flex justify-between items-center">
+        <div className="h-5 w-32 rounded bg-muted" />
+        <div className="h-9 w-36 rounded-lg bg-muted" />
+      </div>
+      {[1, 2, 3].map((i) => (
+        <div key={i} className="rounded-xl border border-border bg-card p-6">
+          <div className="flex items-center justify-between mb-3">
+            <div className="h-4 w-40 rounded bg-muted" />
+            <div className="h-5 w-20 rounded-full bg-muted" />
+          </div>
+          <div className="space-y-2">
+            <div className="h-3 w-48 rounded bg-muted" />
+            <div className="h-3 w-32 rounded bg-muted" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
 
+async function MeetingsContent({
+  condoId,
+  isAdmin,
+}: {
+  condoId: string;
+  isAdmin: boolean;
+}) {
   const [meetings, units, memberships] = await Promise.all([
     db.meeting.findMany({
-      where: { condominiumId: membership.condominiumId },
+      where: { condominiumId: condoId },
       include: {
         agendaItems: { orderBy: { order: "asc" } },
         attendees: {
@@ -22,12 +49,12 @@ export default async function MeetingsPage({ params }: { params: Promise<{ slug:
       orderBy: { date: "desc" },
     }),
     db.unit.findMany({
-      where: { condominiumId: membership.condominiumId },
+      where: { condominiumId: condoId },
       include: { owner: { select: { name: true } } },
       orderBy: { identifier: "asc" },
     }),
     db.membership.findMany({
-      where: { condominiumId: membership.condominiumId, isActive: true },
+      where: { condominiumId: condoId, isActive: true },
       include: { user: { select: { id: true, name: true } } },
     }),
   ]);
@@ -79,7 +106,21 @@ export default async function MeetingsPage({ params }: { params: Promise<{ slug:
       meetings={serializedMeetings}
       units={serializedUnits}
       members={serializedMembers}
-      isAdmin={membership.role === "ADMIN"}
+      isAdmin={isAdmin}
     />
+  );
+}
+
+export default async function MeetingsPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+  const { membership } = await requireMembership(slug);
+
+  return (
+    <Suspense fallback={<MeetingsSkeleton />}>
+      <MeetingsContent
+        condoId={membership.condominiumId}
+        isAdmin={membership.role === "ADMIN"}
+      />
+    </Suspense>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useOptimistic, useTransition } from "react";
 import { RefreshCw, Edit2, Trash2, Pause, Play } from "lucide-react";
 import { FREQUENCY_LABELS } from "@/lib/validators/recurring-expense";
 import { toggleRecurringExpense, deleteRecurringExpense } from "./actions";
@@ -21,25 +21,43 @@ export function RecurringExpenseList({
   const { condominiumId } = useCondominium();
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [actionError, setActionError] = useState("");
+  const [, startTransition] = useTransition();
+
+  type OptimisticAction =
+    | { type: "delete"; id: string }
+    | { type: "toggle"; id: string };
+
+  const [optimisticTemplates, addOptimistic] = useOptimistic(
+    templates,
+    (state, action: OptimisticAction) => {
+      if (action.type === "delete") return state.filter((item) => item.id !== action.id);
+      if (action.type === "toggle") return state.map((t) => t.id === action.id ? { ...t, isActive: !t.isActive } : t);
+      return state;
+    }
+  );
 
   async function handleToggle(id: string) {
-    setActionError("");
-    const result = await toggleRecurringExpense(condominiumId, id);
-    if (result.error) setActionError(result.error);
+    startTransition(async () => {
+      addOptimistic({ type: "toggle", id });
+      const result = await toggleRecurringExpense(condominiumId, id);
+      if (result.error) setActionError(result.error);
+    });
   }
 
   async function handleDelete(id: string) {
-    setActionError("");
-    const result = await deleteRecurringExpense(condominiumId, id);
-    if (result.error) setActionError(result.error);
     setConfirmDelete(null);
+    startTransition(async () => {
+      addOptimistic({ type: "delete", id });
+      const result = await deleteRecurringExpense(condominiumId, id);
+      if (result.error) setActionError(result.error);
+    });
   }
 
-  const activeTotal = templates
+  const activeTotal = optimisticTemplates
     .filter((t) => t.isActive)
     .reduce((s, t) => s + t.amount, 0);
 
-  if (templates.length === 0) {
+  if (optimisticTemplates.length === 0) {
     return (
       <div className="rounded-xl border border-border bg-card">
         <div className="flex h-64 flex-col items-center justify-center gap-3 text-muted-foreground">
@@ -75,7 +93,7 @@ export function RecurringExpenseList({
 
       {/* Mobile cards */}
       <div className="space-y-3 md:hidden">
-        {templates.map((t) => (
+        {optimisticTemplates.map((t) => (
           <div key={t.id} className={`rounded-xl border border-border bg-card p-4 ${!t.isActive ? "opacity-50" : ""}`}>
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0 flex-1">
@@ -159,7 +177,7 @@ export function RecurringExpenseList({
             </tr>
           </thead>
           <tbody>
-            {templates.map((t) => (
+            {optimisticTemplates.map((t) => (
               <tr
                 key={t.id}
                 className={`border-b border-border/50 ${!t.isActive ? "opacity-50" : ""}`}

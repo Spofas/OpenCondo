@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useOptimistic, useTransition } from "react";
 import {
   ChevronDown,
   ChevronUp,
@@ -45,6 +45,17 @@ export function BudgetList({
   const [editingBudget, setEditingBudget] = useState<BudgetData | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [actionError, setActionError] = useState("");
+  const [, startTransition] = useTransition();
+
+  type OptimisticAction = { type: "delete"; id: string };
+
+  const [optimisticBudgets, addOptimistic] = useOptimistic(
+    budgets,
+    (state, action: OptimisticAction) => {
+      if (action.type === "delete") return state.filter((item) => item.id !== action.id);
+      return state;
+    }
+  );
 
   async function handleApprove(budgetId: string) {
     setActionError("");
@@ -53,15 +64,15 @@ export function BudgetList({
   }
 
   async function handleDelete(budgetId: string) {
-    setActionError("");
-    const result = await deleteBudget(condominiumId, budgetId);
-    if (result.error) {
-      setActionError(result.error);
-    }
     setConfirmDelete(null);
+    startTransition(async () => {
+      addOptimistic({ type: "delete", id: budgetId });
+      const result = await deleteBudget(condominiumId, budgetId);
+      if (result.error) setActionError(result.error);
+    });
   }
 
-  if (budgets.length === 0) {
+  if (optimisticBudgets.length === 0) {
     return (
       <div className="rounded-xl border border-border bg-card">
         <div className="flex h-64 flex-col items-center justify-center gap-3 text-muted-foreground">
@@ -84,7 +95,7 @@ export function BudgetList({
       )}
 
       <div className="space-y-4">
-        {budgets.map((budget) => {
+        {optimisticBudgets.map((budget) => {
           const isExpanded = expandedId === budget.id;
           const reserveAmount =
             budget.totalAmount * (budget.reserveFundPercentage / 100);

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useOptimistic, useTransition } from "react";
 import { Wrench, Trash2 } from "lucide-react";
 import { updateMaintenanceStatus, deleteMaintenanceRequest } from "./actions";
 import { useCondominium } from "@/lib/condominium-context";
@@ -31,6 +31,17 @@ export function MaintenanceList({
   const { condominiumId } = useCondominium();
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [actionError, setActionError] = useState("");
+  const [, startTransition] = useTransition();
+
+  type OptimisticAction = { type: "delete"; id: string };
+
+  const [optimisticRequests, addOptimistic] = useOptimistic(
+    requests,
+    (state, action: OptimisticAction) => {
+      if (action.type === "delete") return state.filter((item) => item.id !== action.id);
+      return state;
+    }
+  );
 
   async function handleStatusChange(requestId: string, newStatus: string) {
     setActionError("");
@@ -39,13 +50,15 @@ export function MaintenanceList({
   }
 
   async function handleDelete(id: string) {
-    setActionError("");
-    const result = await deleteMaintenanceRequest(condominiumId, id);
-    if (result.error) setActionError(result.error);
     setConfirmDelete(null);
+    startTransition(async () => {
+      addOptimistic({ type: "delete", id });
+      const result = await deleteMaintenanceRequest(condominiumId, id);
+      if (result.error) setActionError(result.error);
+    });
   }
 
-  if (requests.length === 0) {
+  if (optimisticRequests.length === 0) {
     return (
       <div className="rounded-xl border border-border bg-card">
         <div className="flex h-64 flex-col items-center justify-center gap-3 text-muted-foreground">
@@ -59,7 +72,7 @@ export function MaintenanceList({
 
   // Summary counts
   const statusCounts = new Map<string, number>();
-  for (const r of requests) {
+  for (const r of optimisticRequests) {
     statusCounts.set(r.status, (statusCounts.get(r.status) || 0) + 1);
   }
 
@@ -85,7 +98,7 @@ export function MaintenanceList({
 
       {/* Request cards */}
       <div className="space-y-4">
-        {requests.map((request) => (
+        {optimisticRequests.map((request) => (
           <div
             key={request.id}
             className="rounded-xl border border-border bg-card p-5"

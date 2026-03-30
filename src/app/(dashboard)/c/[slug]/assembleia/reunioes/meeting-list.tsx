@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useOptimistic, useTransition } from "react";
 import {
   Users,
   MapPin,
@@ -57,6 +57,17 @@ export function MeetingList({
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [actionError, setActionError] = useState("");
   const [ataText, setAtaText] = useState("");
+  const [, startTransition] = useTransition();
+
+  type OptimisticAction = { type: "delete"; id: string };
+
+  const [optimisticMeetings, addOptimistic] = useOptimistic(
+    meetings,
+    (state, action: OptimisticAction) => {
+      if (action.type === "delete") return state.filter((item) => item.id !== action.id);
+      return state;
+    }
+  );
 
   async function handleStatusChange(meetingId: string, status: string) {
     setActionError("");
@@ -65,10 +76,12 @@ export function MeetingList({
   }
 
   async function handleDelete(id: string) {
-    setActionError("");
-    const result = await deleteMeeting(condominiumId, id);
-    if (result.error) setActionError(result.error);
     setConfirmDelete(null);
+    startTransition(async () => {
+      addOptimistic({ type: "delete", id });
+      const result = await deleteMeeting(condominiumId, id);
+      if (result.error) setActionError(result.error);
+    });
   }
 
   async function handleAttendanceChange(
@@ -126,7 +139,7 @@ export function MeetingList({
     if (result.error) setActionError(result.error);
   }
 
-  if (meetings.length === 0) {
+  if (optimisticMeetings.length === 0) {
     return (
       <div className="rounded-xl border border-border bg-card">
         <div className="flex h-64 flex-col items-center justify-center gap-3 text-muted-foreground">
@@ -149,7 +162,7 @@ export function MeetingList({
       )}
 
       <div className="space-y-4">
-        {meetings.map((meeting) => {
+        {optimisticMeetings.map((meeting) => {
           const isExpanded = expandedId === meeting.id;
           const meetingDate = new Date(meeting.date);
 

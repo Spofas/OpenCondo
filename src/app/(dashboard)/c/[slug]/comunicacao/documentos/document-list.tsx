@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useOptimistic, useTransition } from "react";
 import { FileText, ExternalLink, Edit2, Trash2, Lock } from "lucide-react";
 import { deleteDocument } from "./actions";
 import { useCondominium } from "@/lib/condominium-context";
@@ -36,17 +36,30 @@ export function DocumentList({
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [actionError, setActionError] = useState("");
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
+  const [, startTransition] = useTransition();
+
+  type OptimisticAction = { type: "delete"; id: string };
+
+  const [optimisticDocuments, addOptimistic] = useOptimistic(
+    documents,
+    (state, action: OptimisticAction) => {
+      if (action.type === "delete") return state.filter((item) => item.id !== action.id);
+      return state;
+    }
+  );
 
   async function handleDelete(id: string) {
-    setActionError("");
-    const result = await deleteDocument(condominiumId, id);
-    if (result.error) setActionError(result.error);
     setConfirmDelete(null);
+    startTransition(async () => {
+      addOptimistic({ type: "delete", id });
+      const result = await deleteDocument(condominiumId, id);
+      if (result.error) setActionError(result.error);
+    });
   }
 
   const filtered = activeCategory
-    ? documents.filter((d) => d.category === activeCategory)
-    : documents;
+    ? optimisticDocuments.filter((d) => d.category === activeCategory)
+    : optimisticDocuments;
 
   return (
     <>
@@ -66,10 +79,10 @@ export function DocumentList({
               : "border-border bg-card text-muted-foreground hover:bg-secondary"
           }`}
         >
-          Todos ({documents.length})
+          Todos ({optimisticDocuments.length})
         </button>
         {DOCUMENT_CATEGORIES.map((cat) => {
-          const count = documents.filter((d) => d.category === cat).length;
+          const count = optimisticDocuments.filter((d) => d.category === cat).length;
           return (
             <button
               key={cat}

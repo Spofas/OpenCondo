@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useOptimistic, useTransition } from "react";
 import { Phone, Mail, Pencil, Trash2, Eye, EyeOff, StickyNote } from "lucide-react";
 import { deleteContact } from "./actions";
 import { useCondominium } from "@/lib/condominium-context";
@@ -37,9 +37,20 @@ export function ContactList({
   const { condominiumId } = useCondominium();
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [, startTransition] = useTransition();
+
+  type OptimisticAction = { type: "delete"; id: string };
+
+  const [optimisticContacts, addOptimistic] = useOptimistic(
+    contacts,
+    (state, action: OptimisticAction) => {
+      if (action.type === "delete") return state.filter((item) => item.id !== action.id);
+      return state;
+    }
+  );
 
   // Group by category
-  const grouped = contacts.reduce<Record<string, ContactInfo[]>>((acc, c) => {
+  const grouped = optimisticContacts.reduce<Record<string, ContactInfo[]>>((acc, c) => {
     const cat = c.category || "outros";
     if (!acc[cat]) acc[cat] = [];
     acc[cat].push(c);
@@ -54,12 +65,15 @@ export function ContactList({
   });
 
   async function handleDelete(id: string) {
-    const result = await deleteContact(condominiumId, id);
-    if (result.error) {
-      setError(result.error);
-      setTimeout(() => setError(null), 4000);
-    }
     setConfirmDelete(null);
+    startTransition(async () => {
+      addOptimistic({ type: "delete", id });
+      const result = await deleteContact(condominiumId, id);
+      if (result.error) {
+        setError(result.error);
+        setTimeout(() => setError(null), 4000);
+      }
+    });
   }
 
   return (
