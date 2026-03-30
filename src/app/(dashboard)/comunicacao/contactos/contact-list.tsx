@@ -81,11 +81,11 @@ export function ContactList({
             </span>
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-3 md:grid-cols-2">
             {grouped[cat].map((contact) => (
               <div
                 key={contact.id}
-                className="rounded-xl border border-border bg-card p-4"
+                className={`rounded-xl border border-border bg-card p-4${grouped[cat].length === 1 ? " md:col-span-2" : ""}`}
               >
                 <div className="mb-2 flex items-start justify-between">
                   <h3 className="text-sm font-semibold text-foreground">
