@@ -6,7 +6,6 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { signIn } from "next-auth/react";
 import { loginSchema, type LoginInput } from "@/lib/validators/auth";
-import { resolvePostLoginDestination } from "./actions";
 
 export default function LoginPage() {
   const [serverError, setServerError] = useState("");
@@ -32,11 +31,9 @@ export default function LoginPage() {
       return;
     }
 
-    // Resolve destination server-side so the fresh session cookie is readable
-    // and the activeCondominiumId cookie is set in the same round-trip.
-    const destination = await resolvePostLoginDestination();
-    // Hard navigation ensures the proxy runs with the fresh session cookie
-    window.location.href = destination;
+    // Hard navigation so the proxy re-evaluates with the fresh session cookie.
+    // The dashboard layout handles activeCondominiumId fallback automatically.
+    window.location.href = "/painel";
   }
 
   return (
