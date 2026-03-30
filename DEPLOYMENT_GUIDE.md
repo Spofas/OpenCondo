@@ -103,6 +103,14 @@ Go to [generate-secret.vercel.app/32](https://generate-secret.vercel.app/32) in 
    - Make it live at `your-project-name.vercel.app`
 3. If the build succeeds, you'll see a "Congratulations!" screen with a link to your live app
 
+### Preview deployments (feature branches)
+
+When Vercel creates preview deployments for non-production branches, the URL changes each time (e.g., `opencondo-git-feature-xyz.vercel.app`). This can cause issues with `NEXTAUTH_URL` since it won't match the preview URL.
+
+- **Remove `NEXTAUTH_URL` from the Preview scope** (or leave it unset) — NextAuth v5 auto-detects the URL from request headers, so preview deployments work without it.
+- **Keep `NEXTAUTH_URL` set for Production** — this should point to your custom domain (e.g., `https://app.opencondo.pt`) or your main Vercel URL.
+- If auto-detection fails on previews, add `AUTH_TRUST_HOST=true` as an environment variable in the Preview scope — this tells NextAuth to trust the host header from the request.
+
 ### After first deploy: Update NEXTAUTH_URL
 
 1. Note the URL Vercel gave you (e.g., `opencondo-abc123.vercel.app`)

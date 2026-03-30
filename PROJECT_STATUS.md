@@ -498,5 +498,4 @@ and get back up to speed without needing the conversation history.
 ### What still needs to be built (in order)
 1. **Bulk import UI** — CSV parsing logic exists (`src/lib/csv-import.ts`, with duplicate detection) but has no page/form yet. Needs a page at `/definicoes` or `/onboarding` with file upload + preview + confirm flow.
 2. **Email notifications** — Transactional emails for announcements, quota reminders, maintenance updates, meeting convocatória. Needs `RESEND_API_KEY` env var and email templates.
-3. **Mobile responsiveness polish** — Core mobile UI is done (bottom nav, card views, full-screen modals, responsive grids). May need fine-tuning based on preview testing.
-4. **Deployment** — See `DEPLOYMENT_GUIDE.md` for Vercel + Neon setup. Remember to set `CRON_SECRET` in env vars.
+3. **Deployment** — See `DEPLOYMENT_GUIDE.md` for Vercel + Neon setup. Remember to set `CRON_SECRET` in env vars.
