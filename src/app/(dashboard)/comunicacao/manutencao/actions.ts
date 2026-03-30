@@ -1,8 +1,8 @@
 "use server";
 
-import { cookies } from "next/headers";
-import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { getMemberContext } from "@/lib/auth/admin-context";
+import { getAdminContext } from "@/lib/auth/admin-context";
 import {
   maintenanceSchema,
   maintenanceUpdateSchema,
@@ -11,37 +11,8 @@ import {
 } from "@/lib/validators/maintenance";
 import { revalidatePath } from "next/cache";
 
-async function getAuthContext() {
-  const session = await auth();
-  if (!session?.user?.id) return null;
-
-  const cookieStore = await cookies();
-  const condominiumId = cookieStore.get("activeCondominiumId")?.value;
-
-  const membership = condominiumId
-    ? await db.membership.findUnique({
-        where: {
-          userId_condominiumId: {
-            userId: session.user.id,
-            condominiumId,
-          },
-        },
-      })
-    : await db.membership.findFirst({
-        where: { userId: session.user.id, isActive: true },
-      });
-
-  if (!membership) return null;
-
-  return {
-    userId: session.user.id,
-    condominiumId: membership.condominiumId,
-    role: membership.role,
-  };
-}
-
 export async function createMaintenanceRequest(input: MaintenanceInput) {
-  const ctx = await getAuthContext();
+  const ctx = await getMemberContext(); // Any authenticated member can create
   if (!ctx) return { error: "Sem permissão" };
 
   const parsed = maintenanceSchema.safeParse(input);
@@ -68,8 +39,8 @@ export async function createMaintenanceRequest(input: MaintenanceInput) {
 }
 
 export async function updateMaintenanceStatus(requestId: string, input: MaintenanceUpdateInput) {
-  const ctx = await getAuthContext();
-  if (!ctx || ctx.role !== "ADMIN") return { error: "Sem permissão" };
+  const ctx = await getAdminContext();
+  if (!ctx) return { error: "Sem permissão" };
 
   const parsed = maintenanceUpdateSchema.safeParse(input);
   if (!parsed.success) {
@@ -106,8 +77,8 @@ export async function updateMaintenanceStatus(requestId: string, input: Maintena
 }
 
 export async function deleteMaintenanceRequest(requestId: string) {
-  const ctx = await getAuthContext();
-  if (!ctx || ctx.role !== "ADMIN") return { error: "Sem permissão" };
+  const ctx = await getAdminContext();
+  if (!ctx) return { error: "Sem permissão" };
 
   const request = await db.maintenanceRequest.findFirst({
     where: { id: requestId, condominiumId: ctx.condominiumId },
