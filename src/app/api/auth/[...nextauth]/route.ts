@@ -2,9 +2,11 @@ import { type NextRequest, NextResponse } from "next/server";
 import { handlers } from "@/lib/auth";
 import { checkRateLimit } from "@/lib/rate-limit";
 
-export const { GET } = handlers;
+type RouteContext = { params: Promise<{ nextauth: string[] }> };
 
-export async function POST(request: NextRequest) {
+export const GET = handlers.GET;
+
+export async function POST(request: NextRequest, context: RouteContext) {
   // Rate limit login attempts (credentials callback)
   if (request.nextUrl.pathname.includes("/callback/credentials")) {
     const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
@@ -20,5 +22,5 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  return handlers.POST(request);
+  return (handlers.POST as (req: NextRequest, ctx: RouteContext) => Promise<Response>)(request, context);
 }
