@@ -6,7 +6,6 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { signIn } from "next-auth/react";
 import { loginSchema, type LoginInput } from "@/lib/validators/auth";
-import { resolvePostLoginDestination } from "./actions";
 
 export default function LoginPage() {
   const [serverError, setServerError] = useState("");
@@ -33,9 +32,8 @@ export default function LoginPage() {
         return;
       }
 
-      // Resolve the user's default condo slug and navigate there
-      const destination = await resolvePostLoginDestination();
-      window.location.href = destination;
+      // Navigate to /painel — the catch-all redirect resolves the slug
+      window.location.href = "/painel";
     } catch (err) {
       setServerError(
         err instanceof Error ? err.message : "Erro inesperado ao iniciar sessão"
