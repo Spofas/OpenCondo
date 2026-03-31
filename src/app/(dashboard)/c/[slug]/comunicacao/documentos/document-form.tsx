@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { X } from "lucide-react";
+import { FileUpload } from "@/components/ui/file-upload";
 import {
   documentSchema,
   type DocumentInput,
@@ -30,6 +31,8 @@ export function DocumentForm({ onClose, existingDocument }: DocumentFormProps) {
   const {
     register,
     handleSubmit,
+    setValue,
+    watch,
     formState: { errors },
   } = useForm<DocumentInput>({
     resolver: zodResolver(documentSchema),
@@ -140,38 +143,21 @@ export function DocumentForm({ onClose, existingDocument }: DocumentFormProps) {
             </div>
           </div>
 
-          {/* File URL */}
-          <div className="mb-4">
-            <label className="mb-1 block text-sm font-medium text-foreground">
-              URL do ficheiro
-            </label>
-            <input
-              type="text"
-              placeholder="https://..."
-              {...register("fileUrl")}
-              className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+          {/* File Upload */}
+          <div className="mb-6">
+            <FileUpload
+              condominiumId={condominiumId}
+              value={watch("fileUrl") || ""}
+              onChange={(url, name, size) => {
+                setValue("fileUrl", url, { shouldValidate: true });
+                if (name) setValue("fileName", name);
+                if (size) setValue("fileSize", size);
+              }}
+              label="Ficheiro"
+              helperText="PDF, imagens, Word, Excel ou CSV (máx. 10 MB)"
             />
             {errors.fileUrl && (
               <p className="mt-1 text-xs text-destructive">{errors.fileUrl.message}</p>
-            )}
-            <p className="mt-1 text-xs text-muted-foreground">
-              Cole o link do ficheiro armazenado (Google Drive, Dropbox, etc.)
-            </p>
-          </div>
-
-          {/* File Name */}
-          <div className="mb-6">
-            <label className="mb-1 block text-sm font-medium text-foreground">
-              Nome do ficheiro
-            </label>
-            <input
-              type="text"
-              placeholder="Ex: ata-marco-2026.pdf"
-              {...register("fileName")}
-              className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary"
-            />
-            {errors.fileName && (
-              <p className="mt-1 text-xs text-destructive">{errors.fileName.message}</p>
             )}
           </div>
 

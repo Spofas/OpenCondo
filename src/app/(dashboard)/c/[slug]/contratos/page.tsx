@@ -28,6 +28,7 @@ export default async function ContractsPage({ params }: { params: Promise<{ slug
     insuredValue: c.insuredValue ? Number(c.insuredValue) : null,
     coverageType: c.coverageType,
     notes: c.notes,
+    documentUrl: c.documentUrl,
     supplierName: c.supplier?.name || null,
   }));
 

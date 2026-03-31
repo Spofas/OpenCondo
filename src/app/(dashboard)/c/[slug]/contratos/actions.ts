@@ -50,6 +50,7 @@ export const createContract = withAdmin(async (ctx, input: ContractInput) => {
       insuredValue: data.insuredValue || null,
       coverageType: data.coverageType || null,
       notes: data.notes || null,
+      documentUrl: data.documentUrl || null,
     },
   });
 
@@ -91,6 +92,7 @@ export const updateContract = withAdmin(async (ctx, contractId: string, input: C
       insuredValue: data.insuredValue || null,
       coverageType: data.coverageType || null,
       notes: data.notes || null,
+      documentUrl: data.documentUrl || null,
     },
   });
 

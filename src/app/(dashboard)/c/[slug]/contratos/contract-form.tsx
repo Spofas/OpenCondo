@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { X } from "lucide-react";
+import { FileUpload } from "@/components/ui/file-upload";
 import {
   contractSchema,
   type ContractInput,
@@ -35,6 +36,7 @@ export function ContractForm({ onClose, existingContract }: ContractFormProps) {
     register,
     handleSubmit,
     watch,
+    setValue,
     formState: { errors },
   } = useForm<ContractInput>({
     resolver: zodResolver(contractSchema),
@@ -48,6 +50,7 @@ export function ContractForm({ onClose, existingContract }: ContractFormProps) {
           annualCost: existingContract.annualCost,
           paymentFrequency: existingContract.paymentFrequency,
           notes: existingContract.notes || "",
+          documentUrl: existingContract.documentUrl || "",
           policyNumber: existingContract.policyNumber || "",
           insuredValue: existingContract.insuredValue || undefined,
           coverageType: existingContract.coverageType || "",
@@ -337,6 +340,18 @@ export function ContractForm({ onClose, existingContract }: ContractFormProps) {
               </div>
             </div>
           )}
+
+          {/* Document attachment */}
+          <div className="mb-4">
+            <FileUpload
+              condominiumId={condominiumId}
+              value={watch("documentUrl") || ""}
+              onChange={(url) => setValue("documentUrl", url)}
+              label="Documento do contrato (opcional)"
+              accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx"
+              helperText="PDF, imagem ou Word (máx. 10 MB)"
+            />
+          </div>
 
           {/* Notes */}
           <div className="mb-6">

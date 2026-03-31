@@ -19,6 +19,7 @@ export interface ContractData {
   insuredValue: number | null;
   coverageType: string | null;
   notes: string | null;
+  documentUrl: string | null;
   supplierName: string | null;
 }
 

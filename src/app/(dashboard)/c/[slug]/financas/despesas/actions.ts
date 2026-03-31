@@ -11,7 +11,7 @@ export const createExpense = withAdmin(async (ctx, input: ExpenseInput) => {
     return { error: parsed.error.issues[0].message };
   }
 
-  const { date, description, amount, category, notes } = parsed.data;
+  const { date, description, amount, category, notes, invoiceUrl } = parsed.data;
 
   await db.$transaction(async (tx) => {
     const expense = await tx.expense.create({
@@ -22,6 +22,7 @@ export const createExpense = withAdmin(async (ctx, input: ExpenseInput) => {
         amount,
         category,
         notes: notes || null,
+        invoiceUrl: invoiceUrl || null,
       },
     });
     await tx.transaction.create({
@@ -52,7 +53,7 @@ export const updateExpense = withAdmin(async (ctx, expenseId: string, input: Exp
 
   if (!expense) return { error: "Despesa não encontrada" };
 
-  const { date, description, amount, category, notes } = parsed.data;
+  const { date, description, amount, category, notes, invoiceUrl } = parsed.data;
 
   await db.$transaction([
     db.expense.update({
@@ -63,6 +64,7 @@ export const updateExpense = withAdmin(async (ctx, expenseId: string, input: Exp
         amount,
         category,
         notes: notes || null,
+        invoiceUrl: invoiceUrl || null,
       },
     }),
     db.transaction.updateMany({

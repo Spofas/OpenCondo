@@ -17,6 +17,7 @@ export interface ExpenseData {
   amount: number;
   category: string;
   notes: string | null;
+  invoiceUrl: string | null;
 }
 
 type Tab = "despesas" | "recorrentes";

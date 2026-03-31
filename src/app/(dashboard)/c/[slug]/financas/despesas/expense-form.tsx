@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { X } from "lucide-react";
+import { FileUpload } from "@/components/ui/file-upload";
 import {
   expenseSchema,
   type ExpenseInput,
@@ -29,6 +30,8 @@ export function ExpenseForm({ onClose, existingExpense }: ExpenseFormProps) {
   const {
     register,
     handleSubmit,
+    setValue,
+    watch,
     formState: { errors },
   } = useForm<ExpenseInput>({
     resolver: zodResolver(expenseSchema),
@@ -39,6 +42,7 @@ export function ExpenseForm({ onClose, existingExpense }: ExpenseFormProps) {
           amount: existingExpense.amount,
           category: existingExpense.category,
           notes: existingExpense.notes || "",
+          invoiceUrl: existingExpense.invoiceUrl || "",
         }
       : {
           date: today,
@@ -46,6 +50,7 @@ export function ExpenseForm({ onClose, existingExpense }: ExpenseFormProps) {
           amount: 0,
           category: "",
           notes: "",
+          invoiceUrl: "",
         },
   });
 
@@ -171,7 +176,7 @@ export function ExpenseForm({ onClose, existingExpense }: ExpenseFormProps) {
           </div>
 
           {/* Notes */}
-          <div className="mb-6">
+          <div className="mb-4">
             <label className="mb-1 block text-sm font-medium text-foreground">
               Notas (opcional)
             </label>
@@ -180,6 +185,18 @@ export function ExpenseForm({ onClose, existingExpense }: ExpenseFormProps) {
               placeholder="Ex: Fatura n.º 12345"
               {...register("notes")}
               className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+            />
+          </div>
+
+          {/* Invoice attachment */}
+          <div className="mb-6">
+            <FileUpload
+              condominiumId={condominiumId}
+              value={watch("invoiceUrl") || ""}
+              onChange={(url) => setValue("invoiceUrl", url)}
+              label="Fatura/recibo (opcional)"
+              accept=".pdf,.jpg,.jpeg,.png,.webp"
+              helperText="PDF ou imagem da fatura (máx. 10 MB)"
             />
           </div>
 
