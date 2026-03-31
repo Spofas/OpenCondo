@@ -117,7 +117,62 @@ async function main() {
 
   console.log("  Created 10 users.");
 
-  // PLACEHOLDER — Part 3 will replace this line
+  // ═══════════════════════════════════════════════════════════════════════════
+  // PART 3: Condominiums + Memberships
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  const aurora = await db.condominium.create({
+    data: {
+      name: "Edifício Aurora",
+      slug: "edificio-aurora",
+      address: "Rua da Liberdade, 42",
+      postalCode: "1250-142",
+      city: "Lisboa",
+      nif: "501234567",
+      totalPermilagem: 1000,
+      quotaModel: "PERMILAGEM",
+      fiscalYearStart: 1,
+    },
+  });
+
+  const jardim = await db.condominium.create({
+    data: {
+      name: "Residências do Jardim",
+      slug: "residencias-do-jardim",
+      address: "Av. dos Aliados, 128",
+      postalCode: "4000-065",
+      city: "Porto",
+      nif: "509876123",
+      totalPermilagem: 1000,
+      quotaModel: "PERMILAGEM",
+      fiscalYearStart: 1,
+    },
+  });
+
+  console.log("  Created 2 condominiums: Aurora (Lisboa) + Jardim (Porto).");
+
+  // Memberships — João is owner in both condos, admins manage their own condo
+  await db.membership.createMany({
+    data: [
+      // Aurora: 1 admin, 3 owners, 1 tenant
+      { userId: adminAurora.id, condominiumId: aurora.id, role: "ADMIN" },
+      { userId: joao.id, condominiumId: aurora.id, role: "OWNER" },
+      { userId: maria.id, condominiumId: aurora.id, role: "OWNER" },
+      { userId: carlos.id, condominiumId: aurora.id, role: "OWNER" },
+      { userId: ana.id, condominiumId: aurora.id, role: "TENANT" },
+      // Jardim: 1 admin, 4 owners (including João), 1 tenant
+      { userId: adminJardim.id, condominiumId: jardim.id, role: "ADMIN" },
+      { userId: joao.id, condominiumId: jardim.id, role: "OWNER" },
+      { userId: sofia.id, condominiumId: jardim.id, role: "OWNER" },
+      { userId: ricardo.id, condominiumId: jardim.id, role: "OWNER" },
+      { userId: beatriz.id, condominiumId: jardim.id, role: "OWNER" },
+      { userId: tiago.id, condominiumId: jardim.id, role: "TENANT" },
+    ],
+  });
+
+  console.log("  Created 11 memberships (João is in both condos).");
+
+  // PLACEHOLDER — Part 4 will replace this line
 }
 
 main()
