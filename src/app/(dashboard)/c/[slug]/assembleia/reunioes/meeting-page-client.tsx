@@ -38,6 +38,7 @@ export interface MeetingData {
   attendees: AttendeeData[];
   votes: VoteData[];
   hasAta: boolean;
+  ataId: string | null;
   ataContent: string | null;
 }
 

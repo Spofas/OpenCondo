@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
 import { requireMembership } from "@/lib/auth/require-membership";
-import { ScrollText } from "lucide-react";
+import { Download, ScrollText } from "lucide-react";
 
 export default async function AtasPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -80,6 +80,15 @@ export default async function AtasPage({ params }: { params: Promise<{ slug: str
               >
                 {ata.status === "FINAL" ? "Final" : "Rascunho"}
               </span>
+              <a
+                href={`/api/atas/${ata.id}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="ml-auto flex items-center gap-1 rounded-lg border border-border px-2.5 py-1 text-xs font-medium text-foreground hover:bg-muted transition-colors"
+              >
+                <Download size={12} />
+                PDF
+              </a>
             </div>
             <div className="whitespace-pre-wrap rounded-lg bg-muted/30 p-4 text-sm text-foreground">
               {ata.content}

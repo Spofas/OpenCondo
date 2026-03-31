@@ -11,6 +11,7 @@ import {
   CheckCircle,
   XCircle,
   FileText,
+  Download,
 } from "lucide-react";
 import {
   updateMeetingStatus,
@@ -521,7 +522,18 @@ export function MeetingList({
                             placeholder="Escreva a ata da assembleia..."
                             className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary resize-none"
                           />
-                          <div className="mt-3 flex justify-end">
+                          <div className="mt-3 flex justify-end gap-2">
+                            {meeting.ataId && (
+                              <a
+                                href={`/api/atas/${meeting.ataId}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-2 rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted transition-colors"
+                              >
+                                <Download size={14} />
+                                PDF
+                              </a>
+                            )}
                             <button
                               onClick={() => handleSaveAta(meeting.id)}
                               className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
@@ -532,9 +544,24 @@ export function MeetingList({
                           </div>
                         </>
                       ) : meeting.ataContent ? (
-                        <div className="whitespace-pre-wrap rounded-lg border border-border/50 p-4 text-sm text-foreground">
-                          {meeting.ataContent}
-                        </div>
+                        <>
+                          <div className="whitespace-pre-wrap rounded-lg border border-border/50 p-4 text-sm text-foreground">
+                            {meeting.ataContent}
+                          </div>
+                          {meeting.ataId && (
+                            <div className="mt-3 flex justify-end">
+                              <a
+                                href={`/api/atas/${meeting.ataId}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-2 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted transition-colors"
+                              >
+                                <Download size={12} />
+                                Descarregar PDF
+                              </a>
+                            </div>
+                          )}
+                        </>
                       ) : (
                         <p className="py-8 text-center text-sm text-muted-foreground">
                           A ata ainda não foi redigida

@@ -86,6 +86,7 @@ async function MeetingsContent({
       permilagem: v.permilagem,
     })),
     hasAta: !!m.ata,
+    ataId: m.ata?.id || null,
     ataContent: m.ata?.content || null,
   }));
 

@@ -8,6 +8,7 @@ import {
   Edit2,
   Trash2,
   PieChart,
+  Download,
 } from "lucide-react";
 import { approveBudget, deleteBudget } from "./actions";
 import { useCondominium } from "@/lib/condominium-context";
@@ -279,12 +280,25 @@ export function BudgetList({
                     </div>
                   )}
 
-                  {budget.status === "APPROVED" && budget.approvedAt && (
-                    <p className="mt-4 border-t border-border pt-3 text-xs text-muted-foreground">
-                      Aprovado em{" "}
-                      {new Date(budget.approvedAt).toLocaleDateString("pt-PT")}
-                    </p>
-                  )}
+                  <div className="mt-4 flex items-center justify-between border-t border-border pt-3">
+                    {budget.status === "APPROVED" && budget.approvedAt ? (
+                      <p className="text-xs text-muted-foreground">
+                        Aprovado em{" "}
+                        {new Date(budget.approvedAt).toLocaleDateString("pt-PT")}
+                      </p>
+                    ) : (
+                      <span />
+                    )}
+                    <a
+                      href={`/api/budgets/${budget.id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted transition-colors"
+                    >
+                      <Download size={12} />
+                      PDF
+                    </a>
+                  </div>
                 </div>
               )}
             </div>
