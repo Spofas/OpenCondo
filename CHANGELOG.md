@@ -6,6 +6,31 @@ All notable changes to OpenCondo are recorded here in reverse-chronological orde
 
 ## [Unreleased]
 
+### 2026-03-31 — PDF exports, file uploads, and auth fixes
+
+**PDF exports:**
+- Ata (minutes) PDF export — `/api/atas/[ataId]` — A4 document with meeting info, agenda, full content, status badge
+- Budget PDF export — `/api/budgets/[budgetId]` — A4 document with line items table, reserve fund, grand total
+- Download buttons added to: atas page, meeting list ata tab (admin + non-admin), every budget card
+- Joins existing quota receipt PDF and conta de gerência PDF — all 4 document types now exportable
+
+**File upload system (Vercel Blob):**
+- Upload API route at `/api/upload` — validates auth, membership, file type (PDF, images, Word, Excel, CSV), max 10 MB
+- Reusable `FileUpload` component (`src/components/ui/file-upload.tsx`) — upload button with progress, file preview, clear, and fallback URL paste
+- Document form: replaced manual URL input with actual file upload
+- Expense form: added optional invoice/receipt attachment (`invoiceUrl` field)
+- Contract form: added optional contract document attachment (`documentUrl` field)
+- Updated validators and server actions for both expense and contract modules
+- Requires `BLOB_READ_WRITE_TOKEN` env var on Vercel
+
+**Auth flow fixes (login + logout regressions from slug migration):**
+- **Root cause — login**: `resolvePostLoginDestination()` server action was called immediately after `signIn()`, but the session cookie wasn't available yet. Fix: removed server action, navigate to `/painel`, let catch-all redirect resolve slug server-side
+- **Root cause — logout**: `signOut({ redirect: false })` + `window.location.href = "/login"` — browser navigated before cookie was cleared, proxy saw old session, redirected back. Fix: `signOut({ redirectTo: "/login" })` — server-side redirect in one response
+- **Secondary**: custom POST wrapper on `[...nextauth]/route.ts` interfered with NextAuth responses. Fix: removed wrapper, export handlers directly. Rate limiting to be re-added via proxy/middleware later
+- **Preview**: `trustHost: true` in NextAuth config for deployments without `NEXTAUTH_URL`
+
+---
+
 ### 2026-03-30 — Slug-based URL routing, optimistic UI, and infrastructure
 
 **Slug-based URL routing (architectural):**

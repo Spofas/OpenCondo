@@ -1,6 +1,6 @@
 # OpenCondo — Project Status & Architecture Guide
 
-**Last updated:** 2026-03-30
+**Last updated:** 2026-03-31
 **For:** Anyone following along, regardless of programming experience
 
 ---
@@ -466,10 +466,43 @@ Applied to 9 list components:
 
 Applied to 6 pages: quotas, livro-caixa, devedores, conta-gerência, reuniões, definições.
 
+#### PDF Exports (complete)
+
+**What:** Printable PDF documents for key records.
+
+- **Quota receipts** — `/api/receipts/[quotaId]` — A4 receipt with payment details, download button on paid quotas in quota list and minha-conta page
+- **Ata (minutes) PDF** — `/api/atas/[ataId]` — A4 document with meeting info, agenda, full ata content, status badge. Download buttons on atas page and meeting list ata tab
+- **Budget PDF** — `/api/budgets/[budgetId]` — A4 document with line items table, reserve fund, grand total. Download button on every budget card
+- **Conta de gerência** — `/api/conta-gerencia` — Annual financial report PDF
+- All PDFs use jsPDF with consistent styling (helvetica, A4, 20mm margins, auto-generated footer)
+
+#### File Upload System (complete)
+
+**What:** Direct file uploads via Vercel Blob storage, replacing the external-URL-only approach.
+
+- **Upload API** — `/api/upload` — validates auth + membership, checks file type/size (PDF, images, Word, Excel, CSV, max 10 MB), uploads to Vercel Blob with condominium-scoped paths
+- **FileUpload component** — `src/components/ui/file-upload.tsx` — reusable upload button with progress state, file preview, clear button, and fallback URL paste input
+- **Documents**: file upload replaces manual URL input in document form
+- **Expenses**: optional invoice/receipt attachment field added to expense form
+- **Contracts**: optional contract document attachment field added to contract form
+- Requires `BLOB_READ_WRITE_TOKEN` env var (Vercel → Storage → Create Blob Store)
+
+#### Auth Flow Fixes (complete)
+
+**What:** Fixed login and logout regressions introduced by the slug migration.
+
+- **Root cause — login**: the `resolvePostLoginDestination()` server action was called immediately after `signIn()`, but the session cookie wasn't available yet for the server action request. Fixed by removing the server action and navigating to `/painel` directly (the catch-all redirect resolves the slug server-side)
+- **Root cause — logout**: `signOut({ redirect: false })` + `window.location.href = "/login"` had a race condition where the browser navigated before the cookie was cleared. The proxy saw the old session and redirected back to dashboard. Fixed by using `signOut({ redirectTo: "/login" })` for server-side redirect
+- **Secondary issue**: custom POST wrapper in `[...nextauth]/route.ts` was interfering with NextAuth responses. Removed entirely — auth route now exports handlers directly
+- **Preview fix**: `trustHost: true` added to NextAuth config for deployments without `NEXTAUTH_URL`
+
 #### Remaining items:
 
-- PDF receipts and ata exports
 - Deployment to production — see `DEPLOYMENT_GUIDE.md` for step-by-step instructions (Vercel + Neon)
+- Announcement file attachments — `AnnouncementAttachment` model exists but no upload UI
+- Maintenance photos — `MaintenancePhoto` model exists but no upload UI
+- Member role management — admins can't change roles or deactivate members from settings
+- Remaining ModalForm migrations — 7 form components can use the shared `<ModalForm>` component
 
 ---
 
@@ -511,6 +544,10 @@ Applied to 6 pages: quotas, livro-caixa, devedores, conta-gerência, reuniões, 
 | 2026-03-30 | Calendar URL pagination | Month/year stored in URL query params instead of local state — bookmarkable, shareable, and survives page refreshes |
 | 2026-03-30 | useOptimistic for list actions | Delete/toggle actions in 9 list components show instant UI feedback via `useOptimistic` + `useTransition` — no waiting for server round-trip |
 | 2026-03-30 | trustHost in NextAuth config | Required for preview deployments where `NEXTAUTH_URL` is not set — NextAuth v5 needs explicit opt-in to trust the Host header |
+| 2026-03-31 | Server-side redirect for signOut | `signOut({ redirect: false })` + `window.location.href` has a cookie race condition — browser navigates before cookie is cleared. `signOut({ redirectTo: "/login" })` handles everything in one server response |
+| 2026-03-31 | No custom wrapper on NextAuth route | Custom POST wrappers on `[...nextauth]/route.ts` interfere with NextAuth's response format. Rate limiting should be done in proxy/middleware instead, not by wrapping the route handler |
+| 2026-03-31 | Vercel Blob for file storage | Direct file uploads replace external-URL-only approach. Vercel Blob is native to the hosting platform, requires no additional infrastructure, and provides CDN-backed public URLs |
+| 2026-03-31 | jsPDF for all PDF exports | Consistent PDF generation library across receipts, atas, budgets, and conta de gerência. Server-side generation via API routes, no client-side dependencies |
 
 ---
 
@@ -519,13 +556,14 @@ Applied to 6 pages: quotas, livro-caixa, devedores, conta-gerência, reuniões, 
 This section exists so that if we start a fresh Claude Code session, I (Claude) can read this file
 and get back up to speed without needing the conversation history.
 
-### Current state (2026-03-30)
+### Current state (2026-03-31)
 - **Branch:** `claude/opencondo-development-Ch14I`
 - **Build status:** Passing (`next build` succeeds, all routes compile)
 - **Database:** Prisma Migrate in use (migration history committed). Latest migration: `20260330000002_add_pending_email_queue` (PendingEmail table for email retry queue).
 - **Test suite:** 444 tests passing (33 test files)
-- **Latest features (2026-03-30, session 2):** Slug-based URL routing (`/c/[slug]/` replaces cookie-based condo selection), CondominiumProvider context, shared ModalForm component, database email retry queue (PendingEmail), calendar URL pagination, useOptimistic on 9 list components, Suspense with skeletons on 6 pages, trustHost fix for preview deployments, legacy catch-all redirect for old bookmarked URLs.
+- **Latest features (2026-03-31):** PDF export for atas and budgets (joining existing receipt + conta de gerência PDFs). File upload system via Vercel Blob (documents, expenses, contracts). Auth flow fixes — login race condition (server action after signIn), logout race condition (cookie not cleared before navigation), removed broken rate limiting wrapper from auth route.
 - **Note:** `pnpm lint` is broken on Next.js 16.1.7 (`next lint` misparses args). The build catches type errors, so this is non-blocking.
+- **Note:** File uploads require `BLOB_READ_WRITE_TOKEN` env var on Vercel (Storage → Create Blob Store).
 
 ### Gotchas & quirks discovered during development
 1. **Prisma 7 breaking changes:** PrismaClient no longer auto-connects to the DB. You must pass a driver adapter (we use `@prisma/adapter-pg` with `PrismaPg`). `new PrismaClient()` without options throws an error.
@@ -538,8 +576,10 @@ and get back up to speed without needing the conversation history.
 8. **Zod v4 `.default()` + React Hook Form:** Using `z.string().default("")` makes the Zod *input* type `string | undefined` but the *output* type `string`. Since `zodResolver` uses the input type and `useForm<T>` expects the output type, this causes a type mismatch. Fix: use `z.string()` (required) instead and provide default values in the form's `defaultValues`.
 9. **Prisma Decimal → JavaScript number:** Prisma's `Decimal` type (used for money) doesn't serialize to JSON automatically. Convert with `Number(value)` before passing to client components.
 10. **NextAuth v5 trustHost:** Preview deployments without `NEXTAUTH_URL` require `trustHost: true` in the auth config. Without it, NextAuth rejects requests because it can't verify the host from request headers.
-11. **Server actions after signIn():** Don't call server actions immediately after `signIn("credentials", { redirect: false })` — the session cookie may not be available for the server action request. Use `window.location.href` to navigate to a server page that resolves the destination instead.
-12. **Slug migration backfill:** The `20260330000001_add_condominium_slug` migration uses `TRANSLATE` + `REGEXP_REPLACE` for Portuguese transliteration (ã→a, ç→c, etc.) and appends cuid prefixes on conflicts. Slugs are immutable once created.
+11. **Server actions after signIn():** Don't call server actions immediately after `signIn("credentials", { redirect: false })` — the session cookie may not be available for the server action request. Navigate to `/painel` and let the catch-all redirect resolve the slug server-side.
+12. **signOut race condition:** `signOut({ redirect: false })` + `window.location.href` doesn't work reliably — the browser navigates before the session cookie is cleared, so the proxy redirects back. Always use `signOut({ redirectTo: "/login" })` for server-side redirect.
+13. **Don't wrap NextAuth route handlers:** Custom POST wrappers on `[...nextauth]/route.ts` can interfere with NextAuth's response format, causing "unexpected response" errors on both signIn and signOut. Export `handlers.GET` and `handlers.POST` directly. Add rate limiting elsewhere (proxy/middleware).
+14. **Slug migration backfill:** The `20260330000001_add_condominium_slug` migration uses `TRANSLATE` + `REGEXP_REPLACE` for Portuguese transliteration (ã→a, ç→c, etc.) and appends cuid prefixes on conflicts. Slugs are immutable once created.
 
 ### Key patterns used
 - **Slug-based routing** — all dashboard pages under `/c/[slug]/`, resolved by `requireMembership(slug)` in server pages and `useCondominium()` in client components
@@ -565,7 +605,13 @@ and get back up to speed without needing the conversation history.
 - **Slug-based URL routing** — ✅ Complete. All dashboard pages under `/c/[slug]/`. Legacy catch-all redirect for old bookmarked URLs.
 - **Optimistic UI** — ✅ Complete. 9 list components with instant delete/toggle feedback via `useOptimistic`.
 - **Suspense streaming** — ✅ Complete. 6 heavy data pages with skeleton fallbacks.
+- **PDF exports** — ✅ Complete. Receipts, atas, budgets, and conta de gerência all have PDF generation + download buttons.
+- **File upload system** — ✅ Complete. Vercel Blob storage with reusable `FileUpload` component. Documents, expenses (invoice), and contracts (document) support direct file upload.
 
 ### What still needs to be built
 1. **Deployment to production** — Staging is live at `staging.opencondo.app`. Production (`main`) deploy pending final review. See `DEPLOYMENT_GUIDE.md` for Vercel + Neon setup.
-2. **Remaining ModalForm migrations** — 7 form components can be mechanically refactored to use the shared `<ModalForm>` component (announcement-form done as demo).
+2. **`BLOB_READ_WRITE_TOKEN`** — needs to be added to Vercel env vars for file uploads to work (Storage → Create Blob Store).
+3. **Announcement file attachments** — `AnnouncementAttachment` model exists but no upload UI in the announcement form.
+4. **Maintenance photos** — `MaintenancePhoto` model exists but no upload UI.
+5. **Member role management** — admins can't change member roles or deactivate members from settings.
+6. **Remaining ModalForm migrations** — 7 form components can be mechanically refactored to use the shared `<ModalForm>` component.
