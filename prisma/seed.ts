@@ -210,7 +210,43 @@ async function main() {
 
   console.log("  Created 4 Jardim units (permilagem: 1000).");
 
-  // PLACEHOLDER — Part 5 will replace this line
+  // ═══════════════════════════════════════════════════════════════════════════
+  // PART 5: Suppliers
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  // Aurora suppliers
+  const auroraLimpeza = await db.supplier.create({
+    data: {
+      condominiumId: aurora.id, name: "LimpaTudo Lda.", nif: "509876543",
+      phone: "210123456", email: "geral@limpatudo.pt", category: "Limpeza",
+    },
+  });
+
+  const auroraElevador = await db.supplier.create({
+    data: {
+      condominiumId: aurora.id, name: "ElevaPro S.A.", nif: "504321987",
+      phone: "210654321", email: "contratos@elevapro.pt", category: "Elevadores",
+    },
+  });
+
+  // Jardim suppliers
+  const jardimLimpeza = await db.supplier.create({
+    data: {
+      condominiumId: jardim.id, name: "Porto Limpo Lda.", nif: "508765432",
+      phone: "220112233", email: "info@portolimpo.pt", category: "Limpeza",
+    },
+  });
+
+  const jardimManutencao = await db.supplier.create({
+    data: {
+      condominiumId: jardim.id, name: "ManutençãoNorte S.A.", nif: "507654321",
+      phone: "220334455", email: "geral@manutencaonorte.pt", category: "Manutenção Geral",
+    },
+  });
+
+  console.log("  Created 4 suppliers (2 per condo).");
+
+  // PLACEHOLDER — Part 6 will replace this line
 }
 
 main()
