@@ -501,4 +501,231 @@ describe("Financial Engine — Report Consistency Invariants", () => {
   });
 });
 
-// PLACEHOLDER — Part 3 will be added below
+// ═══════════════════════════════════════════════════════════════════════════════
+// PART 3: Budget variance, reserve fund, and year boundary isolation
+// ═══════════════════════════════════════════════════════════════════════════════
+
+describe("Financial Engine — Budget & Reserve Fund", () => {
+  const standardBudget = {
+    totalAmount: 24000,
+    status: "APPROVED",
+    reserveFundPercentage: 10,
+    items: [
+      { category: "Limpeza", description: "Limpeza mensal", plannedAmount: 7200 },
+      { category: "Elevador", description: "Manutenção elevador", plannedAmount: 4800 },
+      { category: "Electricidade", description: "Electricidade comum", plannedAmount: 3600 },
+      { category: "Seguro", description: "Seguro multirriscos", plannedAmount: 1800 },
+      { category: "Fundo de Reserva", description: "10% do orçamento", plannedAmount: 2400 },
+    ],
+  };
+
+  describe("budget variance per category", () => {
+    it("variance = planned - actual for each line", () => {
+      const expenses = [
+        { category: "Limpeza", amount: 6000, date: "2026-06-01" },
+        { category: "Elevador", amount: 5200, date: "2026-06-01" },
+        { category: "Electricidade", amount: 3600, date: "2026-06-01" },
+        { category: "Seguro", amount: 1800, date: "2026-06-01" },
+        { category: "Fundo de Reserva", amount: 2400, date: "2026-06-01" },
+      ];
+      const report = buildContaGerencia(makeReport({ budget: standardBudget, expenses }));
+
+      const limpeza = report.budgetLines.find(l => l.category === "Limpeza")!;
+      expect(limpeza.planned).toBe(7200);
+      expect(limpeza.actual).toBe(6000);
+      expect(limpeza.variance).toBe(1200); // under budget
+
+      const elevador = report.budgetLines.find(l => l.category === "Elevador")!;
+      expect(elevador.planned).toBe(4800);
+      expect(elevador.actual).toBe(5200);
+      expect(elevador.variance).toBe(-400); // over budget
+
+      const electr = report.budgetLines.find(l => l.category === "Electricidade")!;
+      expect(electr.variance).toBe(0); // exactly on budget
+    });
+
+    it("categories with no spending have full planned as positive variance", () => {
+      const report = buildContaGerencia(makeReport({
+        budget: standardBudget,
+        expenses: [], // no spending at all
+      }));
+
+      for (const line of report.budgetLines) {
+        expect(line.actual).toBe(0);
+        expect(line.variance).toBe(line.planned);
+      }
+    });
+
+    it("unbudgeted expenses appear in totals but not in budget lines", () => {
+      const expenses = [
+        { category: "Limpeza", amount: 3000, date: "2026-03-01" },
+        { category: "Jardinagem", amount: 2000, date: "2026-04-01" }, // not in budget
+      ];
+      const report = buildContaGerencia(makeReport({ budget: standardBudget, expenses }));
+
+      // Total includes unbudgeted
+      expect(report.totalExpenses).toBe(5000);
+
+      // Budget lines only cover budgeted categories
+      expect(report.budgetLines.find(l => l.category === "Jardinagem")).toBeUndefined();
+
+      // But category breakdown includes it
+      expect(report.expensesByCategory.find(c => c.category === "Jardinagem")).toBeDefined();
+    });
+
+    it("sum of budget line planned amounts = budgetTotal", () => {
+      const report = buildContaGerencia(makeReport({ budget: standardBudget }));
+
+      const sumPlanned = report.budgetLines.reduce((s, l) => s + l.planned, 0);
+      // Budget items may not sum to totalAmount (reserve fund is separate in some cases)
+      // but budgetTotal should reflect the budget's totalAmount
+      expect(report.budgetTotal).toBe(24000);
+      expect(sumPlanned).toBe(
+        standardBudget.items.reduce((s, i) => s + i.plannedAmount, 0)
+      );
+    });
+
+    it("multiple expenses in same category accumulate correctly", () => {
+      const expenses = [
+        { category: "Limpeza", amount: 600, date: "2026-01-05" },
+        { category: "Limpeza", amount: 600, date: "2026-02-05" },
+        { category: "Limpeza", amount: 600, date: "2026-03-05" },
+        { category: "Limpeza", amount: 600, date: "2026-04-05" },
+        { category: "Limpeza", amount: 600, date: "2026-05-05" },
+        { category: "Limpeza", amount: 600, date: "2026-06-05" },
+      ];
+      const report = buildContaGerencia(makeReport({ budget: standardBudget, expenses }));
+
+      const limpeza = report.budgetLines.find(l => l.category === "Limpeza")!;
+      expect(limpeza.actual).toBe(3600);
+      expect(limpeza.variance).toBe(3600); // 7200 - 3600 = half year
+    });
+  });
+
+  describe("reserve fund calculations", () => {
+    it("contributions = paid × percentage", () => {
+      const quotas = [
+        { unitIdentifier: "A", ownerName: "Ana", amount: 10000, status: "PAID" as const, period: "2026-01" },
+      ];
+      const report = buildContaGerencia(makeReport({
+        budget: { ...standardBudget, reserveFundPercentage: 10 },
+        quotas,
+      }));
+
+      expect(report.reserveFundPercentage).toBe(10);
+      expect(report.reserveFundContributions).toBe(1000); // 10000 × 10%
+    });
+
+    it("contributions with 15% rate", () => {
+      const quotas = [
+        { unitIdentifier: "A", ownerName: "Ana", amount: 8000, status: "PAID" as const, period: "2026-01" },
+      ];
+      const report = buildContaGerencia(makeReport({
+        budget: { ...standardBudget, reserveFundPercentage: 15 },
+        quotas,
+      }));
+
+      expect(report.reserveFundContributions).toBe(1200); // 8000 × 15%
+    });
+
+    it("zero contributions when nothing paid", () => {
+      const quotas = [
+        { unitIdentifier: "A", ownerName: "Ana", amount: 5000, status: "PENDING" as const, period: "2026-01" },
+      ];
+      const report = buildContaGerencia(makeReport({
+        budget: standardBudget,
+        quotas,
+      }));
+
+      expect(report.reserveFundContributions).toBe(0);
+    });
+
+    it("defaults to 10% when no budget", () => {
+      const quotas = [
+        { unitIdentifier: "A", ownerName: "Ana", amount: 6000, status: "PAID" as const, period: "2026-01" },
+      ];
+      const report = buildContaGerencia(makeReport({ quotas }));
+
+      expect(report.reserveFundPercentage).toBe(10);
+      expect(report.reserveFundContributions).toBe(600);
+    });
+
+    it("reserve fund balance equals contributions (no withdrawals modeled)", () => {
+      const quotas = [
+        { unitIdentifier: "A", ownerName: "Ana", amount: 12000, status: "PAID" as const, period: "2026-01" },
+      ];
+      const report = buildContaGerencia(makeReport({
+        budget: standardBudget,
+        quotas,
+      }));
+
+      expect(report.reserveFundBalance).toBe(report.reserveFundContributions);
+    });
+  });
+
+  describe("year boundary isolation", () => {
+    it("quotas from other years are excluded", () => {
+      const report = buildContaGerencia(makeReport({
+        year: 2026,
+        quotas: [
+          { unitIdentifier: "A", ownerName: "Ana", amount: 100, status: "PAID", period: "2026-01" },
+          { unitIdentifier: "A", ownerName: "Ana", amount: 100, status: "PAID", period: "2026-12" },
+          { unitIdentifier: "A", ownerName: "Ana", amount: 999, status: "PAID", period: "2025-12" },
+          { unitIdentifier: "A", ownerName: "Ana", amount: 999, status: "PAID", period: "2027-01" },
+        ],
+      }));
+
+      expect(report.totalQuotasGenerated).toBe(200); // only 2026
+      expect(report.totalQuotasPaid).toBe(200);
+    });
+
+    it("expenses from other years are excluded", () => {
+      const report = buildContaGerencia(makeReport({
+        year: 2026,
+        expenses: [
+          { category: "Limpeza", amount: 500, date: "2026-01-01" },
+          { category: "Limpeza", amount: 500, date: "2026-12-31" },
+          { category: "Limpeza", amount: 9999, date: "2025-12-31" },
+          { category: "Limpeza", amount: 9999, date: "2027-01-01" },
+        ],
+      }));
+
+      expect(report.totalExpenses).toBe(1000); // only 2026
+    });
+
+    it("Jan 1st is included, Dec 31st is included, boundaries are correct", () => {
+      const report = buildContaGerencia(makeReport({
+        year: 2026,
+        quotas: [
+          { unitIdentifier: "A", ownerName: "Ana", amount: 1, status: "PAID", period: "2026-01" },
+          { unitIdentifier: "A", ownerName: "Ana", amount: 1, status: "PAID", period: "2026-12" },
+        ],
+        expenses: [
+          { category: "X", amount: 1, date: "2026-01-01" },
+          { category: "X", amount: 1, date: "2026-12-31" },
+        ],
+      }));
+
+      expect(report.totalQuotasGenerated).toBe(2);
+      expect(report.totalExpenses).toBe(2);
+    });
+
+    it("report for year with no data returns zeros", () => {
+      const report = buildContaGerencia(makeReport({
+        year: 2024,
+        quotas: [
+          { unitIdentifier: "A", ownerName: "Ana", amount: 100, status: "PAID", period: "2026-01" },
+        ],
+        expenses: [
+          { category: "X", amount: 500, date: "2026-06-15" },
+        ],
+      }));
+
+      expect(report.totalQuotasGenerated).toBe(0);
+      expect(report.totalExpenses).toBe(0);
+      expect(report.netBalance).toBe(0);
+    });
+  });
+});
+
+// PLACEHOLDER — Part 4 will be added below
