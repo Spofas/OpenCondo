@@ -246,7 +246,74 @@ async function main() {
 
   console.log("  Created 4 suppliers (2 per condo).");
 
-  // PLACEHOLDER — Part 6 will replace this line
+  // ═══════════════════════════════════════════════════════════════════════════
+  // PART 6: Budgets + Budget Items (2025 & 2026 × 2 condos)
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  // Aurora 2025 — approved, €20,000
+  const auroraBudget2025 = await db.budget.create({
+    data: {
+      condominiumId: aurora.id, year: 2025, status: "APPROVED",
+      totalAmount: 20000, reserveFundPercentage: 10, approvedAt: new Date("2024-12-10"),
+    },
+  });
+
+  const ab25Items = await Promise.all([
+    db.budgetItem.create({ data: { budgetId: auroraBudget2025.id, category: "Limpeza", description: "Limpeza semanal das áreas comuns", plannedAmount: 6000 } }),
+    db.budgetItem.create({ data: { budgetId: auroraBudget2025.id, category: "Elevador", description: "Manutenção mensal do elevador", plannedAmount: 4000 } }),
+    db.budgetItem.create({ data: { budgetId: auroraBudget2025.id, category: "Electricidade", description: "Electricidade das áreas comuns", plannedAmount: 3000 } }),
+    db.budgetItem.create({ data: { budgetId: auroraBudget2025.id, category: "Seguro", description: "Seguro multirriscos", plannedAmount: 1800 } }),
+    db.budgetItem.create({ data: { budgetId: auroraBudget2025.id, category: "Fundo de Reserva", description: "10% do orçamento anual", plannedAmount: 2000 } }),
+  ]);
+
+  // Aurora 2026 — approved, €24,000
+  const auroraBudget2026 = await db.budget.create({
+    data: {
+      condominiumId: aurora.id, year: 2026, status: "APPROVED",
+      totalAmount: 24000, reserveFundPercentage: 10, approvedAt: new Date("2025-12-15"),
+    },
+  });
+
+  const ab26Items = await Promise.all([
+    db.budgetItem.create({ data: { budgetId: auroraBudget2026.id, category: "Limpeza", description: "Limpeza semanal das áreas comuns", plannedAmount: 7200 } }),
+    db.budgetItem.create({ data: { budgetId: auroraBudget2026.id, category: "Elevador", description: "Manutenção mensal do elevador", plannedAmount: 4800 } }),
+    db.budgetItem.create({ data: { budgetId: auroraBudget2026.id, category: "Electricidade", description: "Electricidade das áreas comuns", plannedAmount: 3600 } }),
+    db.budgetItem.create({ data: { budgetId: auroraBudget2026.id, category: "Fundo de Reserva", description: "10% do orçamento anual", plannedAmount: 2400 } }),
+  ]);
+
+  // Jardim 2025 — approved, €14,400
+  const jardimBudget2025 = await db.budget.create({
+    data: {
+      condominiumId: jardim.id, year: 2025, status: "APPROVED",
+      totalAmount: 14400, reserveFundPercentage: 10, approvedAt: new Date("2024-12-18"),
+    },
+  });
+
+  const jb25Items = await Promise.all([
+    db.budgetItem.create({ data: { budgetId: jardimBudget2025.id, category: "Limpeza", description: "Limpeza bisemanal", plannedAmount: 4800 } }),
+    db.budgetItem.create({ data: { budgetId: jardimBudget2025.id, category: "Manutenção Geral", description: "Manutenção áreas comuns e jardim", plannedAmount: 3600 } }),
+    db.budgetItem.create({ data: { budgetId: jardimBudget2025.id, category: "Electricidade", description: "Electricidade partes comuns", plannedAmount: 2400 } }),
+    db.budgetItem.create({ data: { budgetId: jardimBudget2025.id, category: "Fundo de Reserva", description: "10% do orçamento anual", plannedAmount: 1440 } }),
+  ]);
+
+  // Jardim 2026 — approved, €16,800
+  const jardimBudget2026 = await db.budget.create({
+    data: {
+      condominiumId: jardim.id, year: 2026, status: "APPROVED",
+      totalAmount: 16800, reserveFundPercentage: 10, approvedAt: new Date("2025-12-20"),
+    },
+  });
+
+  const jb26Items = await Promise.all([
+    db.budgetItem.create({ data: { budgetId: jardimBudget2026.id, category: "Limpeza", description: "Limpeza bisemanal", plannedAmount: 5400 } }),
+    db.budgetItem.create({ data: { budgetId: jardimBudget2026.id, category: "Manutenção Geral", description: "Manutenção áreas comuns e jardim", plannedAmount: 4200 } }),
+    db.budgetItem.create({ data: { budgetId: jardimBudget2026.id, category: "Electricidade", description: "Electricidade partes comuns", plannedAmount: 2800 } }),
+    db.budgetItem.create({ data: { budgetId: jardimBudget2026.id, category: "Fundo de Reserva", description: "10% do orçamento anual", plannedAmount: 1680 } }),
+  ]);
+
+  console.log("  Created 4 budgets (2025+2026 × 2 condos) with budget items.");
+
+  // PLACEHOLDER — Part 7 will replace this line
 }
 
 main()
