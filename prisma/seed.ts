@@ -482,7 +482,151 @@ async function main() {
 
   console.log("  Created 4 recurring expense templates.");
 
-  // PLACEHOLDER — Part 9 will replace this line
+  // ═══════════════════════════════════════════════════════════════════════════
+  // PART 9: Meetings + Atas + Votes + Attendance
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  // --- Aurora: past meeting (Dec 2025, completed) ---
+  const auroraPastMeeting = await db.meeting.create({
+    data: {
+      condominiumId: aurora.id, date: new Date("2025-12-15T19:00:00"),
+      location: "Sala de condomínio, R/C", type: "ORDINARIA", status: "REALIZADA",
+    },
+  });
+
+  const auroraAg1 = await db.agendaItem.create({
+    data: { meetingId: auroraPastMeeting.id, order: 1, title: "Aprovação das contas de 2024", description: "Apresentação e votação do relatório de contas." },
+  });
+  const auroraAg2 = await db.agendaItem.create({
+    data: { meetingId: auroraPastMeeting.id, order: 2, title: "Orçamento para 2026", description: "Discussão e votação do orçamento anual de €24.000." },
+  });
+  await db.agendaItem.create({
+    data: { meetingId: auroraPastMeeting.id, order: 3, title: "Diversos" },
+  });
+
+  // Attendance
+  for (const att of [
+    { userId: adminAurora.id, status: "PRESENTE" as const, permilagem: 100 },
+    { userId: joao.id, status: "PRESENTE" as const, permilagem: 300 },
+    { userId: maria.id, status: "REPRESENTADO" as const, permilagem: 200 },
+    { userId: carlos.id, status: "PRESENTE" as const, permilagem: 400 },
+  ]) {
+    await db.meetingAttendee.create({
+      data: {
+        meetingId: auroraPastMeeting.id, userId: att.userId,
+        status: att.status, permilagem: att.permilagem,
+        representedBy: att.status === "REPRESENTADO" ? adminAurora.id : null,
+      },
+    });
+  }
+
+  // Votes — agenda item 1: unanimous; agenda item 2: 5 favor, 1 against
+  for (const unit of auroraUnits) {
+    await db.vote.create({
+      data: { meetingId: auroraPastMeeting.id, agendaItemId: auroraAg1.id, unitId: unit.id, vote: "A_FAVOR", permilagem: unit.permilagem },
+    });
+    await db.vote.create({
+      data: {
+        meetingId: auroraPastMeeting.id, agendaItemId: auroraAg2.id, unitId: unit.id,
+        vote: unit.identifier === "2.º Dto" ? "CONTRA" : "A_FAVOR", permilagem: unit.permilagem,
+      },
+    });
+  }
+
+  // Ata
+  await db.ata.create({
+    data: {
+      meetingId: auroraPastMeeting.id, number: 1, status: "FINAL",
+      content: "Ata n.º 1/2025 — Assembleia Geral Ordinária\n\nData: 15 de Dezembro de 2025, 19h00\nLocal: Sala de condomínio, R/C\n\nPresenças: Administrador Aurora, João Silva, Carlos Ferreira (presentes); Maria Santos (representada pelo Administrador).\n\nPonto 1 — Aprovação das contas de 2024: Aprovado por unanimidade.\n\nPonto 2 — Orçamento para 2026: Aprovado por maioria (850/1000 permilagem a favor). O condómino Carlos Ferreira (fração 2.º Dto, 150‰) votou contra.\n\nPonto 3 — Diversos: Discutiu-se a necessidade de obras na fachada.\n\nA reunião terminou às 20h15.",
+    },
+  });
+
+  // --- Aurora: future meeting (Apr 2026) ---
+  const auroraFutureMeeting = await db.meeting.create({
+    data: {
+      condominiumId: aurora.id, date: new Date("2026-04-15T19:00:00"),
+      location: "Sala de condomínio, R/C", type: "ORDINARIA", status: "AGENDADA",
+    },
+  });
+  await db.agendaItem.createMany({
+    data: [
+      { meetingId: auroraFutureMeeting.id, order: 1, title: "Aprovação da ata anterior" },
+      { meetingId: auroraFutureMeeting.id, order: 2, title: "Apresentação das contas de 2025" },
+      { meetingId: auroraFutureMeeting.id, order: 3, title: "Obras na fachada — ponto de situação" },
+      { meetingId: auroraFutureMeeting.id, order: 4, title: "Diversos" },
+    ],
+  });
+
+  console.log("  Created 2 Aurora meetings (1 completed with votes/ata, 1 scheduled).");
+
+  // --- Jardim: past meeting (Nov 2025, completed) ---
+  const jardimPastMeeting = await db.meeting.create({
+    data: {
+      condominiumId: jardim.id, date: new Date("2025-11-20T18:30:00"),
+      location: "Sala de reuniões, Fração A", type: "ORDINARIA", status: "REALIZADA",
+    },
+  });
+
+  const jardimAg1 = await db.agendaItem.create({
+    data: { meetingId: jardimPastMeeting.id, order: 1, title: "Aprovação das contas de 2024", description: "Relatório financeiro do exercício de 2024." },
+  });
+  const jardimAg2 = await db.agendaItem.create({
+    data: { meetingId: jardimPastMeeting.id, order: 2, title: "Orçamento para 2026", description: "Proposta de €16.800 para 2026." },
+  });
+  await db.agendaItem.create({
+    data: { meetingId: jardimPastMeeting.id, order: 3, title: "Obras no jardim", description: "Proposta de requalificação do jardim comum." },
+  });
+
+  // Attendance
+  for (const att of [
+    { userId: adminJardim.id, status: "PRESENTE" as const, permilagem: 0 },
+    { userId: joao.id, status: "PRESENTE" as const, permilagem: 250 },
+    { userId: sofia.id, status: "PRESENTE" as const, permilagem: 250 },
+    { userId: ricardo.id, status: "AUSENTE" as const, permilagem: 300 },
+    { userId: beatriz.id, status: "PRESENTE" as const, permilagem: 200 },
+  ]) {
+    await db.meetingAttendee.create({
+      data: { meetingId: jardimPastMeeting.id, userId: att.userId, status: att.status, permilagem: att.permilagem },
+    });
+  }
+
+  // Votes
+  for (const unit of jardimUnits) {
+    const isAbsent = unit.identifier === "Fração C"; // Ricardo was absent
+    await db.vote.create({
+      data: { meetingId: jardimPastMeeting.id, agendaItemId: jardimAg1.id, unitId: unit.id, vote: isAbsent ? "ABSTENCAO" : "A_FAVOR", permilagem: unit.permilagem },
+    });
+    await db.vote.create({
+      data: { meetingId: jardimPastMeeting.id, agendaItemId: jardimAg2.id, unitId: unit.id, vote: "A_FAVOR", permilagem: unit.permilagem },
+    });
+  }
+
+  // Ata
+  await db.ata.create({
+    data: {
+      meetingId: jardimPastMeeting.id, number: 1, status: "FINAL",
+      content: "Ata n.º 1/2025 — Assembleia Geral Ordinária\n\nData: 20 de Novembro de 2025, 18h30\nLocal: Sala de reuniões, Fração A\n\nPresenças: Pedro Mendes (administrador), João Silva, Sofia Oliveira, Beatriz Almeida (presentes); Ricardo Pereira (ausente).\n\nPonto 1 — Aprovação das contas de 2024: Aprovado por maioria (700/1000 permilagem). Fração C absteve-se (ausente).\n\nPonto 2 — Orçamento para 2026: Aprovado por unanimidade dos presentes.\n\nPonto 3 — Obras no jardim: Aprovada a requalificação do jardim com orçamento de €3.500. Administrador fica encarregue de contratar.\n\nA reunião terminou às 19h45.",
+    },
+  });
+
+  // --- Jardim: future meeting (May 2026) ---
+  const jardimFutureMeeting = await db.meeting.create({
+    data: {
+      condominiumId: jardim.id, date: new Date("2026-05-10T18:30:00"),
+      location: "Sala de reuniões, Fração A", type: "EXTRAORDINARIA", status: "AGENDADA",
+    },
+  });
+  await db.agendaItem.createMany({
+    data: [
+      { meetingId: jardimFutureMeeting.id, order: 1, title: "Aprovação da ata anterior" },
+      { meetingId: jardimFutureMeeting.id, order: 2, title: "Obras no jardim — adjudicação" },
+      { meetingId: jardimFutureMeeting.id, order: 3, title: "Diversos" },
+    ],
+  });
+
+  console.log("  Created 2 Jardim meetings (1 completed with votes/ata, 1 scheduled).");
+
+  // PLACEHOLDER — Part 10 will replace this line
 }
 
 main()
