@@ -41,10 +41,12 @@ async function ContaGerenciaContent({
   condoId,
   condo,
   isAdmin,
+  yearParam,
 }: {
   condoId: string;
   condo: { name: string; nif: string | null; address: string; postalCode: string | null; city: string | null };
   isAdmin: boolean;
+  yearParam?: string;
 }) {
   // Get available years from budgets and quotas
   const [budgets, quotaPeriods] = await Promise.all([
@@ -66,10 +68,11 @@ async function ContaGerenciaContent({
     (a, b) => b - a
   );
 
-  // Default to most recent year, or current year
-  const currentYear = allYears[0] || new Date().getFullYear();
+  // Use year from URL param if valid, otherwise default to most recent
+  const parsedYear = yearParam ? parseInt(yearParam, 10) : NaN;
+  const currentYear = allYears.includes(parsedYear) ? parsedYear : (allYears[0] || new Date().getFullYear());
 
-  // Build report for the default year
+  // Build report for the selected year
   const report = await buildReportForYear(condoId, condo, currentYear);
 
   return (
@@ -83,8 +86,15 @@ async function ContaGerenciaContent({
   );
 }
 
-export default async function ContaGerenciaPage({ params }: { params: Promise<{ slug: string }> }) {
+export default async function ContaGerenciaPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ slug: string }>;
+  searchParams: Promise<{ year?: string }>;
+}) {
   const { slug } = await params;
+  const { year } = await searchParams;
   const { membership } = await requireMembershipWithCondo(slug);
 
   const condoId = membership.condominiumId;
@@ -97,6 +107,7 @@ export default async function ContaGerenciaPage({ params }: { params: Promise<{ 
         condoId={condoId}
         condo={condo}
         isAdmin={isAdmin}
+        yearParam={year}
       />
     </Suspense>
   );
