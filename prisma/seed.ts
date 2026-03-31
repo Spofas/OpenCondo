@@ -400,7 +400,89 @@ async function main() {
   }
   console.log(`  Created ${allPaidQuotas.length} quota payment transactions.`);
 
-  // PLACEHOLDER — Part 8 will replace this line
+  // ═══════════════════════════════════════════════════════════════════════════
+  // PART 8: Expenses + Recurring Expenses + Expense Transactions
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  // Aurora expenses (2025 + early 2026)
+  const auroraExpenses = [
+    // 2025 — full year of expenses
+    { date: new Date("2025-01-05"), description: "Limpeza - Janeiro 2025", amount: 500, category: "Limpeza", supplierId: auroraLimpeza.id, budgetItemId: ab25Items[0].id },
+    { date: new Date("2025-02-05"), description: "Limpeza - Fevereiro 2025", amount: 500, category: "Limpeza", supplierId: auroraLimpeza.id, budgetItemId: ab25Items[0].id },
+    { date: new Date("2025-03-05"), description: "Limpeza - Março 2025", amount: 500, category: "Limpeza", supplierId: auroraLimpeza.id, budgetItemId: ab25Items[0].id },
+    { date: new Date("2025-01-15"), description: "Manutenção elevador - Jan 2025", amount: 333, category: "Elevador", supplierId: auroraElevador.id, budgetItemId: ab25Items[1].id },
+    { date: new Date("2025-02-15"), description: "Manutenção elevador - Fev 2025", amount: 333, category: "Elevador", supplierId: auroraElevador.id, budgetItemId: ab25Items[1].id },
+    { date: new Date("2025-03-20"), description: "Electricidade - Q1 2025", amount: 720, category: "Electricidade", budgetItemId: ab25Items[2].id },
+    { date: new Date("2025-06-20"), description: "Electricidade - Q2 2025", amount: 680, category: "Electricidade", budgetItemId: ab25Items[2].id },
+    { date: new Date("2025-07-10"), description: "Reparação porta garagem", amount: 380, category: "Manutenção", notes: "Mola da porta partiu" },
+    { date: new Date("2025-09-20"), description: "Electricidade - Q3 2025", amount: 750, category: "Electricidade", budgetItemId: ab25Items[2].id },
+    { date: new Date("2025-11-15"), description: "Seguro multirriscos anual", amount: 1800, category: "Seguro", budgetItemId: ab25Items[3].id },
+    // 2026
+    { date: new Date("2026-01-05"), description: "Limpeza - Janeiro 2026", amount: 600, category: "Limpeza", supplierId: auroraLimpeza.id, budgetItemId: ab26Items[0].id },
+    { date: new Date("2026-01-15"), description: "Manutenção elevador - Jan 2026", amount: 400, category: "Elevador", supplierId: auroraElevador.id, budgetItemId: ab26Items[1].id },
+    { date: new Date("2026-01-20"), description: "Electricidade - Janeiro 2026", amount: 280, category: "Electricidade", budgetItemId: ab26Items[2].id },
+    { date: new Date("2026-02-05"), description: "Limpeza - Fevereiro 2026", amount: 600, category: "Limpeza", supplierId: auroraLimpeza.id, budgetItemId: ab26Items[0].id },
+    { date: new Date("2026-02-15"), description: "Manutenção elevador - Fev 2026", amount: 400, category: "Elevador", supplierId: auroraElevador.id, budgetItemId: ab26Items[1].id },
+    { date: new Date("2026-03-05"), description: "Limpeza - Março 2026", amount: 600, category: "Limpeza", supplierId: auroraLimpeza.id, budgetItemId: ab26Items[0].id },
+    { date: new Date("2026-03-10"), description: "Reparação porta entrada", amount: 450, category: "Manutenção", notes: "Porta principal partida por vandalismo" },
+  ];
+
+  for (const e of auroraExpenses) {
+    await db.expense.create({ data: { condominiumId: aurora.id, ...e } });
+  }
+
+  // Jardim expenses (2025 + early 2026)
+  const jardimExpenses = [
+    // 2025
+    { date: new Date("2025-01-10"), description: "Limpeza - Janeiro 2025", amount: 400, category: "Limpeza", supplierId: jardimLimpeza.id, budgetItemId: jb25Items[0].id },
+    { date: new Date("2025-02-10"), description: "Limpeza - Fevereiro 2025", amount: 400, category: "Limpeza", supplierId: jardimLimpeza.id, budgetItemId: jb25Items[0].id },
+    { date: new Date("2025-03-10"), description: "Limpeza - Março 2025", amount: 400, category: "Limpeza", supplierId: jardimLimpeza.id, budgetItemId: jb25Items[0].id },
+    { date: new Date("2025-01-20"), description: "Manutenção jardim - Jan 2025", amount: 300, category: "Manutenção Geral", supplierId: jardimManutencao.id, budgetItemId: jb25Items[1].id },
+    { date: new Date("2025-04-15"), description: "Electricidade - Q1 2025", amount: 580, category: "Electricidade", budgetItemId: jb25Items[2].id },
+    { date: new Date("2025-06-20"), description: "Pintura hall entrada", amount: 950, category: "Manutenção Geral", supplierId: jardimManutencao.id, notes: "Pintura completa do hall" },
+    { date: new Date("2025-07-15"), description: "Electricidade - Q2 2025", amount: 540, category: "Electricidade", budgetItemId: jb25Items[2].id },
+    { date: new Date("2025-10-15"), description: "Electricidade - Q3 2025", amount: 610, category: "Electricidade", budgetItemId: jb25Items[2].id },
+    // 2026
+    { date: new Date("2026-01-10"), description: "Limpeza - Janeiro 2026", amount: 450, category: "Limpeza", supplierId: jardimLimpeza.id, budgetItemId: jb26Items[0].id },
+    { date: new Date("2026-01-20"), description: "Manutenção jardim - Jan 2026", amount: 350, category: "Manutenção Geral", supplierId: jardimManutencao.id, budgetItemId: jb26Items[1].id },
+    { date: new Date("2026-02-10"), description: "Limpeza - Fevereiro 2026", amount: 450, category: "Limpeza", supplierId: jardimLimpeza.id, budgetItemId: jb26Items[0].id },
+    { date: new Date("2026-03-10"), description: "Limpeza - Março 2026", amount: 450, category: "Limpeza", supplierId: jardimLimpeza.id, budgetItemId: jb26Items[0].id },
+  ];
+
+  for (const e of jardimExpenses) {
+    await db.expense.create({ data: { condominiumId: jardim.id, ...e } });
+  }
+
+  console.log(`  Created ${auroraExpenses.length + jardimExpenses.length} expenses.`);
+
+  // Expense transactions (negative amounts = money out)
+  for (const condoId of [aurora.id, jardim.id]) {
+    const expenses = await db.expense.findMany({ where: { condominiumId: condoId }, orderBy: { date: "asc" } });
+    for (const e of expenses) {
+      await db.transaction.create({
+        data: {
+          condominiumId: condoId, date: e.date, amount: -Number(e.amount),
+          type: "EXPENSE", description: e.description, expenseId: e.id,
+        },
+      });
+    }
+  }
+
+  console.log("  Created expense transactions.");
+
+  // Recurring expenses
+  await db.recurringExpense.createMany({
+    data: [
+      { condominiumId: aurora.id, description: "Limpeza semanal das áreas comuns", amount: 600, category: "Limpeza", frequency: "MENSAL", isActive: true, lastGenerated: "2026-03" },
+      { condominiumId: aurora.id, description: "Manutenção preventiva do elevador", amount: 400, category: "Elevador", frequency: "MENSAL", isActive: true, lastGenerated: "2026-02" },
+      { condominiumId: jardim.id, description: "Limpeza bisemanal", amount: 450, category: "Limpeza", frequency: "MENSAL", isActive: true, lastGenerated: "2026-03" },
+      { condominiumId: jardim.id, description: "Manutenção jardim e áreas comuns", amount: 350, category: "Manutenção Geral", frequency: "MENSAL", isActive: true, lastGenerated: "2026-01" },
+    ],
+  });
+
+  console.log("  Created 4 recurring expense templates.");
+
+  // PLACEHOLDER — Part 9 will replace this line
 }
 
 main()
