@@ -172,7 +172,45 @@ async function main() {
 
   console.log("  Created 11 memberships (João is in both condos).");
 
-  // PLACEHOLDER — Part 4 will replace this line
+  // ═══════════════════════════════════════════════════════════════════════════
+  // PART 4: Units
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  // Aurora: 6 units, permilagem totals 1000
+  const auroraUnitData = [
+    { identifier: "R/C Esq", floor: 0, typology: "T1", permilagem: 100, ownerId: adminAurora.id },
+    { identifier: "R/C Dto", floor: 0, typology: "T1", permilagem: 100, ownerId: joao.id, tenantId: ana.id },
+    { identifier: "1.º Esq", floor: 1, typology: "T2", permilagem: 200, ownerId: joao.id },
+    { identifier: "1.º Dto", floor: 1, typology: "T2", permilagem: 200, ownerId: maria.id },
+    { identifier: "2.º Esq", floor: 2, typology: "T3", permilagem: 250, ownerId: carlos.id },
+    { identifier: "2.º Dto", floor: 2, typology: "T2", permilagem: 150, ownerId: carlos.id },
+  ];
+
+  const auroraUnits = [];
+  for (const u of auroraUnitData) {
+    const unit = await db.unit.create({ data: { condominiumId: aurora.id, ...u } });
+    auroraUnits.push(unit);
+  }
+
+  console.log("  Created 6 Aurora units (permilagem: 1000).");
+
+  // Jardim: 4 units, permilagem totals 1000
+  const jardimUnitData = [
+    { identifier: "Fração A", floor: 0, typology: "T2", permilagem: 250, ownerId: joao.id },
+    { identifier: "Fração B", floor: 0, typology: "T2", permilagem: 250, ownerId: sofia.id, tenantId: tiago.id },
+    { identifier: "Fração C", floor: 1, typology: "T3", permilagem: 300, ownerId: ricardo.id },
+    { identifier: "Fração D", floor: 1, typology: "T1", permilagem: 200, ownerId: beatriz.id },
+  ];
+
+  const jardimUnits = [];
+  for (const u of jardimUnitData) {
+    const unit = await db.unit.create({ data: { condominiumId: jardim.id, ...u } });
+    jardimUnits.push(unit);
+  }
+
+  console.log("  Created 4 Jardim units (permilagem: 1000).");
+
+  // PLACEHOLDER — Part 5 will replace this line
 }
 
 main()
