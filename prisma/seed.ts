@@ -626,7 +626,204 @@ async function main() {
 
   console.log("  Created 2 Jardim meetings (1 completed with votes/ata, 1 scheduled).");
 
-  // PLACEHOLDER — Part 10 will replace this line
+  // ═══════════════════════════════════════════════════════════════════════════
+  // PART 10: Announcements, Contracts, Documents, Maintenance, Invites
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  // --- Announcements ---
+  // Aurora
+  await db.announcement.create({
+    data: {
+      condominiumId: aurora.id, authorId: adminAurora.id, pinned: true, category: "OBRAS",
+      title: "Obras na fachada — início previsto para Abril",
+      body: "Informamos todos os condóminos que as obras de reabilitação da fachada terão início na primeira semana de Abril de 2026. Os trabalhos deverão durar aproximadamente 3 meses.\n\nDurante este período, poderá haver algum ruído entre as 9h e as 18h nos dias úteis.\n\nO orçamento aprovado em assembleia foi de €15.000.",
+      createdAt: new Date("2026-03-10"),
+    },
+  });
+  await db.announcement.create({
+    data: {
+      condominiumId: aurora.id, authorId: adminAurora.id, pinned: false, category: "ASSEMBLEIA",
+      title: "Próxima assembleia geral ordinária",
+      body: "A assembleia geral ordinária realizar-se-á no dia 15 de Abril de 2026, às 19h00, na sala de condomínio do R/C.\n\nOrdem de trabalhos:\n1. Aprovação da ata anterior\n2. Apresentação das contas de 2025\n3. Obras na fachada\n4. Diversos",
+      createdAt: new Date("2026-03-15"),
+    },
+  });
+  await db.announcement.create({
+    data: {
+      condominiumId: aurora.id, authorId: adminAurora.id, pinned: false, category: "MANUTENCAO",
+      title: "Manutenção do elevador — 20 de Março",
+      body: "O elevador estará fora de serviço no dia 20 de Março entre as 10h e as 14h para manutenção preventiva semestral.",
+      createdAt: new Date("2026-03-17"),
+    },
+  });
+
+  // Jardim
+  await db.announcement.create({
+    data: {
+      condominiumId: jardim.id, authorId: adminJardim.id, pinned: true, category: "OBRAS",
+      title: "Requalificação do jardim — Primavera 2026",
+      body: "Conforme aprovado em assembleia, a requalificação do jardim comum terá início em Maio de 2026. O orçamento aprovado é de €3.500.\n\nO trabalho incluirá nova relva, sistema de rega automática e plantação de arbustos.",
+      createdAt: new Date("2026-03-05"),
+    },
+  });
+  await db.announcement.create({
+    data: {
+      condominiumId: jardim.id, authorId: adminJardim.id, pinned: false, category: "GERAL",
+      title: "Boas Festas e informações úteis",
+      body: "A administração deseja a todos um excelente 2026.\n\nRelembramos que as quotas vencem no dia 8 de cada mês. Pagamentos podem ser feitos por transferência ou MBWay.",
+      createdAt: new Date("2025-12-28"),
+    },
+  });
+
+  console.log("  Created 5 announcements (3 Aurora, 2 Jardim).");
+
+  // --- Contracts ---
+  await db.contract.create({
+    data: {
+      condominiumId: aurora.id, supplierId: auroraLimpeza.id,
+      description: "Contrato de limpeza semanal das áreas comuns", type: "Limpeza",
+      startDate: new Date("2025-01-01"), endDate: new Date("2026-12-31"),
+      renewalType: "AUTOMATICA", annualCost: 7200, paymentFrequency: "MENSAL", status: "ATIVO",
+    },
+  });
+  await db.contract.create({
+    data: {
+      condominiumId: aurora.id, supplierId: auroraElevador.id,
+      description: "Seguro multirriscos do edifício", type: "Seguro",
+      startDate: new Date("2025-03-01"), endDate: new Date("2025-12-31"),
+      renewalType: "MANUAL", annualCost: 1800, paymentFrequency: "ANUAL", status: "EXPIRADO",
+      policyNumber: "APL-2025-78432", insuredValue: 500000, coverageType: "Multirriscos",
+      notes: "Precisa de renovação — contactar seguradora.",
+    },
+  });
+  await db.contract.create({
+    data: {
+      condominiumId: jardim.id, supplierId: jardimLimpeza.id,
+      description: "Contrato de limpeza bisemanal", type: "Limpeza",
+      startDate: new Date("2025-06-01"), endDate: new Date("2026-05-31"),
+      renewalType: "AUTOMATICA", annualCost: 5400, paymentFrequency: "MENSAL", status: "ATIVO",
+    },
+  });
+  await db.contract.create({
+    data: {
+      condominiumId: jardim.id, supplierId: jardimManutencao.id,
+      description: "Manutenção geral e jardim", type: "Manutenção",
+      startDate: new Date("2025-01-01"), endDate: new Date("2025-12-31"),
+      renewalType: "MANUAL", annualCost: 4200, paymentFrequency: "TRIMESTRAL", status: "RENOVADO",
+      notes: "Renovado para 2026 com aumento de 5%.",
+    },
+  });
+
+  console.log("  Created 4 contracts (2 per condo).");
+
+  // --- Documents ---
+  await db.document.create({
+    data: {
+      condominiumId: aurora.id, name: "Regulamento do Condomínio", category: "REGULAMENTOS",
+      fileUrl: "/uploads/regulamento-aurora.pdf", fileName: "regulamento-aurora.pdf", fileSize: 245000, visibility: "ALL",
+    },
+  });
+  await db.document.create({
+    data: {
+      condominiumId: aurora.id, name: "Orçamento 2026 — Detalhado", category: "ORCAMENTOS",
+      fileUrl: "/uploads/orcamento-2026-aurora.pdf", fileName: "orcamento-2026-aurora.pdf", fileSize: 128000, visibility: "ADMIN_ONLY",
+    },
+  });
+  await db.document.create({
+    data: {
+      condominiumId: jardim.id, name: "Regulamento Interno", category: "REGULAMENTOS",
+      fileUrl: "/uploads/regulamento-jardim.pdf", fileName: "regulamento-jardim.pdf", fileSize: 198000, visibility: "ALL",
+    },
+  });
+  await db.document.create({
+    data: {
+      condominiumId: jardim.id, name: "Orçamento jardim requalificação", category: "ORCAMENTOS",
+      fileUrl: "/uploads/orcamento-jardim-obras.pdf", fileName: "orcamento-jardim-obras.pdf", fileSize: 85000, visibility: "ALL",
+    },
+  });
+
+  console.log("  Created 4 documents (2 per condo).");
+
+  // --- Maintenance Requests ---
+  // Aurora
+  const auroraMaint1 = await db.maintenanceRequest.create({
+    data: {
+      condominiumId: aurora.id, requesterId: joao.id,
+      title: "Lâmpada fundida no 1.º andar", description: "A lâmpada do corredor do 1.º andar fundiu.",
+      location: "Corredor do 1.º andar", priority: "MEDIA", status: "CONCLUIDO",
+      createdAt: new Date("2025-09-10"),
+    },
+  });
+  await db.maintenanceUpdate.createMany({
+    data: [
+      { maintenanceRequestId: auroraMaint1.id, status: "EM_ANALISE", note: "Pedido recebido.", createdAt: new Date("2025-09-11") },
+      { maintenanceRequestId: auroraMaint1.id, status: "CONCLUIDO", note: "Lâmpada substituída por LED.", createdAt: new Date("2025-09-13") },
+    ],
+  });
+
+  await db.maintenanceRequest.create({
+    data: {
+      condominiumId: aurora.id, requesterId: maria.id,
+      title: "Infiltração na garagem", description: "Infiltração de água no tecto da garagem, perto do lugar 4.",
+      location: "Garagem — lugar 4", priority: "ALTA", status: "EM_CURSO",
+      supplierId: auroraLimpeza.id, createdAt: new Date("2026-03-05"),
+    },
+  });
+
+  // Jardim
+  const jardimMaint1 = await db.maintenanceRequest.create({
+    data: {
+      condominiumId: jardim.id, requesterId: sofia.id,
+      title: "Portão da garagem avariado", description: "O portão automático da garagem não abre com o comando.",
+      location: "Garagem", priority: "ALTA", status: "CONCLUIDO",
+      supplierId: jardimManutencao.id, createdAt: new Date("2025-08-15"),
+    },
+  });
+  await db.maintenanceUpdate.createMany({
+    data: [
+      { maintenanceRequestId: jardimMaint1.id, status: "EM_ANALISE", note: "Técnico contactado.", createdAt: new Date("2025-08-16") },
+      { maintenanceRequestId: jardimMaint1.id, status: "EM_CURSO", note: "Peça encomendada.", createdAt: new Date("2025-08-20") },
+      { maintenanceRequestId: jardimMaint1.id, status: "CONCLUIDO", note: "Motor substituído.", createdAt: new Date("2025-08-28") },
+    ],
+  });
+
+  await db.maintenanceRequest.create({
+    data: {
+      condominiumId: jardim.id, requesterId: beatriz.id,
+      title: "Humidade na parede do hall", description: "Mancha de humidade crescente na parede junto à entrada.",
+      location: "Hall de entrada", priority: "MEDIA", status: "SUBMETIDO",
+      createdAt: new Date("2026-03-20"),
+    },
+  });
+
+  console.log("  Created 4 maintenance requests (2 per condo).");
+
+  // --- Invites ---
+  await db.invite.create({
+    data: { condominiumId: aurora.id, email: "novo.condominino@example.com", role: "OWNER", expiresAt: new Date("2026-04-30") },
+  });
+  await db.invite.create({
+    data: { condominiumId: jardim.id, email: "inquilino.novo@example.com", role: "TENANT", expiresAt: new Date("2026-05-15") },
+  });
+
+  console.log("  Created 2 pending invites.");
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Done!
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  console.log("\n✅ Seed complete!\n");
+  console.log("Login credentials (all use password123):");
+  console.log("  Admin:   admin@aurora.pt        (Edifício Aurora)");
+  console.log("  Admin:   pedro@jardim.pt         (Residências do Jardim)");
+  console.log("  Owner:   joao@example.com        (Aurora + Jardim)");
+  console.log("  Owner:   maria@example.com       (Aurora)");
+  console.log("  Owner:   carlos@example.com      (Aurora)");
+  console.log("  Owner:   sofia@example.com       (Jardim)");
+  console.log("  Owner:   ricardo@example.com     (Jardim)");
+  console.log("  Owner:   beatriz@example.com     (Jardim)");
+  console.log("  Tenant:  ana@example.com         (Aurora)");
+  console.log("  Tenant:  tiago@example.com       (Jardim)");
 }
 
 main()
