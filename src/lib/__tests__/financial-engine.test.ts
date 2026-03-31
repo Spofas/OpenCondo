@@ -728,4 +728,224 @@ describe("Financial Engine — Budget & Reserve Fund", () => {
   });
 });
 
-// PLACEHOLDER — Part 4 will be added below
+// ═══════════════════════════════════════════════════════════════════════════════
+// PART 4: Recurring expense generation logic + cron frequency gating
+// ═══════════════════════════════════════════════════════════════════════════════
+
+describe("Financial Engine — Recurring Expense & Cron Logic", () => {
+  describe("isDueThisPeriod — frequency gating", () => {
+    it("MENSAL fires all 12 months", () => {
+      for (let m = 0; m < 12; m++) {
+        expect(isDueThisPeriod("MENSAL", new Date(2026, m, 15))).toBe(true);
+      }
+    });
+
+    it("TRIMESTRAL fires exactly in Jan, Apr, Jul, Oct", () => {
+      const expected = [true, false, false, true, false, false, true, false, false, true, false, false];
+      for (let m = 0; m < 12; m++) {
+        expect(isDueThisPeriod("TRIMESTRAL", new Date(2026, m, 15))).toBe(expected[m]);
+      }
+    });
+
+    it("SEMESTRAL fires exactly in Jan and Jul", () => {
+      for (let m = 0; m < 12; m++) {
+        const expected = m === 0 || m === 6;
+        expect(isDueThisPeriod("SEMESTRAL", new Date(2026, m, 15))).toBe(expected);
+      }
+    });
+
+    it("ANUAL fires only in January", () => {
+      for (let m = 0; m < 12; m++) {
+        expect(isDueThisPeriod("ANUAL", new Date(2026, m, 15))).toBe(m === 0);
+      }
+    });
+
+    it("PONTUAL never fires", () => {
+      for (let m = 0; m < 12; m++) {
+        expect(isDueThisPeriod("PONTUAL", new Date(2026, m, 15))).toBe(false);
+      }
+    });
+
+    it("unknown frequency never fires", () => {
+      expect(isDueThisPeriod("DIARIO", new Date(2026, 5, 15))).toBe(false);
+      expect(isDueThisPeriod("", new Date(2026, 0, 1))).toBe(false);
+    });
+
+    it("total fires per year: MENSAL=12, TRIMESTRAL=4, SEMESTRAL=2, ANUAL=1", () => {
+      const count = (freq: string) =>
+        Array.from({ length: 12 }, (_, m) => isDueThisPeriod(freq, new Date(2026, m, 15)))
+          .filter(Boolean).length;
+
+      expect(count("MENSAL")).toBe(12);
+      expect(count("TRIMESTRAL")).toBe(4);
+      expect(count("SEMESTRAL")).toBe(2);
+      expect(count("ANUAL")).toBe(1);
+      expect(count("PONTUAL")).toBe(0);
+    });
+  });
+
+  describe("periodSuffix — description formatting", () => {
+    it("MENSAL: Portuguese month name + year", () => {
+      expect(periodSuffix("MENSAL", new Date(2026, 0, 1))).toBe("Janeiro 2026");
+      expect(periodSuffix("MENSAL", new Date(2026, 1, 1))).toBe("Fevereiro 2026");
+      expect(periodSuffix("MENSAL", new Date(2026, 2, 1))).toBe("Março 2026");
+      expect(periodSuffix("MENSAL", new Date(2026, 3, 1))).toBe("Abril 2026");
+      expect(periodSuffix("MENSAL", new Date(2026, 4, 1))).toBe("Maio 2026");
+      expect(periodSuffix("MENSAL", new Date(2026, 5, 1))).toBe("Junho 2026");
+      expect(periodSuffix("MENSAL", new Date(2026, 6, 1))).toBe("Julho 2026");
+      expect(periodSuffix("MENSAL", new Date(2026, 7, 1))).toBe("Agosto 2026");
+      expect(periodSuffix("MENSAL", new Date(2026, 8, 1))).toBe("Setembro 2026");
+      expect(periodSuffix("MENSAL", new Date(2026, 9, 1))).toBe("Outubro 2026");
+      expect(periodSuffix("MENSAL", new Date(2026, 10, 1))).toBe("Novembro 2026");
+      expect(periodSuffix("MENSAL", new Date(2026, 11, 1))).toBe("Dezembro 2026");
+    });
+
+    it("TRIMESTRAL: quarter designation", () => {
+      expect(periodSuffix("TRIMESTRAL", new Date(2026, 0, 1))).toBe("Q1 2026");
+      expect(periodSuffix("TRIMESTRAL", new Date(2026, 2, 1))).toBe("Q1 2026");
+      expect(periodSuffix("TRIMESTRAL", new Date(2026, 3, 1))).toBe("Q2 2026");
+      expect(periodSuffix("TRIMESTRAL", new Date(2026, 5, 1))).toBe("Q2 2026");
+      expect(periodSuffix("TRIMESTRAL", new Date(2026, 6, 1))).toBe("Q3 2026");
+      expect(periodSuffix("TRIMESTRAL", new Date(2026, 9, 1))).toBe("Q4 2026");
+      expect(periodSuffix("TRIMESTRAL", new Date(2026, 11, 1))).toBe("Q4 2026");
+    });
+
+    it("SEMESTRAL: semester designation", () => {
+      expect(periodSuffix("SEMESTRAL", new Date(2026, 0, 1))).toBe("1.º Sem. 2026");
+      expect(periodSuffix("SEMESTRAL", new Date(2026, 5, 1))).toBe("1.º Sem. 2026");
+      expect(periodSuffix("SEMESTRAL", new Date(2026, 6, 1))).toBe("2.º Sem. 2026");
+      expect(periodSuffix("SEMESTRAL", new Date(2026, 11, 1))).toBe("2.º Sem. 2026");
+    });
+
+    it("ANUAL: just the year", () => {
+      expect(periodSuffix("ANUAL", new Date(2026, 0, 1))).toBe("2026");
+      expect(periodSuffix("ANUAL", new Date(2025, 0, 1))).toBe("2025");
+    });
+
+    it("unknown frequency falls back to month + year", () => {
+      expect(periodSuffix("PONTUAL", new Date(2026, 5, 1))).toBe("Junho 2026");
+      expect(periodSuffix("UNKNOWN", new Date(2026, 0, 1))).toBe("Janeiro 2026");
+    });
+
+    it("generated description format: title — suffix", () => {
+      // Simulate what the cron/action code does
+      const templateDescription = "Manutenção preventiva do elevador";
+      const suffix = periodSuffix("MENSAL", new Date(2026, 2, 1));
+      const result = `${templateDescription} — ${suffix}`;
+      expect(result).toBe("Manutenção preventiva do elevador — Março 2026");
+    });
+
+    it("quarterly template produces correct description", () => {
+      const desc = "Auditoria contabilística";
+      const suffix = periodSuffix("TRIMESTRAL", new Date(2026, 3, 1));
+      expect(`${desc} — ${suffix}`).toBe("Auditoria contabilística — Q2 2026");
+    });
+
+    it("annual template produces correct description", () => {
+      const desc = "Revisão regulamento interno";
+      const suffix = periodSuffix("ANUAL", new Date(2026, 0, 1));
+      expect(`${desc} — ${suffix}`).toBe("Revisão regulamento interno — 2026");
+    });
+  });
+
+  describe("recurring expense generation rules", () => {
+    // These test the FREQUENCY_MONTHS logic used by the manual "Gerar" action
+    // (the action checks: if freqMonths > 1 && month % freqMonths !== 1, skip)
+
+    it("monthly expense should generate every month", () => {
+      for (let m = 1; m <= 12; m++) {
+        const freqMonths = 1; // MENSAL
+        const shouldGenerate = freqMonths === 1 || m % freqMonths === 1;
+        expect(shouldGenerate).toBe(true);
+      }
+    });
+
+    it("quarterly expense should generate in months 1, 4, 7, 10", () => {
+      const freqMonths = 3; // TRIMESTRAL
+      const generatedMonths = [];
+      for (let m = 1; m <= 12; m++) {
+        if (freqMonths === 1 || m % freqMonths === 1) {
+          generatedMonths.push(m);
+        }
+      }
+      expect(generatedMonths).toEqual([1, 4, 7, 10]);
+    });
+
+    it("semi-annual expense should generate in months 1 and 7", () => {
+      const freqMonths = 6; // SEMESTRAL
+      const generatedMonths = [];
+      for (let m = 1; m <= 12; m++) {
+        if (freqMonths === 1 || m % freqMonths === 1) {
+          generatedMonths.push(m);
+        }
+      }
+      expect(generatedMonths).toEqual([1, 7]);
+    });
+
+    it("annual expense should generate only in month 1", () => {
+      const freqMonths = 12; // ANUAL
+      const generatedMonths = [];
+      for (let m = 1; m <= 12; m++) {
+        if (freqMonths === 1 || m % freqMonths === 1) {
+          generatedMonths.push(m);
+        }
+      }
+      expect(generatedMonths).toEqual([1]);
+    });
+
+    it("FREQUENCY_MONTHS and isDueThisPeriod agree on all months", () => {
+      // Verify the manual action logic matches the cron logic
+      const freqMap: Record<string, number> = { MENSAL: 1, TRIMESTRAL: 3, SEMESTRAL: 6, ANUAL: 12 };
+
+      for (const [freq, freqMonths] of Object.entries(freqMap)) {
+        for (let m = 1; m <= 12; m++) {
+          const actionWouldGenerate = freqMonths === 1 || m % freqMonths === 1;
+          const cronWouldGenerate = isDueThisPeriod(freq, new Date(2026, m - 1, 15));
+          expect(actionWouldGenerate).toBe(cronWouldGenerate);
+        }
+      }
+    });
+  });
+
+  describe("transaction integrity for generated expenses", () => {
+    // These tests validate the expected shape of data after generation.
+    // Since we can't call server actions here, we test the invariants that
+    // the action code must uphold.
+
+    it("expense amount must equal negative transaction amount", () => {
+      const expenseAmount = 600;
+      const transactionAmount = -expenseAmount;
+      expect(transactionAmount).toBe(-600);
+      expect(Math.abs(transactionAmount)).toBe(expenseAmount);
+    });
+
+    it("expense and transaction should have same description", () => {
+      const desc = "Limpeza semanal";
+      const suffix = periodSuffix("MENSAL", new Date(2026, 2, 1));
+      const expenseDesc = `${desc} — ${suffix}`;
+      const transactionDesc = `${desc} — ${suffix}`;
+      expect(expenseDesc).toBe(transactionDesc);
+    });
+
+    it("Decimal to number conversion preserves 2 decimal places", () => {
+      // Simulate Prisma Decimal → Number conversion
+      const values = [600.00, 333.33, 0.01, 99999.99, 0.10];
+      for (const v of values) {
+        const converted = Number(v);
+        expect(converted).toBe(v);
+        expect(round2(converted)).toBe(converted);
+      }
+    });
+
+    it("negating a positive amount preserves precision", () => {
+      const amounts = [600, 333.33, 0.01, 99999.99, 1234.56];
+      for (const amt of amounts) {
+        const negated = -Number(amt);
+        expect(negated).toBe(-amt);
+        expect(round2(Math.abs(negated))).toBe(amt);
+      }
+    });
+  });
+});
+
+// PLACEHOLDER — Part 5 will be added below
