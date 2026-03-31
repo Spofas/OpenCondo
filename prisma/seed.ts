@@ -313,7 +313,94 @@ async function main() {
 
   console.log("  Created 4 budgets (2025+2026 × 2 condos) with budget items.");
 
-  // PLACEHOLDER — Part 7 will replace this line
+  // ═══════════════════════════════════════════════════════════════════════════
+  // PART 7: Quotas (2025 & 2026 × both condos) + Transactions for paid quotas
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  // Helper to generate quotas for a condo/year
+  async function generateQuotas(
+    condoId: string, units: { id: string; permilagem: number; identifier: string }[],
+    year: number, annualTotal: number, today: Date,
+  ) {
+    const monthlyTotal = annualTotal / 12;
+    const paidQuotas: { id: string; amount: number; paymentDate: Date; unitIdentifier: string; period: string }[] = [];
+    const methods = ["TRANSFERENCIA", "MBWAY", "MULTIBANCO"] as const;
+    let count = 0;
+
+    for (let month = 1; month <= 12; month++) {
+      const period = `${year}-${String(month).padStart(2, "0")}`;
+      const dueDate = new Date(year, month - 1, 8);
+      const monthDate = new Date(year, month - 1, 1);
+
+      for (const unit of units) {
+        const amount = Math.round((unit.permilagem / 1000) * monthlyTotal * 100) / 100;
+
+        let status: "PAID" | "PENDING" | "OVERDUE";
+        let paymentDate: Date | null = null;
+        let paymentMethod: typeof methods[number] | null = null;
+
+        if (monthDate < today) {
+          // Past month
+          const monthsAgo = (today.getFullYear() - year) * 12 + (today.getMonth() - (month - 1));
+          if (monthsAgo > 3) {
+            // Older than 3 months ago — almost all paid, occasional overdue
+            status = (unit.permilagem <= 100 && month % 7 === 0) ? "OVERDUE" : "PAID";
+          } else {
+            // Recent 1-3 months — mix
+            status = (unit.permilagem >= 200) ? "PAID" : (month % 2 === 0 ? "PAID" : "PENDING");
+          }
+        } else {
+          // Future month
+          status = "PENDING";
+        }
+
+        if (status === "PAID") {
+          paymentDate = new Date(year, month - 1, 3 + (count % 5));
+          paymentMethod = methods[count % 3];
+        }
+        if (status === "PENDING" && dueDate < today) {
+          status = "OVERDUE";
+        }
+
+        const quota = await db.quota.create({
+          data: { condominiumId: condoId, unitId: unit.id, period, amount, dueDate, status, paymentDate, paymentMethod },
+        });
+        count++;
+
+        if (status === "PAID" && paymentDate) {
+          paidQuotas.push({ id: quota.id, amount, paymentDate, unitIdentifier: unit.identifier, period });
+        }
+      }
+    }
+    return { count, paidQuotas };
+  }
+
+  const today = new Date("2026-03-31");
+
+  // Aurora quotas
+  const aq2025 = await generateQuotas(aurora.id, auroraUnits, 2025, 20000, today);
+  const aq2026 = await generateQuotas(aurora.id, auroraUnits, 2026, 24000, today);
+  console.log(`  Created ${aq2025.count + aq2026.count} Aurora quotas (2025+2026).`);
+
+  // Jardim quotas
+  const jq2025 = await generateQuotas(jardim.id, jardimUnits, 2025, 14400, today);
+  const jq2026 = await generateQuotas(jardim.id, jardimUnits, 2026, 16800, today);
+  console.log(`  Created ${jq2025.count + jq2026.count} Jardim quotas (2025+2026).`);
+
+  // Create transactions for all paid quotas
+  const allPaidQuotas = [...aq2025.paidQuotas, ...aq2026.paidQuotas, ...jq2025.paidQuotas, ...jq2026.paidQuotas];
+  for (const q of allPaidQuotas) {
+    const condoId = aq2025.paidQuotas.includes(q) || aq2026.paidQuotas.includes(q) ? aurora.id : jardim.id;
+    await db.transaction.create({
+      data: {
+        condominiumId: condoId, date: q.paymentDate, amount: q.amount,
+        type: "QUOTA_PAYMENT", description: `Quota ${q.period} — ${q.unitIdentifier}`, quotaId: q.id,
+      },
+    });
+  }
+  console.log(`  Created ${allPaidQuotas.length} quota payment transactions.`);
+
+  // PLACEHOLDER — Part 8 will replace this line
 }
 
 main()
