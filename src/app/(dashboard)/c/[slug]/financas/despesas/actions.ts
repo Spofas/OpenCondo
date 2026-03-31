@@ -48,7 +48,7 @@ export const updateExpense = withAdmin(async (ctx, expenseId: string, input: Exp
   }
 
   const expense = await db.expense.findFirst({
-    where: { id: expenseId, condominiumId: ctx.condominiumId },
+    where: { id: expenseId, condominiumId: ctx.condominiumId, deletedAt: null },
   });
 
   if (!expense) return { error: "Despesa não encontrada" };
@@ -68,7 +68,7 @@ export const updateExpense = withAdmin(async (ctx, expenseId: string, input: Exp
       },
     }),
     db.transaction.updateMany({
-      where: { expenseId },
+      where: { expenseId, deletedAt: null },
       data: {
         date: new Date(date),
         amount: -amount,

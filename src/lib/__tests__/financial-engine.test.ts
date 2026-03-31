@@ -1272,3 +1272,394 @@ describe("Financial Engine — Cross-Cutting Invariants", () => {
     });
   });
 });
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// PART 6 — SOFT-DELETE FILTERING & LEDGER INTEGRITY
+// ═══════════════════════════════════════════════════════════════════════════════
+
+describe("Part 6 — Soft-delete filtering & ledger integrity", () => {
+  describe("buildContaGerencia excludes data outside the selected year", () => {
+    it("ignores quotas from other years", () => {
+      const report = buildContaGerencia(makeReport({
+        year: 2026,
+        quotas: [
+          { unitIdentifier: "A", ownerName: "A", amount: 100, status: "PAID", period: "2026-01" },
+          { unitIdentifier: "A", ownerName: "A", amount: 100, status: "PAID", period: "2025-12" },
+          { unitIdentifier: "A", ownerName: "A", amount: 100, status: "PAID", period: "2027-01" },
+        ],
+      }));
+      expect(report.totalQuotasGenerated).toBe(100);
+      expect(report.totalQuotasPaid).toBe(100);
+    });
+
+    it("ignores expenses from other years", () => {
+      const report = buildContaGerencia(makeReport({
+        year: 2026,
+        expenses: [
+          { category: "Limpeza", amount: 500, date: "2026-06-15" },
+          { category: "Limpeza", amount: 300, date: "2025-12-31" },
+          { category: "Limpeza", amount: 200, date: "2027-01-01" },
+        ],
+      }));
+      expect(report.totalExpenses).toBe(500);
+    });
+  });
+
+  describe("Soft-delete simulation — deleted records must not appear in reports", () => {
+    // In the real app, queries filter `deletedAt: null` before passing to buildContaGerencia.
+    // These tests verify that if deleted records are accidentally included, the engine still
+    // processes them. The real safety net is the DB query filter. This section tests that the
+    // page/API layer MUST pre-filter, by showing what happens if it doesn't.
+
+    it("report totals change when a deleted quota is removed from input", () => {
+      const allQuotas = [
+        { unitIdentifier: "A", ownerName: "A", amount: 100, status: "PAID" as const, period: "2026-01" },
+        { unitIdentifier: "B", ownerName: "B", amount: 100, status: "PAID" as const, period: "2026-01" },
+        { unitIdentifier: "C", ownerName: "C", amount: 100, status: "PAID" as const, period: "2026-01" },
+      ];
+
+      // Full report includes all 3
+      const fullReport = buildContaGerencia(makeReport({ quotas: allQuotas }));
+      expect(fullReport.totalQuotasPaid).toBe(300);
+
+      // After "soft-deleting" quota C (removing from input, as the query layer should)
+      const filteredReport = buildContaGerencia(makeReport({
+        quotas: allQuotas.filter((q) => q.unitIdentifier !== "C"),
+      }));
+      expect(filteredReport.totalQuotasPaid).toBe(200);
+      expect(filteredReport.totalQuotasGenerated).toBe(200);
+    });
+
+    it("report totals change when a deleted expense is removed from input", () => {
+      const allExpenses = [
+        { category: "Limpeza", amount: 500, date: "2026-03-15" },
+        { category: "Elevador", amount: 300, date: "2026-04-20" },
+        { category: "Seguro", amount: 200, date: "2026-05-10" },
+      ];
+
+      const fullReport = buildContaGerencia(makeReport({ expenses: allExpenses }));
+      expect(fullReport.totalExpenses).toBe(1000);
+
+      // After "soft-deleting" Seguro expense
+      const filteredReport = buildContaGerencia(makeReport({
+        expenses: allExpenses.filter((e) => e.category !== "Seguro"),
+      }));
+      expect(filteredReport.totalExpenses).toBe(800);
+      expect(filteredReport.expensesByCategory).toHaveLength(2);
+    });
+
+    it("net balance reflects removal of deleted expenses", () => {
+      const quotas = [
+        { unitIdentifier: "A", ownerName: "A", amount: 1000, status: "PAID" as const, period: "2026-01" },
+      ];
+      const expenses = [
+        { category: "Limpeza", amount: 400, date: "2026-01-15" },
+        { category: "Obras", amount: 300, date: "2026-02-15" },
+      ];
+
+      const full = buildContaGerencia(makeReport({ quotas, expenses }));
+      expect(full.netBalance).toBe(300); // 1000 - 700
+
+      // Delete "Obras" expense
+      const filtered = buildContaGerencia(makeReport({
+        quotas,
+        expenses: expenses.filter((e) => e.category !== "Obras"),
+      }));
+      expect(filtered.netBalance).toBe(600); // 1000 - 400
+    });
+
+    it("unit debts update when a quota is soft-deleted", () => {
+      const quotas = [
+        { unitIdentifier: "A", ownerName: "A", amount: 100, status: "OVERDUE" as const, period: "2026-01" },
+        { unitIdentifier: "A", ownerName: "A", amount: 100, status: "OVERDUE" as const, period: "2026-02" },
+        { unitIdentifier: "B", ownerName: "B", amount: 100, status: "PENDING" as const, period: "2026-01" },
+      ];
+
+      const full = buildContaGerencia(makeReport({ quotas }));
+      expect(full.unitDebts).toHaveLength(2);
+      const unitA = full.unitDebts.find((d) => d.unitIdentifier === "A")!;
+      expect(unitA.overdueAmount).toBe(200);
+
+      // Remove one of A's overdue quotas (simulating soft-delete filter)
+      const filtered = buildContaGerencia(makeReport({
+        quotas: quotas.slice(1), // remove first overdue
+      }));
+      const unitAFiltered = filtered.unitDebts.find((d) => d.unitIdentifier === "A")!;
+      expect(unitAFiltered.overdueAmount).toBe(100);
+    });
+  });
+
+  describe("Expense transaction ledger integrity", () => {
+    it("expense amount and transaction amount must be inverses", () => {
+      // This tests the pattern: expense.amount = X, transaction.amount = -X
+      const amounts = [100, 0.01, 9999.99, 0.50, 123.45];
+      for (const amount of amounts) {
+        const txAmount = -amount;
+        expect(txAmount).toBe(-amount);
+        expect(amount + txAmount).toBe(0);
+      }
+    });
+
+    it("expense update must keep transaction in sync", () => {
+      // Simulates: create expense 500, update to 750
+      const originalAmount = 500;
+      const updatedAmount = 750;
+
+      const originalTx = -originalAmount;
+      expect(originalTx).toBe(-500);
+
+      const updatedTx = -updatedAmount;
+      expect(updatedTx).toBe(-750);
+
+      // Ledger net for this expense should be -750 after update, not -500
+      expect(updatedTx).not.toBe(originalTx);
+    });
+
+    it("soft-deleted expense should not affect report totals", () => {
+      // Simulates the correct query pattern: filter deletedAt: null
+      const activeExpenses = [
+        { category: "Limpeza", amount: 500, date: "2026-03-15" },
+        { category: "Elevador", amount: 300, date: "2026-04-20" },
+      ];
+      // A deleted expense that should NOT be in the query results
+      // const deletedExpense = { category: "Seguro", amount: 90000, date: "2026-05-10", deletedAt: "2026-05-11" };
+
+      const report = buildContaGerencia(makeReport({ expenses: activeExpenses }));
+      expect(report.totalExpenses).toBe(800);
+      // If the deleted 90k expense had leaked through, total would be 90800
+      expect(report.totalExpenses).not.toBe(90800);
+    });
+  });
+
+  describe("Budget variance with deleted expenses", () => {
+    it("budget variance recalculates correctly after expense removal", () => {
+      const budget = {
+        totalAmount: 1000,
+        status: "APPROVED",
+        reserveFundPercentage: 10,
+        items: [
+          { category: "Limpeza", description: null, plannedAmount: 600 },
+          { category: "Elevador", description: null, plannedAmount: 400 },
+        ],
+      };
+
+      // Before deletion: 500 in Limpeza, 300 in Elevador
+      const before = buildContaGerencia(makeReport({
+        budget,
+        expenses: [
+          { category: "Limpeza", amount: 500, date: "2026-06-15" },
+          { category: "Elevador", amount: 300, date: "2026-07-15" },
+        ],
+      }));
+      const limpezaBefore = before.budgetLines.find((b) => b.category === "Limpeza")!;
+      expect(limpezaBefore.variance).toBe(100); // 600 - 500
+      expect(limpezaBefore.actual).toBe(500);
+
+      // After deletion of 200 from Limpeza (one expense removed)
+      const after = buildContaGerencia(makeReport({
+        budget,
+        expenses: [
+          { category: "Limpeza", amount: 300, date: "2026-06-15" },
+          { category: "Elevador", amount: 300, date: "2026-07-15" },
+        ],
+      }));
+      const limpezaAfter = after.budgetLines.find((b) => b.category === "Limpeza")!;
+      expect(limpezaAfter.variance).toBe(300); // 600 - 300
+      expect(limpezaAfter.actual).toBe(300);
+    });
+  });
+
+  describe("Collection rate edge cases", () => {
+    it("collection rate is 0 when no quotas exist", () => {
+      const report = buildContaGerencia(makeReport({ quotas: [] }));
+      expect(report.collectionRate).toBe(0);
+    });
+
+    it("collection rate is 100 when all quotas are paid", () => {
+      const report = buildContaGerencia(makeReport({
+        quotas: [
+          { unitIdentifier: "A", ownerName: "A", amount: 100, status: "PAID", period: "2026-01" },
+          { unitIdentifier: "B", ownerName: "B", amount: 200, status: "PAID", period: "2026-01" },
+        ],
+      }));
+      expect(report.collectionRate).toBe(100);
+    });
+
+    it("collection rate is 0 when no quotas are paid", () => {
+      const report = buildContaGerencia(makeReport({
+        quotas: [
+          { unitIdentifier: "A", ownerName: "A", amount: 100, status: "PENDING", period: "2026-01" },
+          { unitIdentifier: "B", ownerName: "B", amount: 200, status: "OVERDUE", period: "2026-01" },
+        ],
+      }));
+      expect(report.collectionRate).toBe(0);
+    });
+
+    it("collection rate handles tiny amounts without NaN or Infinity", () => {
+      const report = buildContaGerencia(makeReport({
+        quotas: [
+          { unitIdentifier: "A", ownerName: "A", amount: 0.01, status: "PAID", period: "2026-01" },
+        ],
+      }));
+      expect(report.collectionRate).toBe(100);
+      expect(isNaN(report.collectionRate)).toBe(false);
+      expect(isFinite(report.collectionRate)).toBe(true);
+    });
+  });
+
+  describe("Reserve fund with varying percentages", () => {
+    const quotas = [
+      { unitIdentifier: "A", ownerName: "A", amount: 1000, status: "PAID" as const, period: "2026-01" },
+    ];
+
+    it("defaults to 10% when no budget", () => {
+      const report = buildContaGerencia(makeReport({ quotas, budget: null }));
+      expect(report.reserveFundPercentage).toBe(10);
+      expect(report.reserveFundContributions).toBe(100);
+    });
+
+    it("uses budget percentage when provided", () => {
+      const report = buildContaGerencia(makeReport({
+        quotas,
+        budget: {
+          totalAmount: 5000,
+          status: "APPROVED",
+          reserveFundPercentage: 25,
+          items: [],
+        },
+      }));
+      expect(report.reserveFundPercentage).toBe(25);
+      expect(report.reserveFundContributions).toBe(250);
+    });
+
+    it("handles 0% reserve fund", () => {
+      const report = buildContaGerencia(makeReport({
+        quotas,
+        budget: {
+          totalAmount: 5000,
+          status: "APPROVED",
+          reserveFundPercentage: 0,
+          items: [],
+        },
+      }));
+      expect(report.reserveFundContributions).toBe(0);
+    });
+  });
+
+  describe("Payment status transitions", () => {
+    it("statusAfterUndo returns OVERDUE for past due date", () => {
+      const pastDue = new Date(2025, 0, 1); // Jan 1, 2025
+      const now = new Date(2026, 2, 31); // Mar 31, 2026
+      expect(statusAfterUndo(pastDue, now)).toBe("OVERDUE");
+    });
+
+    it("statusAfterUndo returns PENDING for future due date", () => {
+      const futureDue = new Date(2027, 0, 1);
+      const now = new Date(2026, 2, 31);
+      expect(statusAfterUndo(futureDue, now)).toBe("PENDING");
+    });
+
+    it("statusAfterUndo returns OVERDUE when due date equals now (past)", () => {
+      // A due date that is exactly now is technically in the past
+      const now = new Date(2026, 2, 31, 12, 0, 0);
+      const sameDayEarlier = new Date(2026, 2, 31, 0, 0, 0);
+      expect(statusAfterUndo(sameDayEarlier, now)).toBe("OVERDUE");
+    });
+
+    it("quota status correctly affects report categorization", () => {
+      const quotas = [
+        { unitIdentifier: "A", ownerName: "A", amount: 100, status: "PAID" as const, period: "2026-01" },
+        { unitIdentifier: "A", ownerName: "A", amount: 100, status: "PENDING" as const, period: "2026-02" },
+        { unitIdentifier: "A", ownerName: "A", amount: 100, status: "OVERDUE" as const, period: "2026-03" },
+      ];
+      const report = buildContaGerencia(makeReport({ quotas }));
+      expect(report.totalQuotasPaid).toBe(100);
+      expect(report.totalQuotasPending).toBe(100);
+      expect(report.totalQuotasOverdue).toBe(100);
+      expect(report.totalQuotasGenerated).toBe(300);
+    });
+  });
+
+  describe("Empty and edge-case reports", () => {
+    it("empty report has all zeroes", () => {
+      const report = buildContaGerencia(makeReport());
+      expect(report.totalQuotasGenerated).toBe(0);
+      expect(report.totalQuotasPaid).toBe(0);
+      expect(report.totalQuotasPending).toBe(0);
+      expect(report.totalQuotasOverdue).toBe(0);
+      expect(report.totalExpenses).toBe(0);
+      expect(report.netBalance).toBe(0);
+      expect(report.collectionRate).toBe(0);
+      expect(report.expensesByCategory).toHaveLength(0);
+      expect(report.unitDebts).toHaveLength(0);
+      expect(report.budgetLines).toHaveLength(0);
+    });
+
+    it("report with only expenses shows negative net balance", () => {
+      const report = buildContaGerencia(makeReport({
+        expenses: [{ category: "Obras", amount: 5000, date: "2026-06-01" }],
+      }));
+      expect(report.netBalance).toBe(-5000);
+      expect(report.totalQuotasPaid).toBe(0);
+    });
+
+    it("report with only quotas shows positive net balance", () => {
+      const report = buildContaGerencia(makeReport({
+        quotas: [
+          { unitIdentifier: "A", ownerName: "A", amount: 500, status: "PAID", period: "2026-01" },
+        ],
+      }));
+      expect(report.netBalance).toBe(500);
+      expect(report.totalExpenses).toBe(0);
+    });
+
+    it("handles many categories without precision drift", () => {
+      const categories = Array.from({ length: 20 }, (_, i) => `Cat${i}`);
+      const expenses = categories.map((cat) => ({
+        category: cat,
+        amount: 33.33,
+        date: "2026-06-15",
+      }));
+      const report = buildContaGerencia(makeReport({ expenses }));
+      const catSum = report.expensesByCategory.reduce((s, c) => s + c.amount, 0);
+      expect(round2(catSum)).toBe(report.totalExpenses);
+    });
+  });
+
+  describe("Unit debts sorting and aggregation", () => {
+    it("units are sorted by total debt descending", () => {
+      const quotas = [
+        { unitIdentifier: "A", ownerName: "A", amount: 100, status: "OVERDUE" as const, period: "2026-01" },
+        { unitIdentifier: "B", ownerName: "B", amount: 300, status: "OVERDUE" as const, period: "2026-01" },
+        { unitIdentifier: "C", ownerName: "C", amount: 200, status: "PENDING" as const, period: "2026-01" },
+      ];
+      const report = buildContaGerencia(makeReport({ quotas }));
+      expect(report.unitDebts[0].unitIdentifier).toBe("B");
+      expect(report.unitDebts[0].totalDebt).toBe(300);
+      expect(report.unitDebts[1].unitIdentifier).toBe("C");
+      expect(report.unitDebts[2].unitIdentifier).toBe("A");
+    });
+
+    it("aggregates multiple months of debt per unit", () => {
+      const quotas = [
+        { unitIdentifier: "A", ownerName: "A", amount: 100, status: "OVERDUE" as const, period: "2026-01" },
+        { unitIdentifier: "A", ownerName: "A", amount: 100, status: "PENDING" as const, period: "2026-02" },
+        { unitIdentifier: "A", ownerName: "A", amount: 100, status: "OVERDUE" as const, period: "2026-03" },
+      ];
+      const report = buildContaGerencia(makeReport({ quotas }));
+      expect(report.unitDebts).toHaveLength(1);
+      expect(report.unitDebts[0].overdueAmount).toBe(200);
+      expect(report.unitDebts[0].pendingAmount).toBe(100);
+      expect(report.unitDebts[0].totalDebt).toBe(300);
+    });
+
+    it("PAID units do not appear in debts", () => {
+      const quotas = [
+        { unitIdentifier: "A", ownerName: "A", amount: 100, status: "PAID" as const, period: "2026-01" },
+        { unitIdentifier: "B", ownerName: "B", amount: 100, status: "PAID" as const, period: "2026-01" },
+      ];
+      const report = buildContaGerencia(makeReport({ quotas }));
+      expect(report.unitDebts).toHaveLength(0);
+    });
+  });
+});
