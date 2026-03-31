@@ -124,7 +124,7 @@ async function buildReportForYear(
       include: { items: true },
     }),
     db.quota.findMany({
-      where: { condominiumId, period: { startsWith: `${year}-` } },
+      where: { condominiumId, period: { startsWith: `${year}-` }, deletedAt: null },
       include: {
         unit: {
           select: {
@@ -137,6 +137,7 @@ async function buildReportForYear(
     db.expense.findMany({
       where: {
         condominiumId,
+        deletedAt: null,
         date: {
           gte: new Date(`${year}-01-01`),
           lt: new Date(`${year + 1}-01-01`),
