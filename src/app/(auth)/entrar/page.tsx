@@ -31,8 +31,11 @@ export default function JoinCondoPage() {
       return;
     }
 
-    router.push("/painel");
-    router.refresh();
+    if ("slug" in result && result.slug) {
+      window.location.href = `/c/${result.slug}/painel`;
+    } else {
+      window.location.href = "/painel";
+    }
   }
 
   return (

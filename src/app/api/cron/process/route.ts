@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { isDueThisPeriod } from "@/lib/cron-utils";
 import { sendBulkQuotaReminders } from "@/lib/email";
+import { processPendingEmails } from "@/lib/email-queue";
 import { checkRateLimit } from "@/lib/rate-limit";
 
 /**
@@ -100,6 +101,15 @@ export async function GET(request: NextRequest) {
     }
   }
   results.condosWithReminders = remindersSent;
+
+  // 4. Process pending email queue (send queued emails, retry failed ones)
+  try {
+    const emailResults = await processPendingEmails();
+    results.emailsSent = emailResults.sent;
+    results.emailsFailed = emailResults.failed;
+  } catch {
+    results.emailQueueError = "Failed to process email queue";
+  }
 
   return NextResponse.json({ success: true, period: currentPeriod, ...results });
 }

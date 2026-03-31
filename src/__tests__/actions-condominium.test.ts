@@ -6,10 +6,9 @@ vi.mock("@/lib/auth", () => ({
   auth: () => mockAuth(),
 }));
 
-// Mock cookies — Next.js headers
-const mockCookieSet = vi.fn();
-vi.mock("next/headers", () => ({
-  cookies: () => Promise.resolve({ set: mockCookieSet, get: vi.fn() }),
+// Mock slug generation
+vi.mock("@/lib/utils/slug", () => ({
+  generateUniqueSlug: vi.fn().mockResolvedValue("edificio-aurora"),
 }));
 
 // Mock db — tracks all Prisma calls
@@ -82,13 +81,13 @@ describe("createCondominiumWithUnits", () => {
 
   it("skips permilagem check for EQUAL quota model", async () => {
     mockAuth.mockResolvedValue({ user: { id: "user-1" } });
-    mockTransaction.mockResolvedValue({ id: "condo-1" });
+    mockTransaction.mockResolvedValue({ id: "condo-1", slug: "edificio-aurora" });
 
     const equalCondo = { ...validCondo, quotaModel: "EQUAL" };
     const units = [{ identifier: "1A", permilagem: 0 }];
 
     const result = await createCondominiumWithUnits(equalCondo, units);
-    expect(result).toEqual({ success: true, condominiumId: "condo-1" });
+    expect(result).toMatchObject({ success: true, condominiumId: "condo-1" });
     expect(mockTransaction).toHaveBeenCalled();
   });
 
@@ -97,7 +96,7 @@ describe("createCondominiumWithUnits", () => {
     mockTransaction.mockImplementation(async (fn) => {
       const tx = {
         condominium: {
-          create: vi.fn().mockResolvedValue({ id: "condo-1" }),
+          create: vi.fn().mockResolvedValue({ id: "condo-1", slug: "edificio-aurora" }),
         },
         membership: { create: vi.fn().mockResolvedValue({}) },
         unit: { createMany: vi.fn().mockResolvedValue({}) },
@@ -106,6 +105,6 @@ describe("createCondominiumWithUnits", () => {
     });
 
     const result = await createCondominiumWithUnits(validCondo, validUnits);
-    expect(result).toEqual({ success: true, condominiumId: "condo-1" });
+    expect(result).toMatchObject({ success: true, condominiumId: "condo-1" });
   });
 });

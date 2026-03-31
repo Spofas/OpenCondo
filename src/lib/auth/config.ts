@@ -2,6 +2,7 @@ import type { NextAuthConfig } from "next-auth";
 
 // Base config used by middleware (edge runtime - no Prisma/bcrypt)
 export const authConfig: NextAuthConfig = {
+  trustHost: true,
   providers: [],  // Providers added in index.ts (server only)
   pages: {
     signIn: "/login",

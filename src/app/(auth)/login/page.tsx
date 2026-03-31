@@ -32,8 +32,7 @@ export default function LoginPage() {
         return;
       }
 
-      // Hard navigation so the proxy re-evaluates with the fresh session cookie.
-      // The dashboard layout handles activeCondominiumId fallback automatically.
+      // Navigate to /painel — the catch-all redirect resolves the slug
       window.location.href = "/painel";
     } catch (err) {
       setServerError(

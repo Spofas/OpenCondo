@@ -34,6 +34,8 @@ export const contractSchema = z.object({
   policyNumber: z.string().optional(),
   insuredValue: z.number().optional(),
   coverageType: z.string().optional(),
+  // Document
+  documentUrl: z.string().optional(),
   // Supplier
   supplierName: z.string().optional(),
   supplierNif: z.string().optional(),

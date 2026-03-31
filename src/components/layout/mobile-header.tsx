@@ -4,12 +4,12 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Building2, ChevronDown, Plus } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
-import { switchCondominium } from "@/app/(dashboard)/actions";
 import Link from "next/link";
 
 interface MembershipInfo {
   condominiumId: string;
   condominiumName: string;
+  slug: string;
   role: string;
 }
 
@@ -21,21 +21,20 @@ const roleLabels: Record<string, string> = {
 
 export function MobileHeader({
   condominiumName,
-  currentCondominiumId,
+  currentSlug,
   memberships,
 }: {
   condominiumName: string;
-  currentCondominiumId: string;
+  currentSlug: string;
   memberships: MembershipInfo[];
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const hasMultiple = memberships.length > 1;
 
-  async function handleSwitch(condominiumId: string) {
+  function handleSwitch(slug: string) {
     setOpen(false);
-    await switchCondominium(condominiumId);
-    router.refresh();
+    router.push(`/c/${slug}/painel`);
   }
 
   return (
@@ -78,10 +77,10 @@ export function MobileHeader({
             {memberships.map((m) => (
               <button
                 key={m.condominiumId}
-                onClick={() => handleSwitch(m.condominiumId)}
+                onClick={() => handleSwitch(m.slug)}
                 className={cn(
                   "flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm transition-colors hover:bg-secondary",
-                  m.condominiumId === currentCondominiumId && "bg-primary/5 font-medium"
+                  m.slug === currentSlug && "bg-primary/5 font-medium"
                 )}
               >
                 <Building2 size={14} className="shrink-0 text-muted-foreground" />

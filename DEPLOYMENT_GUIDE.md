@@ -86,12 +86,24 @@ Click **Environment Variables** and add these one at a time:
 | `NEXTAUTH_URL` | `https://your-project-name.vercel.app` | Vercel will show you the URL after the first deploy — you can update this after |
 | `NEXTAUTH_SECRET` | A random secret string | See below how to generate one |
 | `CRON_SECRET` | A random secret string | See below how to generate one |
+| `BLOB_READ_WRITE_TOKEN` | Vercel Blob storage token | See "File uploads" below |
 
 **How to generate NEXTAUTH_SECRET and CRON_SECRET:**
 
 Go to [generate-secret.vercel.app/32](https://generate-secret.vercel.app/32) in your browser. It will show a random string. Copy it and paste it as the value. Generate a **separate value** for each secret — do not reuse the same string for both.
 
 `CRON_SECRET` protects the nightly background job (`/api/cron/process`) that marks overdue quotas and generates recurring expenses. Vercel sends this secret automatically when it triggers the cron — you just need to set the same value in both Vercel's environment variables and this field.
+
+**File uploads (BLOB_READ_WRITE_TOKEN):**
+
+File uploads (documents, expense invoices, contract attachments) are stored in Vercel Blob. To enable:
+
+1. In your Vercel project dashboard, go to **Storage** tab
+2. Click **Create** → **Blob**
+3. Give it a name (e.g., "opencondo-files") and click **Create**
+4. Vercel automatically adds `BLOB_READ_WRITE_TOKEN` to your environment variables
+
+If you skip this step, the app works normally but file uploads will fail — users can still paste external URLs (Google Drive, Dropbox) as a fallback.
 
 ### Deploy
 

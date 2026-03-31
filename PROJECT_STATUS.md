@@ -1,6 +1,6 @@
 # OpenCondo — Project Status & Architecture Guide
 
-**Last updated:** 2026-03-26
+**Last updated:** 2026-03-31
 **For:** Anyone following along, regardless of programming experience
 
 ---
@@ -158,40 +158,45 @@ src/
 │   ├── (auth)/                   # Auth-related pages (no sidebar)
 │   │   ├── login/                # Login form
 │   │   ├── registar/             # Registration form
+│   │   ├── entrar/               # Invite acceptance flow
 │   │   └── onboarding/           # Condominium setup wizard
-│   │       ├── page.tsx          # The wizard UI (client-side)
-│   │       ├── actions.ts        # Server logic (database writes)
-│   │       └── layout.tsx        # Guards (redirect if already set up)
 │   ├── (dashboard)/              # All authenticated pages (with sidebar)
-│   │   ├── layout.tsx            # Checks login + condominium, shows sidebar
-│   │   ├── actions.ts            # Shared actions (condo switching, invites)
-│   │   ├── painel/               # Dashboard overview
-│   │   ├── financas/
-│   │   │   ├── orcamento/        # Budget management (COMPLETE)
-│   │   │   │   ├── page.tsx      # Server component — fetches budgets from DB
-│   │   │   │   ├── actions.ts    # Server actions (create, update, approve, delete)
-│   │   │   │   ├── budget-form.tsx        # Modal form with dynamic line items
-│   │   │   │   ├── budget-list.tsx        # Expandable budget cards
-│   │   │   │   └── budget-page-client.tsx # Client wrapper (manages modal state)
-│   │   │   ├── quotas/           # Quota management (placeholder)
-│   │   │   └── despesas/         # Expense tracking (placeholder)
-│   │   ├── comunicacao/          # Announcements, maintenance, documents
-│   │   ├── assembleia/           # Meetings, minutes
-│   │   ├── contratos/            # Contract management
-│   │   └── definicoes/           # Settings
-│   └── api/auth/                 # API endpoints
-│       ├── register/             # POST: create new account
-│       └── [...nextauth]/        # NextAuth magic route (handles login/logout)
+│   │   ├── c/[slug]/             # Slug-based multi-tenant routing
+│   │   │   ├── layout.tsx        # Resolves slug → condominium, wraps in CondominiumProvider
+│   │   │   ├── painel/           # Dashboard overview
+│   │   │   ├── financas/
+│   │   │   │   ├── orcamento/    # Budget management
+│   │   │   │   ├── quotas/       # Quota management
+│   │   │   │   ├── despesas/     # Expense tracking + recurring expenses
+│   │   │   │   ├── livro-caixa/  # Cash book
+│   │   │   │   ├── devedores/    # Debtor tracking
+│   │   │   │   └── conta-gerencia/ # Annual financial report
+│   │   │   ├── comunicacao/      # Announcements, maintenance, documents
+│   │   │   ├── assembleia/       # Meetings, minutes, calendar
+│   │   │   ├── contratos/        # Contract management
+│   │   │   ├── minha-conta/      # User settings
+│   │   │   └── definicoes/       # Condominium settings
+│   │   ├── actions.ts            # Shared actions (invites)
+│   │   └── [...path]/page.tsx    # Legacy catch-all redirect (old URLs → /c/{slug}/...)
+│   └── api/                      # API endpoints
+│       ├── cron/process/         # Nightly cron (overdue quotas, recurring expenses, email queue)
+│       └── conta-gerencia/       # PDF export
 ├── components/                   # Reusable UI pieces
-│   ├── layout/sidebar.tsx        # Navigation sidebar
-│   └── providers/session-provider.tsx  # Makes login state available everywhere
+│   ├── layout/sidebar.tsx        # Navigation sidebar (slug-aware links)
+│   └── ui/modal-form.tsx         # Shared modal form wrapper
 ├── lib/                          # Shared logic
-│   ├── auth/config.ts            # Auth rules (lightweight, for proxy)
+│   ├── auth/config.ts            # Auth rules (edge-safe, trustHost)
 │   ├── auth/index.ts             # Auth logic (full, with database)
+│   ├── auth/admin-context.ts     # withAdmin/withMember HOF wrappers
+│   ├── auth/require-membership.ts # requireMembership(slug) — server page helper
+│   ├── condominium-context.tsx   # React context: CondominiumProvider + useCondominium()
 │   ├── db/index.ts               # Database connection
-│   ├── validators/auth.ts        # Email/password validation rules
-│   ├── validators/condominium.ts # Building/unit validation rules
-│   └── validators/budget.ts      # Budget validation + category list
+│   ├── email.ts                  # Direct sends (login, invite) + queued notifications
+│   ├── email-queue.ts            # PendingEmail queue (batch processing, retry logic)
+│   ├── utils/slug.ts             # Slug generation (nameToSlug, generateUniqueSlug)
+│   ├── validators/               # Zod schemas (auth, condominium, budget, quota, expense, etc.)
+│   ├── serializers.ts            # Prisma Decimal→number, Date→string conversions
+│   └── *-calculations.ts         # Pure business logic (quota, debtor, conta-gerencia, cron)
 ├── i18n/messages/pt.json         # All Portuguese text strings
 ├── proxy.ts                      # Route gatekeeper (auth redirects)
 ```
@@ -402,7 +407,7 @@ A budget is the annual spending plan for the building — "we expect to spend �
 - **Pause/resume**: Toggle individual templates active/inactive without deleting
 - Schema: Added `RecurringExpense` model to Prisma
 - Validator tests (5) + frequency scenario tests (16)
-- Available at `/financas/despesas-recorrentes` (admin only)
+- Available at `/c/{slug}/financas/despesas` (admin only, "Custos recorrentes" tab)
 
 #### Calendar View (complete)
 
@@ -410,17 +415,94 @@ A budget is the annual spending plan for the building — "we expect to spend �
 
 - **Monthly grid**: Clickable days with color-coded dots (green = meetings, blue = quotas, orange = contracts)
 - **Event detail sidebar**: Click a day to see full event details; otherwise shows next 10 upcoming events
-- **Month navigation**: Previous/next buttons with "Today" shortcut
+- **Month navigation**: Previous/next buttons with "Today" shortcut; month/year stored in URL query params for persistence and bookmarkability
 - **Data sources**: Meetings (date + type + status), quota due dates (grouped + overdue count), contract end dates
-- Available at `/calendario` (all roles)
+- Available at `/c/{slug}/assembleia/calendario` (all roles)
 
-#### Remaining Phase 5 items:
+#### Slug-based URL Routing (complete)
 
-- PDF receipts and ata exports
-- Bulk import UI (CSV parsing logic exists in `src/lib/csv-import.ts`, needs page)
-- Email notifications
-- Mobile responsiveness polish
+**What:** Migrated from cookie-based condominium selection to URL path segments with slugs.
+
+- **URL structure**: All dashboard pages moved under `/c/[slug]/` (e.g., `/c/edificio-aurora/painel`)
+- **CondominiumProvider**: React context providing `slug` and `condominiumId` to client components via `useCondominium()` hook
+- **requireMembership(slug)**: Server-side helper that resolves condominium from URL slug and verifies membership
+- **withAdmin/withMember HOFs**: Accept `condominiumId` as first argument (no more cookie reading)
+- **Legacy catch-all redirect**: `src/app/(dashboard)/[...path]/page.tsx` redirects old bookmarked URLs to slug-based routes
+- **Slug generation**: Portuguese transliteration (ã→a, ç→c, etc.) with unique suffix on conflicts
+- Migration: `20260330000001_add_condominium_slug` backfills slugs from existing names
+
+#### Shared ModalForm Component (complete)
+
+**What:** Extracted common modal wrapper pattern used across 8+ form components.
+
+- **Component**: `src/components/ui/modal-form.tsx`
+- Handles overlay, header, error display, footer with cancel/submit buttons
+- Props: `onClose`, `onSubmit`, `title`, `error`, `isSubmitting`, `submitText`, `loadingText`, `maxWidth`, `children`
+- Announcement form refactored as demonstration; remaining 7 forms can be mechanically migrated
+
+#### Database Email Retry Queue (complete)
+
+**What:** Non-urgent email notifications queued in database for reliable delivery with retries.
+
+- **PendingEmail model**: Stores to, subject, html, retries count, sentAt, errorMessage
+- **queueEmail()**: Inserts into PendingEmail table (called by announcement, meeting, quota reminder notifications)
+- **processPendingEmails()**: Processes in batches of 50, retries up to 3 times, called by nightly cron
+- **Direct sends preserved**: Login-critical emails (password reset, invite) still send immediately via Resend
+- Migration: `20260330000002_add_pending_email_queue`
+
+#### Optimistic Updates (complete)
+
+**What:** Instant UI feedback on delete/toggle actions using `useOptimistic` and `useTransition`.
+
+Applied to 9 list components:
+- contract-list, document-list, maintenance-list, contact-list (optimistic delete)
+- recurring-expense-list (optimistic delete + toggle active/inactive)
+- budget-list, meeting-list (optimistic delete)
+- announcement-list, expense-list (optimistic delete)
+
+#### Suspense with Skeletons (complete)
+
+**What:** Heavy data pages wrapped in `<Suspense>` with skeleton fallbacks for streaming SSR.
+
+Applied to 6 pages: quotas, livro-caixa, devedores, conta-gerência, reuniões, definições.
+
+#### PDF Exports (complete)
+
+**What:** Printable PDF documents for key records.
+
+- **Quota receipts** — `/api/receipts/[quotaId]` — A4 receipt with payment details, download button on paid quotas in quota list and minha-conta page
+- **Ata (minutes) PDF** — `/api/atas/[ataId]` — A4 document with meeting info, agenda, full ata content, status badge. Download buttons on atas page and meeting list ata tab
+- **Budget PDF** — `/api/budgets/[budgetId]` — A4 document with line items table, reserve fund, grand total. Download button on every budget card
+- **Conta de gerência** — `/api/conta-gerencia` — Annual financial report PDF
+- All PDFs use jsPDF with consistent styling (helvetica, A4, 20mm margins, auto-generated footer)
+
+#### File Upload System (complete)
+
+**What:** Direct file uploads via Vercel Blob storage, replacing the external-URL-only approach.
+
+- **Upload API** — `/api/upload` — validates auth + membership, checks file type/size (PDF, images, Word, Excel, CSV, max 10 MB), uploads to Vercel Blob with condominium-scoped paths
+- **FileUpload component** — `src/components/ui/file-upload.tsx` — reusable upload button with progress state, file preview, clear button, and fallback URL paste input
+- **Documents**: file upload replaces manual URL input in document form
+- **Expenses**: optional invoice/receipt attachment field added to expense form
+- **Contracts**: optional contract document attachment field added to contract form
+- Requires `BLOB_READ_WRITE_TOKEN` env var (Vercel → Storage → Create Blob Store)
+
+#### Auth Flow Fixes (complete)
+
+**What:** Fixed login and logout regressions introduced by the slug migration.
+
+- **Root cause — login**: the `resolvePostLoginDestination()` server action was called immediately after `signIn()`, but the session cookie wasn't available yet for the server action request. Fixed by removing the server action and navigating to `/painel` directly (the catch-all redirect resolves the slug server-side)
+- **Root cause — logout**: `signOut({ redirect: false })` + `window.location.href = "/login"` had a race condition where the browser navigated before the cookie was cleared. The proxy saw the old session and redirected back to dashboard. Fixed by using `signOut({ redirectTo: "/login" })` for server-side redirect
+- **Secondary issue**: custom POST wrapper in `[...nextauth]/route.ts` was interfering with NextAuth responses. Removed entirely — auth route now exports handlers directly
+- **Preview fix**: `trustHost: true` added to NextAuth config for deployments without `NEXTAUTH_URL`
+
+#### Remaining items:
+
 - Deployment to production — see `DEPLOYMENT_GUIDE.md` for step-by-step instructions (Vercel + Neon)
+- Announcement file attachments — `AnnouncementAttachment` model exists but no upload UI
+- Maintenance photos — `MaintenancePhoto` model exists but no upload UI
+- Member role management — admins can't change roles or deactivate members from settings
+- Remaining ModalForm migrations — 7 form components can use the shared `<ModalForm>` component
 
 ---
 
@@ -455,6 +537,17 @@ A budget is the annual spending plan for the building — "we expect to spend �
 | 2026-03-25 | Centralized serializers | Prisma Decimal→number and Date→string conversions scattered across pages; consolidated in `src/lib/serializers.ts` |
 | 2026-03-25 | Vercel Cron for overdue + recurring | Nightly job at 02:00 UTC covers all condominiums; removes per-page side-effects for overdue marking (still kept as fallback on page load) |
 | 2026-03-25 | Receipt endpoint ownership check | Non-admin users could previously download any unit's receipt; restricted to units they own/rent |
+| 2026-03-30 | Slug-based URL routing | Cookie-based condo selection replaced with `/c/[slug]/` URL path segments — enables bookmarkable multi-tenant URLs, eliminates cookie drift issues, and aligns with standard SaaS URL patterns |
+| 2026-03-30 | CondominiumProvider context | Client components get `slug` and `condominiumId` from React context (`useCondominium()`) instead of reading cookies — cleaner, type-safe, and derived from the URL |
+| 2026-03-30 | Database email retry queue | Non-urgent notifications (announcements, meetings, quota reminders) queued in PendingEmail table instead of sent inline — prevents slow/failed email from blocking user actions; cron processes in batches with retries |
+| 2026-03-30 | Shared ModalForm component | 8+ form components shared identical modal wrapper code (overlay, header, error, footer) — extracted to `src/components/ui/modal-form.tsx` for DRY reuse |
+| 2026-03-30 | Calendar URL pagination | Month/year stored in URL query params instead of local state — bookmarkable, shareable, and survives page refreshes |
+| 2026-03-30 | useOptimistic for list actions | Delete/toggle actions in 9 list components show instant UI feedback via `useOptimistic` + `useTransition` — no waiting for server round-trip |
+| 2026-03-30 | trustHost in NextAuth config | Required for preview deployments where `NEXTAUTH_URL` is not set — NextAuth v5 needs explicit opt-in to trust the Host header |
+| 2026-03-31 | Server-side redirect for signOut | `signOut({ redirect: false })` + `window.location.href` has a cookie race condition — browser navigates before cookie is cleared. `signOut({ redirectTo: "/login" })` handles everything in one server response |
+| 2026-03-31 | No custom wrapper on NextAuth route | Custom POST wrappers on `[...nextauth]/route.ts` interfere with NextAuth's response format. Rate limiting should be done in proxy/middleware instead, not by wrapping the route handler |
+| 2026-03-31 | Vercel Blob for file storage | Direct file uploads replace external-URL-only approach. Vercel Blob is native to the hosting platform, requires no additional infrastructure, and provides CDN-backed public URLs |
+| 2026-03-31 | jsPDF for all PDF exports | Consistent PDF generation library across receipts, atas, budgets, and conta de gerência. Server-side generation via API routes, no client-side dependencies |
 
 ---
 
@@ -463,15 +556,14 @@ A budget is the annual spending plan for the building — "we expect to spend �
 This section exists so that if we start a fresh Claude Code session, I (Claude) can read this file
 and get back up to speed without needing the conversation history.
 
-### Current state (2026-03-30)
+### Current state (2026-03-31)
 - **Branch:** `claude/opencondo-development-Ch14I`
 - **Build status:** Passing (`next build` succeeds, all routes compile)
-- **Database:** Prisma Migrate in use (migration history committed). Latest migration: `20260324224329_add_soft_delete_fields` (adds `deletedAt` to `Expense`, `Quota`, `Transaction`).
-- **Test suite:** 417 tests passing (31 test files)
-- **Latest features (2026-03-25):** Soft deletes on financial records, nightly cron, receipt ownership gate, year-scoped quota queries, centralized auth+serializer helpers.
-- **Latest features (2026-03-26):** Extracted `isDueThisPeriod` to `src/lib/cron-utils.ts` (testable without Next.js); added 20+ cron tests, tightened permilagem rounding bound, added conta-gerencia edge case tests; painel stat cards.
-- **Latest features (2026-03-30):** Mobile responsiveness overhaul (bottom nav, full-screen modals, card views for tables, responsive grids). Auth routing via proxy (authenticated users auto-redirect to dashboard). Fixed login/logout flows (hard navigation). Removed non-functional "Lembrar-me" checkbox. Email notifications fully built and active (`RESEND_API_KEY` configured).
+- **Database:** Prisma Migrate in use (migration history committed). Latest migration: `20260330000002_add_pending_email_queue` (PendingEmail table for email retry queue).
+- **Test suite:** 444 tests passing (33 test files)
+- **Latest features (2026-03-31):** PDF export for atas and budgets (joining existing receipt + conta de gerência PDFs). File upload system via Vercel Blob (documents, expenses, contracts). Auth flow fixes — login race condition (server action after signIn), logout race condition (cookie not cleared before navigation), removed broken rate limiting wrapper from auth route.
 - **Note:** `pnpm lint` is broken on Next.js 16.1.7 (`next lint` misparses args). The build catches type errors, so this is non-blocking.
+- **Note:** File uploads require `BLOB_READ_WRITE_TOKEN` env var on Vercel (Storage → Create Blob Store).
 
 ### Gotchas & quirks discovered during development
 1. **Prisma 7 breaking changes:** PrismaClient no longer auto-connects to the DB. You must pass a driver adapter (we use `@prisma/adapter-pg` with `PrismaPg`). `new PrismaClient()` without options throws an error.
@@ -483,22 +575,43 @@ and get back up to speed without needing the conversation history.
 7. **next.config.ts:** Uses `serverExternalPackages: ["@prisma/client", "bcryptjs"]` to prevent bundling issues.
 8. **Zod v4 `.default()` + React Hook Form:** Using `z.string().default("")` makes the Zod *input* type `string | undefined` but the *output* type `string`. Since `zodResolver` uses the input type and `useForm<T>` expects the output type, this causes a type mismatch. Fix: use `z.string()` (required) instead and provide default values in the form's `defaultValues`.
 9. **Prisma Decimal → JavaScript number:** Prisma's `Decimal` type (used for money) doesn't serialize to JSON automatically. Convert with `Number(value)` before passing to client components.
+10. **NextAuth v5 trustHost:** Preview deployments without `NEXTAUTH_URL` require `trustHost: true` in the auth config. Without it, NextAuth rejects requests because it can't verify the host from request headers.
+11. **Server actions after signIn():** Don't call server actions immediately after `signIn("credentials", { redirect: false })` — the session cookie may not be available for the server action request. Navigate to `/painel` and let the catch-all redirect resolve the slug server-side.
+12. **signOut race condition:** `signOut({ redirect: false })` + `window.location.href` doesn't work reliably — the browser navigates before the session cookie is cleared, so the proxy redirects back. Always use `signOut({ redirectTo: "/login" })` for server-side redirect.
+13. **Don't wrap NextAuth route handlers:** Custom POST wrappers on `[...nextauth]/route.ts` can interfere with NextAuth's response format, causing "unexpected response" errors on both signIn and signOut. Export `handlers.GET` and `handlers.POST` directly. Add rate limiting elsewhere (proxy/middleware).
+14. **Slug migration backfill:** The `20260330000001_add_condominium_slug` migration uses `TRANSLATE` + `REGEXP_REPLACE` for Portuguese transliteration (ã→a, ç→c, etc.) and appends cuid prefixes on conflicts. Slugs are immutable once created.
 
 ### Key patterns used
-- **Server Actions** (`"use server"`) for database mutations (e.g., `onboarding/actions.ts`)
+- **Slug-based routing** — all dashboard pages under `/c/[slug]/`, resolved by `requireMembership(slug)` in server pages and `useCondominium()` in client components
+- **withAdmin/withMember HOFs** — in `lib/auth/admin-context.ts`, wrap server action logic; accept `condominiumId` as first argument
+- **CondominiumProvider** — React context in `lib/condominium-context.tsx` providing `slug` and `condominiumId` to all client components under the slug layout
+- **Server Actions** (`"use server"`) for database mutations — all accept `condominiumId` as first argument
 - **Client Components** (`"use client"`) for interactive forms (login, register, onboarding wizard)
-- **Server Components** (default) for layouts that read the session/DB (dashboard layout)
+- **Server Components** (default) for layouts that read the session/DB (slug layout)
 - **Route groups** `(auth)` and `(dashboard)` to share layouts without affecting URLs
 - **Zod schemas** in `lib/validators/` shared between client forms and server actions
 - **`db` singleton** in `lib/db/index.ts` with global caching to prevent connection leaks in dev
-- **`requireMembership()`** in `lib/auth/require-membership.ts` — call at the top of every server page instead of repeating `auth()` + `getUserMembership()` + redirect logic
+- **`requireMembership(slug)`** in `lib/auth/require-membership.ts` — call at the top of every server page; resolves slug → condominium and verifies membership
 - **Serializers** in `lib/serializers.ts` — call `serializeExpense(e)`, `serializeTransaction(t)`, etc. to convert Prisma Decimals and Dates before passing to client components
-- **Soft deletes** — all `Expense`, `Quota`, `Transaction` writes filter `deletedAt: null`; deletions set `deletedAt = now()` instead of removing rows; cascades handled manually in actions (delete expense → also soft-delete its Transaction)
+- **Soft deletes** — all `Expense`, `Quota`, `Transaction` writes filter `deletedAt: null`; deletions set `deletedAt = now()` instead of removing rows
+- **useOptimistic** — 9 list components use `useOptimistic` + `useTransition` for instant delete/toggle feedback
+- **Suspense** — 6 heavy data pages wrapped in `<Suspense>` with skeleton fallbacks
+- **Email queue** — non-urgent notifications queued in `PendingEmail` table; cron processes in batches with retries
 
 ### What's been completed but was previously listed as pending
-- **Bulk import UI** — ✅ Complete. File upload + text paste + preview + confirm flow in `/definicoes` (unit-manager.tsx). Auto-invites unregistered owners during import.
-- **Email notifications** — ✅ Complete. Transactional emails for announcements, meetings, quota reminders via Resend. Per-user notification preferences on Minha Conta page. `RESEND_API_KEY` configured in all Vercel environments.
+- **Bulk import UI** — ✅ Complete. File upload + text paste + preview + confirm flow in `/c/{slug}/definicoes` (unit-manager.tsx). Auto-invites unregistered owners during import.
+- **Email notifications** — ✅ Complete. Transactional emails via Resend. Non-urgent notifications now queued in PendingEmail table with batch processing and retry logic; login-critical emails (invite, password reset) still sent directly.
 - **Mobile responsiveness** — ✅ Complete. Bottom nav, card views, full-screen modals, responsive grids.
+- **Slug-based URL routing** — ✅ Complete. All dashboard pages under `/c/[slug]/`. Legacy catch-all redirect for old bookmarked URLs.
+- **Optimistic UI** — ✅ Complete. 9 list components with instant delete/toggle feedback via `useOptimistic`.
+- **Suspense streaming** — ✅ Complete. 6 heavy data pages with skeleton fallbacks.
+- **PDF exports** — ✅ Complete. Receipts, atas, budgets, and conta de gerência all have PDF generation + download buttons.
+- **File upload system** — ✅ Complete. Vercel Blob storage with reusable `FileUpload` component. Documents, expenses (invoice), and contracts (document) support direct file upload.
 
 ### What still needs to be built
 1. **Deployment to production** — Staging is live at `staging.opencondo.app`. Production (`main`) deploy pending final review. See `DEPLOYMENT_GUIDE.md` for Vercel + Neon setup.
+2. **`BLOB_READ_WRITE_TOKEN`** — needs to be added to Vercel env vars for file uploads to work (Storage → Create Blob Store).
+3. **Announcement file attachments** — `AnnouncementAttachment` model exists but no upload UI in the announcement form.
+4. **Maintenance photos** — `MaintenancePhoto` model exists but no upload UI.
+5. **Member role management** — admins can't change member roles or deactivate members from settings.
+6. **Remaining ModalForm migrations** — 7 form components can be mechanically refactored to use the shared `<ModalForm>` component.

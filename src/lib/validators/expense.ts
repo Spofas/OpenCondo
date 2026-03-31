@@ -8,6 +8,7 @@ export const expenseSchema = z.object({
     .positive("Valor deve ser positivo"),
   category: z.string().min(1, "Categoria é obrigatória"),
   notes: z.string().optional(),
+  invoiceUrl: z.string().optional(),
 });
 
 export type ExpenseInput = z.infer<typeof expenseSchema>;

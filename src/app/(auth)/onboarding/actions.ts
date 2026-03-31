@@ -1,9 +1,9 @@
 "use server";
 
-import { cookies } from "next/headers";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { condominiumSchema, unitsArraySchema } from "@/lib/validators/condominium";
+import { generateUniqueSlug } from "@/lib/utils/slug";
 
 export async function createCondominiumWithUnits(
   condominiumData: unknown,
@@ -39,11 +39,17 @@ export async function createCondominiumWithUnits(
   }
 
   try {
+    const slug = await generateUniqueSlug(condo.name, async (s) => {
+      const existing = await db.condominium.findUnique({ where: { slug: s } });
+      return !!existing;
+    });
+
     const result = await db.$transaction(async (tx) => {
       // Create the condominium
       const condominium = await tx.condominium.create({
         data: {
           name: condo.name,
+          slug,
           address: condo.address,
           postalCode: condo.postalCode || null,
           city: condo.city || null,
@@ -77,16 +83,7 @@ export async function createCondominiumWithUnits(
       return condominium;
     });
 
-    // Set the new condominium as active so the dashboard shows it
-    const cookieStore = await cookies();
-    cookieStore.set("activeCondominiumId", result.id, {
-      path: "/",
-      httpOnly: true,
-      sameSite: "lax",
-      maxAge: 60 * 60 * 24 * 365,
-    });
-
-    return { success: true, condominiumId: result.id };
+    return { success: true, condominiumId: result.id, slug: result.slug };
   } catch (err) {
     console.error("createCondominiumWithUnits transaction error:", err);
     return { error: "Erro ao criar o condomínio. Tente novamente." };

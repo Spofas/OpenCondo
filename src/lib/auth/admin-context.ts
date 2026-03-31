@@ -1,4 +1,3 @@
-import { cookies } from "next/headers";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import type { ActionReturn } from "@/lib/action-result";
@@ -15,28 +14,20 @@ export type AdminContext = {
 };
 
 /**
- * Gets the authenticated member's context (any role).
- * Returns { userId, condominiumId, role } or null if not authenticated.
+ * Gets the authenticated member's context for a specific condominium.
  */
-export async function getMemberContext(): Promise<MemberContext | null> {
+export async function getMemberContext(condominiumId: string): Promise<MemberContext | null> {
   const session = await auth();
   if (!session?.user?.id) return null;
 
-  const cookieStore = await cookies();
-  const condominiumId = cookieStore.get("activeCondominiumId")?.value;
-
-  const membership = condominiumId
-    ? await db.membership.findUnique({
-        where: {
-          userId_condominiumId: {
-            userId: session.user.id,
-            condominiumId,
-          },
-        },
-      })
-    : await db.membership.findFirst({
-        where: { userId: session.user.id, isActive: true },
-      });
+  const membership = await db.membership.findUnique({
+    where: {
+      userId_condominiumId: {
+        userId: session.user.id,
+        condominiumId,
+      },
+    },
+  });
 
   if (!membership) return null;
 
@@ -48,31 +39,30 @@ export async function getMemberContext(): Promise<MemberContext | null> {
 }
 
 /**
- * Shared admin context check used by all server actions that require ADMIN role.
- * Returns { userId, condominiumId } or null if the user is not an authenticated admin.
+ * Gets the admin context for a specific condominium.
  */
-export async function getAdminContext(): Promise<AdminContext | null> {
-  const ctx = await getMemberContext();
+export async function getAdminContext(condominiumId: string): Promise<AdminContext | null> {
+  const ctx = await getMemberContext(condominiumId);
   if (!ctx || ctx.role !== "ADMIN") return null;
   return { userId: ctx.userId, condominiumId: ctx.condominiumId };
 }
 
 /**
  * Higher-order function that wraps a server action with admin auth check.
- * Eliminates the repetitive `getAdminContext()` + null check boilerplate.
+ * The first argument to the returned function is always the condominiumId.
  *
  * Usage:
  *   export const createExpense = withAdmin(async (ctx, input: ExpenseInput) => {
- *     // ctx is guaranteed to be a valid AdminContext here
  *     ...
  *     return { success: true };
  *   });
+ *   // Called as: createExpense(condominiumId, input)
  */
 export function withAdmin<TArgs extends unknown[]>(
   fn: (ctx: AdminContext, ...args: TArgs) => Promise<ActionReturn>,
-): (...args: TArgs) => Promise<ActionReturn> {
-  return async (...args: TArgs) => {
-    const ctx = await getAdminContext();
+): (condominiumId: string, ...args: TArgs) => Promise<ActionReturn> {
+  return async (condominiumId: string, ...args: TArgs) => {
+    const ctx = await getAdminContext(condominiumId);
     if (!ctx) return { error: "Sem permissão" };
     return fn(ctx, ...args);
   };
@@ -80,13 +70,13 @@ export function withAdmin<TArgs extends unknown[]>(
 
 /**
  * Higher-order function that wraps a server action with member auth check.
- * Any authenticated member of the active condominium can call the action.
+ * The first argument to the returned function is always the condominiumId.
  */
 export function withMember<TArgs extends unknown[]>(
   fn: (ctx: MemberContext, ...args: TArgs) => Promise<ActionReturn>,
-): (...args: TArgs) => Promise<ActionReturn> {
-  return async (...args: TArgs) => {
-    const ctx = await getMemberContext();
+): (condominiumId: string, ...args: TArgs) => Promise<ActionReturn> {
+  return async (condominiumId: string, ...args: TArgs) => {
+    const ctx = await getMemberContext(condominiumId);
     if (!ctx) return { error: "Sem permissão" };
     return fn(ctx, ...args);
   };

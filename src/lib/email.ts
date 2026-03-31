@@ -1,8 +1,9 @@
 import { Resend } from "resend";
 import { db } from "@/lib/db";
+import { queueEmail } from "@/lib/email-queue";
 
 let _resend: Resend | null = null;
-function getResend() {
+export function getResend() {
   if (!_resend) _resend = new Resend(process.env.RESEND_API_KEY);
   return _resend;
 }
@@ -177,11 +178,12 @@ export async function sendAnnouncementNotification(
 
   await Promise.allSettled(
     recipients.map((r) =>
-      getResend().emails.send({
-        from: FROM,
-        to: r.email,
+      queueEmail({
+        recipient: r.email,
         subject: `${isUrgent ? "⚠️ " : ""}Novo aviso: ${title} — ${condominiumName}`,
         html,
+        type: "ANNOUNCEMENT",
+        referenceId: condominiumId,
       })
     )
   );
@@ -222,11 +224,12 @@ export async function sendMeetingNotification(
 
   await Promise.allSettled(
     recipients.map((r) =>
-      getResend().emails.send({
-        from: FROM,
-        to: r.email,
+      queueEmail({
+        recipient: r.email,
         subject: `Assembleia ${typeLabel} — ${dateStr} — ${condominiumName}`,
         html,
+        type: "MEETING",
+        referenceId: condominiumId,
       })
     )
   );
@@ -268,11 +271,12 @@ export async function sendQuotaReminderNotification(
     ${emailButton(`${BASE_URL}/financas/quotas`, "Ver quotas")}
   `);
 
-  await getResend().emails.send({
-    from: FROM,
-    to: ownerEmail,
+  await queueEmail({
+    recipient: ownerEmail,
     subject: `Quota pendente: ${amountStr} — ${condominiumName}`,
     html,
+    type: "QUOTA_REMINDER",
+    referenceId: condominiumId,
   });
 }
 

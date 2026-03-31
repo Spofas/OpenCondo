@@ -6,16 +6,6 @@ vi.mock("@/lib/auth", () => ({
   auth: () => mockAuth(),
 }));
 
-// Mock cookies
-vi.mock("next/headers", () => ({
-  cookies: () =>
-    Promise.resolve({
-      set: vi.fn(),
-      get: (key: string) =>
-        key === "activeCondominiumId" ? { value: "condo-1" } : undefined,
-    }),
-}));
-
 // Mock revalidatePath
 vi.mock("next/cache", () => ({
   revalidatePath: vi.fn(),
@@ -53,7 +43,7 @@ vi.mock("@/lib/db", () => ({
 }));
 
 const { createContact, updateContact, deleteContact } = await import(
-  "@/app/(dashboard)/comunicacao/contactos/actions"
+  "@/app/(dashboard)/c/[slug]/comunicacao/contactos/actions"
 );
 
 const validInput = {
@@ -86,13 +76,13 @@ describe("createContact", () => {
 
   it("returns error when not authenticated", async () => {
     mockAuth.mockResolvedValue(null);
-    const result = await createContact(validInput);
+    const result = await createContact("condo-1", validInput);
     expect(result).toEqual({ error: "Sem permissão" });
   });
 
   it("returns error when not admin", async () => {
     mockNonAdminSession();
-    const result = await createContact(validInput);
+    const result = await createContact("condo-1", validInput);
     expect(result).toEqual({ error: "Sem permissão" });
   });
 
@@ -100,7 +90,7 @@ describe("createContact", () => {
     mockAdminSession();
     mockSupplierCreate.mockResolvedValue({ id: "s-1" });
 
-    const result = await createContact(validInput);
+    const result = await createContact("condo-1", validInput);
     expect(result).toEqual({ success: true });
     expect(mockSupplierCreate).toHaveBeenCalledWith({
       data: expect.objectContaining({
@@ -123,7 +113,7 @@ describe("updateContact", () => {
 
   it("returns error when not admin", async () => {
     mockNonAdminSession();
-    const result = await updateContact("s-1", validInput);
+    const result = await updateContact("condo-1", "s-1", validInput);
     expect(result).toEqual({ error: "Sem permissão" });
   });
 
@@ -131,7 +121,7 @@ describe("updateContact", () => {
     mockAdminSession();
     mockSupplierFindFirst.mockResolvedValue(null);
 
-    const result = await updateContact("s-1", validInput);
+    const result = await updateContact("condo-1", "s-1", validInput);
     expect(result).toEqual({ error: "Contacto não encontrado" });
   });
 
@@ -140,7 +130,7 @@ describe("updateContact", () => {
     mockSupplierFindFirst.mockResolvedValue({ id: "s-1" });
     mockSupplierUpdate.mockResolvedValue({ id: "s-1" });
 
-    const result = await updateContact("s-1", {
+    const result = await updateContact("condo-1", "s-1", {
       ...validInput,
       name: "Bombeiros Profissionais",
     });
@@ -157,7 +147,7 @@ describe("deleteContact", () => {
 
   it("returns error when not admin", async () => {
     mockNonAdminSession();
-    const result = await deleteContact("s-1");
+    const result = await deleteContact("condo-1", "s-1");
     expect(result).toEqual({ error: "Sem permissão" });
   });
 
@@ -165,7 +155,7 @@ describe("deleteContact", () => {
     mockAdminSession();
     mockSupplierFindFirst.mockResolvedValue(null);
 
-    const result = await deleteContact("s-1");
+    const result = await deleteContact("condo-1", "s-1");
     expect(result).toEqual({ error: "Contacto não encontrado" });
   });
 
@@ -175,7 +165,7 @@ describe("deleteContact", () => {
     mockContractCount.mockResolvedValue(2);
     mockExpenseCount.mockResolvedValue(0);
 
-    const result = await deleteContact("s-1");
+    const result = await deleteContact("condo-1", "s-1");
     expect(result.error).toContain("2 contratos");
   });
 
@@ -185,7 +175,7 @@ describe("deleteContact", () => {
     mockContractCount.mockResolvedValue(0);
     mockExpenseCount.mockResolvedValue(3);
 
-    const result = await deleteContact("s-1");
+    const result = await deleteContact("condo-1", "s-1");
     expect(result.error).toContain("3 despesas");
   });
 
@@ -196,7 +186,7 @@ describe("deleteContact", () => {
     mockExpenseCount.mockResolvedValue(0);
     mockSupplierDelete.mockResolvedValue({ id: "s-1" });
 
-    const result = await deleteContact("s-1");
+    const result = await deleteContact("condo-1", "s-1");
     expect(result).toEqual({ success: true });
     expect(mockSupplierDelete).toHaveBeenCalledWith({ where: { id: "s-1" } });
   });

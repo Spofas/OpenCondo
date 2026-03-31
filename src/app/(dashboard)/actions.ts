@@ -1,37 +1,12 @@
 "use server";
 
-import { cookies } from "next/headers";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { parseCsvUnits } from "@/lib/csv-import";
 import { revalidatePath } from "next/cache";
 import { sendInviteEmail } from "@/lib/email";
 import { notificationPreferencesSchema, NOTIFICATION_DEFAULTS } from "@/lib/validators/notification-preferences";
-
-export async function switchCondominium(condominiumId: string) {
-  const session = await auth();
-  if (!session?.user?.id) return;
-
-  // Verify the user actually has a membership for this condominium
-  const membership = await db.membership.findUnique({
-    where: {
-      userId_condominiumId: {
-        userId: session.user.id,
-        condominiumId,
-      },
-    },
-  });
-
-  if (!membership || !membership.isActive) return;
-
-  const cookieStore = await cookies();
-  cookieStore.set("activeCondominiumId", condominiumId, {
-    path: "/",
-    httpOnly: true,
-    sameSite: "lax",
-    maxAge: 60 * 60 * 24 * 365, // 1 year
-  });
-}
+import { generateUniqueSlug } from "@/lib/utils/slug";
 
 export async function createInvite(data: {
   condominiumId: string;
@@ -148,10 +123,9 @@ export async function importUnitsFromCsv(condominiumId: string, csvText: string)
   let skipped = 0;
   let invited = 0;
   const importErrors: string[] = [...errors];
-  const invitedEmails = new Set<string>(); // Deduplicate invites per email
+  const invitedEmails = new Set<string>();
 
   for (const unit of units) {
-    // Check if unit already exists
     const existing = await db.unit.findUnique({
       where: {
         condominiumId_identifier: {
@@ -166,7 +140,6 @@ export async function importUnitsFromCsv(condominiumId: string, csvText: string)
       continue;
     }
 
-    // Find owner by email if provided
     let ownerId: string | null = null;
     let pendingOwnerEmail: string | null = null;
 
@@ -177,10 +150,8 @@ export async function importUnitsFromCsv(condominiumId: string, csvText: string)
       if (owner) {
         ownerId = owner.id;
       } else {
-        // Mark unit with pending email for auto-linking on invite acceptance
         pendingOwnerEmail = unit.ownerEmail;
 
-        // Send one invite per unique email
         if (!invitedEmails.has(unit.ownerEmail)) {
           try {
             const invite = await db.invite.create({
@@ -217,9 +188,8 @@ export async function importUnitsFromCsv(condominiumId: string, csvText: string)
     created++;
   }
 
-  revalidatePath("/definicoes");
+  revalidatePath(`/c/`);
 
-  // Build summary message
   const parts: string[] = [];
   parts.push(`${created} fração${created !== 1 ? "ões" : ""} importada${created !== 1 ? "s" : ""}`);
   if (skipped > 0) parts.push(`${skipped} já existente${skipped !== 1 ? "s" : ""}`);
@@ -239,16 +209,13 @@ export async function importUnitsFromCsv(condominiumId: string, csvText: string)
  * Assign an owner or tenant to a unit.
  */
 export async function assignUnitMember(
+  condominiumId: string,
   unitId: string,
   userId: string | null,
   role: "owner" | "tenant"
 ) {
   const session = await auth();
   if (!session?.user?.id) return { error: "Não autenticado" };
-
-  const cookieStore = await cookies();
-  const condominiumId = cookieStore.get("activeCondominiumId")?.value;
-  if (!condominiumId) return { error: "Nenhum condomínio selecionado" };
 
   const membership = await db.membership.findUnique({
     where: {
@@ -274,12 +241,13 @@ export async function assignUnitMember(
     data: role === "owner" ? { ownerId: userId } : { tenantId: userId },
   });
 
-  revalidatePath("/definicoes");
+  revalidatePath(`/c/`);
   return { success: true };
 }
 
 /**
  * Update condominium basic info (admin only).
+ * Regenerates slug if name changes.
  */
 export async function updateCondominium(
   condominiumId: string,
@@ -297,30 +265,41 @@ export async function updateCondominium(
     return { error: "Nome e morada são obrigatórios" };
   }
 
+  // Check if name changed — regenerate slug if so
+  const current = await db.condominium.findUnique({
+    where: { id: condominiumId },
+    select: { name: true, slug: true },
+  });
+
+  let slug = current?.slug;
+  if (current && data.name.trim() !== current.name) {
+    slug = await generateUniqueSlug(data.name.trim(), async (s) => {
+      const existing = await db.condominium.findUnique({ where: { slug: s } });
+      return !!existing && existing.id !== condominiumId;
+    });
+  }
+
   await db.condominium.update({
     where: { id: condominiumId },
     data: {
       name: data.name.trim(),
+      slug,
       address: data.address.trim(),
       city: data.city?.trim() || null,
       nif: data.nif?.trim() || null,
     },
   });
 
-  revalidatePath("/definicoes");
-  return { success: true };
+  revalidatePath(`/c/`);
+  return { success: true, slug };
 }
 
 /**
  * Update a unit's identifier (name). Admin only.
  */
-export async function updateUnitIdentifier(unitId: string, identifier: string) {
+export async function updateUnitIdentifier(condominiumId: string, unitId: string, identifier: string) {
   const session = await auth();
   if (!session?.user?.id) return { error: "Não autenticado" };
-
-  const cookieStore = await cookies();
-  const condominiumId = cookieStore.get("activeCondominiumId")?.value;
-  if (!condominiumId) return { error: "Nenhum condomínio selecionado" };
 
   const membership = await db.membership.findUnique({
     where: { userId_condominiumId: { userId: session.user.id, condominiumId } },
@@ -338,20 +317,16 @@ export async function updateUnitIdentifier(unitId: string, identifier: string) {
     return { error: "Já existe uma fração com esta identificação" };
   }
 
-  revalidatePath("/definicoes");
+  revalidatePath(`/c/`);
   return { success: true };
 }
 
 /**
  * Update a unit's permilagem.
  */
-export async function updateUnitPermilagem(unitId: string, permilagem: number) {
+export async function updateUnitPermilagem(condominiumId: string, unitId: string, permilagem: number) {
   const session = await auth();
   if (!session?.user?.id) return { error: "Não autenticado" };
-
-  const cookieStore = await cookies();
-  const condominiumId = cookieStore.get("activeCondominiumId")?.value;
-  if (!condominiumId) return { error: "Nenhum condomínio selecionado" };
 
   const membership = await db.membership.findUnique({
     where: {
@@ -375,20 +350,16 @@ export async function updateUnitPermilagem(unitId: string, permilagem: number) {
     data: { permilagem },
   });
 
-  revalidatePath("/definicoes");
+  revalidatePath(`/c/`);
   return { success: true };
 }
 
 /**
- * Get notification preferences for the current user and active condominium.
+ * Get notification preferences for the current user and condominium.
  */
-export async function getNotificationPreferences() {
+export async function getNotificationPreferences(condominiumId: string) {
   const session = await auth();
   if (!session?.user?.id) return null;
-
-  const cookieStore = await cookies();
-  const condominiumId = cookieStore.get("activeCondominiumId")?.value;
-  if (!condominiumId) return null;
 
   const pref = await db.notificationPreference.findUnique({
     where: { userId_condominiumId: { userId: session.user.id, condominiumId } },
@@ -408,15 +379,11 @@ export async function getNotificationPreferences() {
 }
 
 /**
- * Save notification preferences for the current user and active condominium.
+ * Save notification preferences for the current user and condominium.
  */
-export async function saveNotificationPreferences(data: Record<string, boolean>) {
+export async function saveNotificationPreferences(condominiumId: string, data: Record<string, boolean>) {
   const session = await auth();
   if (!session?.user?.id) return { error: "Não autenticado" };
-
-  const cookieStore = await cookies();
-  const condominiumId = cookieStore.get("activeCondominiumId")?.value;
-  if (!condominiumId) return { error: "Nenhum condomínio selecionado" };
 
   const parsed = notificationPreferencesSchema.safeParse(data);
   if (!parsed.success) return { error: "Dados inválidos" };
@@ -431,6 +398,6 @@ export async function saveNotificationPreferences(data: Record<string, boolean>)
     update: parsed.data,
   });
 
-  revalidatePath("/definicoes");
+  revalidatePath(`/c/`);
   return { success: true };
 }
