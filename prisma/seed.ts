@@ -72,10 +72,52 @@ async function main() {
   const passwordHash = await hash("password123", 12);
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // PART 2: Users
+  // PART 2: Users (10 total)
   // ═══════════════════════════════════════════════════════════════════════════
 
-  // PLACEHOLDER — Part 2 will replace this line
+  const adminAurora = await db.user.create({
+    data: { name: "Administrador Aurora", email: "admin@aurora.pt", passwordHash, phone: "912345678", nif: "123456789" },
+  });
+
+  const adminJardim = await db.user.create({
+    data: { name: "Pedro Mendes", email: "pedro@jardim.pt", passwordHash, phone: "916789012", nif: "987654321" },
+  });
+
+  const joao = await db.user.create({
+    data: { name: "João Silva", email: "joao@example.com", passwordHash, phone: "913456789" },
+  });
+
+  const maria = await db.user.create({
+    data: { name: "Maria Santos", email: "maria@example.com", passwordHash, phone: "914567890" },
+  });
+
+  const carlos = await db.user.create({
+    data: { name: "Carlos Ferreira", email: "carlos@example.com", passwordHash, phone: "915678901" },
+  });
+
+  const sofia = await db.user.create({
+    data: { name: "Sofia Oliveira", email: "sofia@example.com", passwordHash, phone: "917890123" },
+  });
+
+  const ricardo = await db.user.create({
+    data: { name: "Ricardo Pereira", email: "ricardo@example.com", passwordHash, phone: "918901234" },
+  });
+
+  const beatriz = await db.user.create({
+    data: { name: "Beatriz Almeida", email: "beatriz@example.com", passwordHash, phone: "919012345" },
+  });
+
+  const ana = await db.user.create({
+    data: { name: "Ana Costa", email: "ana@example.com", passwordHash },
+  });
+
+  const tiago = await db.user.create({
+    data: { name: "Tiago Rodrigues", email: "tiago@example.com", passwordHash },
+  });
+
+  console.log("  Created 10 users.");
+
+  // PLACEHOLDER — Part 3 will replace this line
 }
 
 main()
