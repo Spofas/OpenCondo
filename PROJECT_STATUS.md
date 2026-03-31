@@ -609,7 +609,7 @@ and get back up to speed without needing the conversation history.
 - **File upload system** — ✅ Complete. Vercel Blob storage with reusable `FileUpload` component. Documents, expenses (invoice), and contracts (document) support direct file upload.
 
 ### What still needs to be built
-1. **Deployment to production** — Staging is live at `staging.opencondo.app`. Production (`main`) deploy pending final review. See `DEPLOYMENT_GUIDE.md` for Vercel + Neon setup.
+1. **Deployment to production** — Develop environment is live at `develop.opencondo.app`, preview at `preview.opencondo.app`. Production (`main`) deploy pending final review. See `DEPLOYMENT_GUIDE.md` for Vercel + Neon setup.
 2. **`BLOB_READ_WRITE_TOKEN`** — needs to be added to Vercel env vars for file uploads to work (Storage → Create Blob Store).
 3. **Announcement file attachments** — `AnnouncementAttachment` model exists but no upload UI in the announcement form.
 4. **Maintenance photos** — `MaintenancePhoto` model exists but no upload UI.

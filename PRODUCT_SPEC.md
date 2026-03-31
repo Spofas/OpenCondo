@@ -396,7 +396,7 @@ All mutations validated with Zod schemas. Authorization checked per-action via `
 
 ### Phase 5 — Polish & Launch (In Progress)
 - [x] Seed data for development (realistic multi-user dataset with Transactions populated)
-- [x] Deployment to production (Vercel + Neon, two-environment setup with `develop` staging branch)
+- [x] Deployment to production (Vercel + Neon, three-environment setup: production, develop, preview)
 - [x] Nightly cron job (overdue marking + recurring expense generation across all condos)
 - [x] Dashboard stat cards (admin: YTD Saldo/Receitas/Despesas/Próxima assembleia; owner: Próxima quota/Próxima assembleia)
 - [x] CSV parsing logic + duplicate detection (`src/lib/csv-import.ts`, tested) — **upload UI not yet built**

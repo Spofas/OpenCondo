@@ -177,7 +177,7 @@ Admin checks use `getAdminContext()` in server actions. View-level access is con
 | Branch | Purpose | Merges into | Deploys to |
 |--------|---------|-------------|------------|
 | `main` | Stable, deployable code. Always working. | — | Production (Vercel + Neon `main`) |
-| `develop` | Integration branch for staging | `main` (via PR) | Staging (Vercel Preview + Neon `develop`) |
+| `develop` | Integration branch for testing | `main` (via PR) | Develop (Vercel Preview + Neon `develop`) |
 | `claude/opencondo-development-Ch14I` | All Claude development work | `develop` (via PR) | — |
 
 **Workflow:**
@@ -193,26 +193,27 @@ The project runs two live environments backed by separate databases:
 
 | Environment | Git branch | Vercel env | Neon branch | URL |
 |-------------|------------|------------|-------------|-----|
-| Production | `main` | Production | `main` | `opencondo.app` |
-| Staging | `develop` | Preview | `develop` | `staging.opencondo.app` |
+| Production | `main` | Production | `production` | `opencondo.app` |
+| Develop | `develop` | Preview | `develop` | `develop.opencondo.app` |
+| Preview | `claude/*` | Preview | `develop` | `preview.opencondo.app` |
 
 **Neon database branching:**
 - Neon supports git-like DB branching — the `develop` branch is an isolated copy of production
 - Schema migrations run independently on each branch
-- To create the staging DB branch: Neon Console → Branches → "New branch" from `main`, name it `develop`
+- To create the develop DB branch: Neon Console → Branches → "New branch" from `production`, name it `develop`
 
 **Vercel environment variables:**
 - `DATABASE_URL` is set **twice** — once per Vercel environment scope:
-  - **Production** scope → Neon `main` branch connection string
+  - **Production** scope → Neon `production` branch connection string
   - **Preview** scope → Neon `develop` branch connection string
 - All other env vars (`NEXTAUTH_SECRET`, `NEXTAUTH_URL`, etc.) should also be scoped appropriately
-- `NEXTAUTH_URL` for Preview should point to `staging.opencondo.app` (or the preview URL)
+- `NEXTAUTH_URL` for Preview should point to `develop.opencondo.app` (or the preview URL)
 
 **Migration workflow across environments:**
-- Migrations applied to `develop` branch DB when staging deploys
-- Migrations applied to `main` branch DB when production deploys
+- Migrations applied to `develop` branch DB when the develop environment deploys
+- Migrations applied to `production` branch DB when production deploys
 - Vercel runs `prisma migrate deploy` automatically before each build (`vercel.json`)
-- Test migrations on staging first before merging to `main`
+- Test migrations on develop first before merging to `main`
 
 ### Conventional Commits
 
