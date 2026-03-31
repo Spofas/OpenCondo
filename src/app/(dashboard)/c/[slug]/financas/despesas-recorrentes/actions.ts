@@ -8,6 +8,7 @@ import {
 } from "@/lib/validators/recurring-expense";
 import { revalidatePath } from "next/cache";
 import { withAdmin } from "@/lib/auth/admin-context";
+import { periodSuffix } from "@/lib/cron-utils";
 
 export const createRecurringExpense = withAdmin(async (ctx, input: RecurringExpenseInput) => {
   const parsed = recurringExpenseSchema.safeParse(input);
@@ -120,14 +121,29 @@ export const generateRecurringExpenses = withAdmin(async (ctx, period: string) =
         continue;
       }
 
-      await tx.expense.create({
+      const expenseDate = new Date(year, month - 1, 1);
+      const suffix = periodSuffix(tmpl.frequency, expenseDate);
+      const expenseDescription = `${tmpl.description} — ${suffix}`;
+
+      const expense = await tx.expense.create({
         data: {
           condominiumId: ctx.condominiumId,
-          date: new Date(year, month - 1, 1),
-          description: tmpl.description,
+          date: expenseDate,
+          description: expenseDescription,
           amount: tmpl.amount,
           category: tmpl.category,
           isRecurring: true,
+        },
+      });
+
+      await tx.transaction.create({
+        data: {
+          condominiumId: ctx.condominiumId,
+          date: expenseDate,
+          amount: -Number(tmpl.amount),
+          type: "EXPENSE",
+          description: expenseDescription,
+          expenseId: expense.id,
         },
       });
 
