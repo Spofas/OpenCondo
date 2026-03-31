@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useOptimistic, useTransition } from "react";
 import { Receipt, Edit2, Trash2 } from "lucide-react";
 import { deleteExpense } from "./actions";
 import type { ExpenseData } from "./expense-page-client";
@@ -20,17 +20,25 @@ export function ExpenseList({
 }) {
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [actionError, setActionError] = useState("");
+  const [, startTransition] = useTransition();
+  const [optimisticExpenses, addOptimistic] = useOptimistic(
+    expenses,
+    (state, deletedId: string) => state.filter((e) => e.id !== deletedId)
+  );
 
   async function handleDelete(expenseId: string) {
     setActionError("");
-    const result = await deleteExpense(expenseId);
-    if (result.error) {
-      setActionError(result.error);
-    }
     setConfirmDelete(null);
+    startTransition(async () => {
+      addOptimistic(expenseId);
+      const result = await deleteExpense(expenseId);
+      if (result.error) {
+        setActionError(result.error);
+      }
+    });
   }
 
-  if (expenses.length === 0) {
+  if (optimisticExpenses.length === 0) {
     return (
       <div className="rounded-xl border border-border bg-card">
         <div className="flex h-64 flex-col items-center justify-center gap-3 text-muted-foreground">
@@ -47,7 +55,7 @@ export function ExpenseList({
   // Summary by category
   const categoryTotals = new Map<string, number>();
   let grandTotal = 0;
-  for (const expense of expenses) {
+  for (const expense of optimisticExpenses) {
     const current = categoryTotals.get(expense.category) || 0;
     categoryTotals.set(expense.category, current + expense.amount);
     grandTotal += expense.amount;
@@ -101,7 +109,7 @@ export function ExpenseList({
 
       {/* Mobile cards */}
       <div className="space-y-3 md:hidden">
-        {expenses.map((expense) => (
+        {optimisticExpenses.map((expense) => (
           <div key={expense.id} className="rounded-xl border border-border bg-card p-4">
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0 flex-1">
@@ -174,7 +182,7 @@ export function ExpenseList({
             </tr>
           </thead>
           <tbody>
-            {expenses.map((expense) => (
+            {optimisticExpenses.map((expense) => (
               <tr key={expense.id} className="border-b border-border/50">
                 <td className="px-6 py-3 text-muted-foreground">
                   {new Date(expense.date).toLocaleDateString("pt-PT")}

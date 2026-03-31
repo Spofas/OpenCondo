@@ -3,12 +3,9 @@
 import { db } from "@/lib/db";
 import { budgetSchema, type BudgetInput } from "@/lib/validators/budget";
 import { revalidatePath } from "next/cache";
-import { getAdminContext } from "@/lib/auth/admin-context";
+import { withAdmin } from "@/lib/auth/admin-context";
 
-export async function createBudget(input: BudgetInput) {
-  const ctx = await getAdminContext();
-  if (!ctx) return { error: "Sem permissão" };
-
+export const createBudget = withAdmin(async (ctx, input: BudgetInput) => {
   const parsed = budgetSchema.safeParse(input);
   if (!parsed.success) {
     return { error: parsed.error.issues[0].message };
@@ -50,12 +47,9 @@ export async function createBudget(input: BudgetInput) {
 
   revalidatePath("/financas/orcamento");
   return { success: true, budgetId: budget.id };
-}
+});
 
-export async function updateBudget(budgetId: string, input: BudgetInput) {
-  const ctx = await getAdminContext();
-  if (!ctx) return { error: "Sem permissão" };
-
+export const updateBudget = withAdmin(async (ctx, budgetId: string, input: BudgetInput) => {
   const parsed = budgetSchema.safeParse(input);
   if (!parsed.success) {
     return { error: parsed.error.issues[0].message };
@@ -109,12 +103,9 @@ export async function updateBudget(budgetId: string, input: BudgetInput) {
 
   revalidatePath("/financas/orcamento");
   return { success: true };
-}
+});
 
-export async function approveBudget(budgetId: string) {
-  const ctx = await getAdminContext();
-  if (!ctx) return { error: "Sem permissão" };
-
+export const approveBudget = withAdmin(async (ctx, budgetId: string) => {
   const budget = await db.budget.findFirst({
     where: { id: budgetId, condominiumId: ctx.condominiumId },
   });
@@ -131,12 +122,9 @@ export async function approveBudget(budgetId: string) {
 
   revalidatePath("/financas/orcamento");
   return { success: true };
-}
+});
 
-export async function deleteBudget(budgetId: string) {
-  const ctx = await getAdminContext();
-  if (!ctx) return { error: "Sem permissão" };
-
+export const deleteBudget = withAdmin(async (ctx, budgetId: string) => {
   const budget = await db.budget.findFirst({
     where: { id: budgetId, condominiumId: ctx.condominiumId },
     include: { _count: { select: { items: true } } },
@@ -151,4 +139,4 @@ export async function deleteBudget(budgetId: string) {
 
   revalidatePath("/financas/orcamento");
   return { success: true };
-}
+});

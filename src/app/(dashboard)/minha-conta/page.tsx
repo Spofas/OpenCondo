@@ -1,17 +1,11 @@
-import { redirect } from "next/navigation";
-import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { getUserMembershipWithCondo } from "@/lib/auth/get-membership";
+import { requireMembershipWithCondo } from "@/lib/auth/require-membership";
 import { MyAccountClient } from "./my-account-client";
 import { NotificationPreferences } from "../definicoes/notification-preferences";
 import { NOTIFICATION_DEFAULTS } from "@/lib/validators/notification-preferences";
 
 export default async function MyAccountPage() {
-  const session = await auth();
-  if (!session?.user?.id) redirect("/login");
-
-  const membership = await getUserMembershipWithCondo(session.user.id);
-  if (!membership) redirect("/iniciar");
+  const { session, membership } = await requireMembershipWithCondo();
 
   const condoId = membership.condominiumId;
 

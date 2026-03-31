@@ -14,16 +14,13 @@ import {
   statusAfterUndo,
 } from "@/lib/quota-calculations";
 import { revalidatePath } from "next/cache";
-import { getAdminContext } from "@/lib/auth/admin-context";
+import { withAdmin } from "@/lib/auth/admin-context";
 
 /**
  * Generate quota records for all units across a range of months.
  * The admin sets a total monthly amount and chooses how to split it.
  */
-export async function generateQuotas(input: QuotaGenerateInput) {
-  const ctx = await getAdminContext();
-  if (!ctx) return { error: "Sem permissão" };
-
+export const generateQuotas = withAdmin(async (ctx, input: QuotaGenerateInput) => {
   const parsed = quotaGenerateSchema.safeParse(input);
   if (!parsed.success) {
     return { error: parsed.error.issues[0].message };
@@ -115,15 +112,12 @@ export async function generateQuotas(input: QuotaGenerateInput) {
     skipped,
     message: `${created} quota${created !== 1 ? "s" : ""} gerada${created !== 1 ? "s" : ""}${skipped > 0 ? ` (${skipped} já existente${skipped !== 1 ? "s" : ""})` : ""}`,
   };
-}
+});
 
 /**
  * Record payment for a quota.
  */
-export async function recordPayment(quotaId: string, input: QuotaPaymentInput) {
-  const ctx = await getAdminContext();
-  if (!ctx) return { error: "Sem permissão" };
-
+export const recordPayment = withAdmin(async (ctx, quotaId: string, input: QuotaPaymentInput) => {
   const parsed = quotaPaymentSchema.safeParse(input);
   if (!parsed.success) {
     return { error: parsed.error.issues[0].message };
@@ -169,15 +163,12 @@ export async function recordPayment(quotaId: string, input: QuotaPaymentInput) {
     revalidatePath("/financas/livro-caixa");
   }
   return result;
-}
+});
 
 /**
  * Undo a payment (set back to pending).
  */
-export async function undoPayment(quotaId: string) {
-  const ctx = await getAdminContext();
-  if (!ctx) return { error: "Sem permissão" };
-
+export const undoPayment = withAdmin(async (ctx, quotaId: string) => {
   const quota = await db.quota.findFirst({
     where: { id: quotaId, condominiumId: ctx.condominiumId },
   });
@@ -206,16 +197,13 @@ export async function undoPayment(quotaId: string) {
   revalidatePath("/financas/quotas");
   revalidatePath("/financas/livro-caixa");
   return { success: true };
-}
+});
 
 /**
  * Delete all quotas for a given period (month).
  * Only deletes unpaid (PENDING/OVERDUE) quotas.
  */
-export async function deleteQuotasByPeriod(period: string) {
-  const ctx = await getAdminContext();
-  if (!ctx) return { error: "Sem permissão" };
-
+export const deleteQuotasByPeriod = withAdmin(async (ctx, period: string) => {
   const result = await db.quota.updateMany({
     where: {
       condominiumId: ctx.condominiumId,
@@ -232,16 +220,13 @@ export async function deleteQuotasByPeriod(period: string) {
     deleted: result.count,
     message: `${result.count} quota${result.count !== 1 ? "s" : ""} eliminada${result.count !== 1 ? "s" : ""}`,
   };
-}
+});
 
 /**
  * Mark overdue quotas — called when loading the page.
  * Updates any PENDING quotas past their due date to OVERDUE.
  */
-export async function markOverdueQuotas() {
-  const ctx = await getAdminContext();
-  if (!ctx) return { updated: 0 };
-
+export const markOverdueQuotas = withAdmin(async (ctx) => {
   const now = new Date();
   const result = await db.quota.updateMany({
     where: {
@@ -257,5 +242,5 @@ export async function markOverdueQuotas() {
     revalidatePath("/financas/quotas");
   }
 
-  return { updated: result.count };
-}
+  return { success: true, updated: result.count };
+});

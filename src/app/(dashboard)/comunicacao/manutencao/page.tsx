@@ -1,19 +1,21 @@
-import { redirect } from "next/navigation";
-import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { getUserMembership } from "@/lib/auth/get-membership";
+import { requireMembership } from "@/lib/auth/require-membership";
 import { MaintenancePageClient } from "./maintenance-page-client";
 
 export default async function MaintenancePage() {
-  const session = await auth();
-  if (!session?.user?.id) redirect("/login");
-
-  const membership = await getUserMembership(session.user.id);
-  if (!membership) redirect("/iniciar");
+  const { membership } = await requireMembership();
 
   const requests = await db.maintenanceRequest.findMany({
     where: { condominiumId: membership.condominiumId },
-    include: {
+    select: {
+      id: true,
+      title: true,
+      description: true,
+      location: true,
+      priority: true,
+      status: true,
+      createdAt: true,
+      updatedAt: true,
       requester: { select: { name: true } },
     },
     orderBy: { createdAt: "desc" },

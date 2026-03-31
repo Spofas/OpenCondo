@@ -57,9 +57,22 @@ export function UnitManager({
     setTimeout(() => { setError(null); setSuccess(null); }, 4000);
   }
 
+  const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+  const ALLOWED_TYPES = ["text/csv", "text/plain", "application/vnd.ms-excel"];
+
   function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
+    if (file.size > MAX_FILE_SIZE) {
+      showMsg("error", "Ficheiro demasiado grande (máximo 5 MB)");
+      e.target.value = "";
+      return;
+    }
+    if (!ALLOWED_TYPES.includes(file.type) && !file.name.endsWith(".csv") && !file.name.endsWith(".txt")) {
+      showMsg("error", "Formato inválido. Use ficheiros .csv ou .txt");
+      e.target.value = "";
+      return;
+    }
     const reader = new FileReader();
     reader.onload = (ev) => {
       const text = ev.target?.result as string;

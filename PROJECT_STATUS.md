@@ -470,7 +470,7 @@ and get back up to speed without needing the conversation history.
 - **Test suite:** 417 tests passing (31 test files)
 - **Latest features (2026-03-25):** Soft deletes on financial records, nightly cron, receipt ownership gate, year-scoped quota queries, centralized auth+serializer helpers.
 - **Latest features (2026-03-26):** Extracted `isDueThisPeriod` to `src/lib/cron-utils.ts` (testable without Next.js); added 20+ cron tests, tightened permilagem rounding bound, added conta-gerencia edge case tests; painel stat cards.
-- **Latest features (2026-03-30):** Mobile responsiveness overhaul (bottom nav, full-screen modals, card views for tables, responsive grids). Auth routing via proxy (authenticated users auto-redirect to dashboard). Removed non-functional "Lembrar-me" checkbox.
+- **Latest features (2026-03-30):** Mobile responsiveness overhaul (bottom nav, full-screen modals, card views for tables, responsive grids). Auth routing via proxy (authenticated users auto-redirect to dashboard). Fixed login/logout flows (hard navigation). Removed non-functional "Lembrar-me" checkbox. Email notifications fully built and active (`RESEND_API_KEY` configured).
 - **Note:** `pnpm lint` is broken on Next.js 16.1.7 (`next lint` misparses args). The build catches type errors, so this is non-blocking.
 
 ### Gotchas & quirks discovered during development
@@ -495,8 +495,10 @@ and get back up to speed without needing the conversation history.
 - **Serializers** in `lib/serializers.ts` — call `serializeExpense(e)`, `serializeTransaction(t)`, etc. to convert Prisma Decimals and Dates before passing to client components
 - **Soft deletes** — all `Expense`, `Quota`, `Transaction` writes filter `deletedAt: null`; deletions set `deletedAt = now()` instead of removing rows; cascades handled manually in actions (delete expense → also soft-delete its Transaction)
 
-### What still needs to be built (in order)
-1. **Bulk import UI** — CSV parsing logic exists (`src/lib/csv-import.ts`, with duplicate detection) but has no page/form yet. Needs a page at `/definicoes` or `/onboarding` with file upload + preview + confirm flow.
-2. **Email notifications** — Transactional emails for announcements, quota reminders, maintenance updates, meeting convocatória. Needs `RESEND_API_KEY` env var and email templates.
-3. **Mobile responsiveness polish** — Core mobile UI is done (bottom nav, card views, full-screen modals, responsive grids). May need fine-tuning based on preview testing.
-4. **Deployment** — See `DEPLOYMENT_GUIDE.md` for Vercel + Neon setup. Remember to set `CRON_SECRET` in env vars.
+### What's been completed but was previously listed as pending
+- **Bulk import UI** — ✅ Complete. File upload + text paste + preview + confirm flow in `/definicoes` (unit-manager.tsx). Auto-invites unregistered owners during import.
+- **Email notifications** — ✅ Complete. Transactional emails for announcements, meetings, quota reminders via Resend. Per-user notification preferences on Minha Conta page. `RESEND_API_KEY` configured in all Vercel environments.
+- **Mobile responsiveness** — ✅ Complete. Bottom nav, card views, full-screen modals, responsive grids.
+
+### What still needs to be built
+1. **Deployment to production** — Staging is live at `staging.opencondo.app`. Production (`main`) deploy pending final review. See `DEPLOYMENT_GUIDE.md` for Vercel + Neon setup.

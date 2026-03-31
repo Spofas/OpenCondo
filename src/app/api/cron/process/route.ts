@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { isDueThisPeriod } from "@/lib/cron-utils";
 import { sendBulkQuotaReminders } from "@/lib/email";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 /**
  * Nightly cron job — runs at 02:00 UTC via Vercel Cron (vercel.json).
@@ -17,6 +18,14 @@ export async function GET(request: NextRequest) {
   const authHeader = request.headers.get("authorization");
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { allowed } = checkRateLimit("cron:process", {
+    maxRequests: 2,
+    windowMs: 60 * 60 * 1000, // max 2 calls per hour
+  });
+  if (!allowed) {
+    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   }
 
   const now = new Date();

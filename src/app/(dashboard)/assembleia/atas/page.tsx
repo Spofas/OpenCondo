@@ -1,15 +1,9 @@
-import { redirect } from "next/navigation";
-import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { getUserMembership } from "@/lib/auth/get-membership";
+import { requireMembership } from "@/lib/auth/require-membership";
 import { ScrollText } from "lucide-react";
 
 export default async function AtasPage() {
-  const session = await auth();
-  if (!session?.user?.id) redirect("/login");
-
-  const membership = await getUserMembership(session.user.id);
-  if (!membership) redirect("/iniciar");
+  const { membership } = await requireMembership();
 
   const atas = await db.ata.findMany({
     where: { meeting: { condominiumId: membership.condominiumId } },
