@@ -238,4 +238,267 @@ describe("Financial Engine — Quota Split Accuracy", () => {
   });
 });
 
-// PLACEHOLDER — Part 2 will be added below
+// ═══════════════════════════════════════════════════════════════════════════════
+// PART 2: Conta de Gerência report consistency invariants
+// ═══════════════════════════════════════════════════════════════════════════════
+
+describe("Financial Engine — Report Consistency Invariants", () => {
+  describe("fundamental accounting identity: paid + pending + overdue = generated", () => {
+    it("holds for a simple scenario", () => {
+      const report = buildContaGerencia(makeReport({
+        quotas: [
+          { unitIdentifier: "A", ownerName: "Ana", amount: 100, status: "PAID", period: "2026-01" },
+          { unitIdentifier: "A", ownerName: "Ana", amount: 100, status: "PENDING", period: "2026-02" },
+          { unitIdentifier: "A", ownerName: "Ana", amount: 100, status: "OVERDUE", period: "2026-03" },
+          { unitIdentifier: "B", ownerName: "Bruno", amount: 200, status: "PAID", period: "2026-01" },
+          { unitIdentifier: "B", ownerName: "Bruno", amount: 200, status: "PAID", period: "2026-02" },
+          { unitIdentifier: "B", ownerName: "Bruno", amount: 200, status: "OVERDUE", period: "2026-03" },
+        ],
+      }));
+
+      expect(report.totalQuotasPaid + report.totalQuotasPending + report.totalQuotasOverdue)
+        .toBe(report.totalQuotasGenerated);
+    });
+
+    it("holds for full year with 6 units (realistic building)", () => {
+      const units = makeUnits([100, 100, 200, 200, 250, 150]);
+      const quotas = generateYearQuotas(units, 2026, 2000, (month, unitIdx) => {
+        if (month <= 3) return "PAID";
+        if (month <= 6) return unitIdx < 3 ? "PAID" : "PENDING";
+        if (month <= 9) return "PENDING";
+        return "OVERDUE";
+      });
+
+      const report = buildContaGerencia(makeReport({ quotas }));
+
+      const sum = round2(report.totalQuotasPaid + report.totalQuotasPending + report.totalQuotasOverdue);
+      expect(sum).toBe(report.totalQuotasGenerated);
+    });
+
+    it("holds when all quotas are paid", () => {
+      const quotas = generateYearQuotas(makeUnits([500, 500]), 2026, 1000, () => "PAID");
+      const report = buildContaGerencia(makeReport({ quotas }));
+
+      expect(report.totalQuotasPaid).toBe(report.totalQuotasGenerated);
+      expect(report.totalQuotasPending).toBe(0);
+      expect(report.totalQuotasOverdue).toBe(0);
+    });
+
+    it("holds when no quotas are paid", () => {
+      const quotas = generateYearQuotas(makeUnits([500, 500]), 2026, 1000, (m) =>
+        m <= 6 ? "OVERDUE" : "PENDING"
+      );
+      const report = buildContaGerencia(makeReport({ quotas }));
+
+      expect(report.totalQuotasPaid).toBe(0);
+      expect(report.totalQuotasPending + report.totalQuotasOverdue).toBe(report.totalQuotasGenerated);
+    });
+  });
+
+  describe("collection rate accuracy", () => {
+    it("is 100% when all paid", () => {
+      const quotas = [
+        { unitIdentifier: "A", ownerName: "Ana", amount: 500, status: "PAID" as const, period: "2026-01" },
+      ];
+      const report = buildContaGerencia(makeReport({ quotas }));
+      expect(report.collectionRate).toBe(100);
+    });
+
+    it("is 0% when none paid", () => {
+      const quotas = [
+        { unitIdentifier: "A", ownerName: "Ana", amount: 500, status: "PENDING" as const, period: "2026-01" },
+      ];
+      const report = buildContaGerencia(makeReport({ quotas }));
+      expect(report.collectionRate).toBe(0);
+    });
+
+    it("is 0% when no quotas exist", () => {
+      const report = buildContaGerencia(makeReport());
+      expect(report.collectionRate).toBe(0);
+    });
+
+    it("is correctly calculated for partial payment", () => {
+      const quotas = [
+        { unitIdentifier: "A", ownerName: "Ana", amount: 100, status: "PAID" as const, period: "2026-01" },
+        { unitIdentifier: "A", ownerName: "Ana", amount: 100, status: "PAID" as const, period: "2026-02" },
+        { unitIdentifier: "A", ownerName: "Ana", amount: 100, status: "PENDING" as const, period: "2026-03" },
+      ];
+      const report = buildContaGerencia(makeReport({ quotas }));
+      expect(report.collectionRate).toBeCloseTo(66.67, 1);
+    });
+
+    it("collection rate × generated ≈ paid (algebraic consistency)", () => {
+      const units = makeUnits([120, 230, 150, 500]);
+      const quotas = generateYearQuotas(units, 2026, 3000, (m) =>
+        m <= 7 ? "PAID" : "PENDING"
+      );
+      const report = buildContaGerencia(makeReport({ quotas }));
+
+      const derivedPaid = round2(report.totalQuotasGenerated * report.collectionRate / 100);
+      // Collection rate is rounded to 2 decimal places, so derived paid can drift
+      // by up to ~0.005% of totalQuotasGenerated. Allow proportional tolerance.
+      const tolerance = round2(report.totalQuotasGenerated * 0.001); // 0.1%
+      expect(Math.abs(derivedPaid - report.totalQuotasPaid)).toBeLessThanOrEqual(tolerance);
+    });
+  });
+
+  describe("net balance = paid - expenses", () => {
+    it("positive balance when income > expenses", () => {
+      const report = buildContaGerencia(makeReport({
+        quotas: [
+          { unitIdentifier: "A", ownerName: "Ana", amount: 1000, status: "PAID", period: "2026-01" },
+        ],
+        expenses: [
+          { category: "Limpeza", amount: 600, date: "2026-01-15" },
+        ],
+      }));
+      expect(report.netBalance).toBe(400);
+    });
+
+    it("negative balance when expenses > income", () => {
+      const report = buildContaGerencia(makeReport({
+        quotas: [
+          { unitIdentifier: "A", ownerName: "Ana", amount: 200, status: "PAID", period: "2026-01" },
+        ],
+        expenses: [
+          { category: "Obras", amount: 5000, date: "2026-02-01" },
+        ],
+      }));
+      expect(report.netBalance).toBe(-4800);
+    });
+
+    it("zero balance when no data", () => {
+      const report = buildContaGerencia(makeReport());
+      expect(report.netBalance).toBe(0);
+    });
+
+    it("only PAID quotas count toward income (not pending/overdue)", () => {
+      const report = buildContaGerencia(makeReport({
+        quotas: [
+          { unitIdentifier: "A", ownerName: "Ana", amount: 500, status: "PAID", period: "2026-01" },
+          { unitIdentifier: "A", ownerName: "Ana", amount: 500, status: "PENDING", period: "2026-02" },
+          { unitIdentifier: "A", ownerName: "Ana", amount: 500, status: "OVERDUE", period: "2026-03" },
+        ],
+        expenses: [
+          { category: "Limpeza", amount: 300, date: "2026-01-15" },
+        ],
+      }));
+      // Net = 500 (paid) - 300 (expenses) = 200
+      expect(report.netBalance).toBe(200);
+    });
+
+    it("consistency: netBalance = totalQuotasPaid - totalExpenses", () => {
+      const units = makeUnits([250, 250, 250, 250]);
+      const quotas = generateYearQuotas(units, 2026, 2000, (m, i) =>
+        m <= 6 ? "PAID" : (i < 2 ? "PAID" : "OVERDUE")
+      );
+      const expenses = [
+        { category: "Limpeza", amount: 500, date: "2026-01-05" },
+        { category: "Elevador", amount: 400, date: "2026-02-15" },
+        { category: "Electricidade", amount: 280, date: "2026-03-20" },
+        { category: "Limpeza", amount: 500, date: "2026-04-05" },
+        { category: "Obras", amount: 3000, date: "2026-07-10" },
+      ];
+      const report = buildContaGerencia(makeReport({ quotas, expenses }));
+
+      expect(report.netBalance).toBe(round2(report.totalQuotasPaid - report.totalExpenses));
+    });
+  });
+
+  describe("expense category totals", () => {
+    it("sum of categories = totalExpenses", () => {
+      const expenses = [
+        { category: "Limpeza", amount: 100, date: "2026-01-05" },
+        { category: "Limpeza", amount: 200, date: "2026-02-05" },
+        { category: "Elevador", amount: 400, date: "2026-01-15" },
+        { category: "Electricidade", amount: 150, date: "2026-03-20" },
+        { category: "Obras", amount: 3000, date: "2026-06-01" },
+      ];
+      const report = buildContaGerencia(makeReport({ expenses }));
+
+      const categorySum = report.expensesByCategory.reduce((s, c) => s + c.amount, 0);
+      expect(categorySum).toBe(report.totalExpenses);
+    });
+
+    it("sorted descending by amount", () => {
+      const expenses = [
+        { category: "Limpeza", amount: 100, date: "2026-01-05" },
+        { category: "Elevador", amount: 400, date: "2026-01-15" },
+        { category: "Obras", amount: 200, date: "2026-02-01" },
+      ];
+      const report = buildContaGerencia(makeReport({ expenses }));
+
+      for (let i = 1; i < report.expensesByCategory.length; i++) {
+        expect(report.expensesByCategory[i - 1].amount)
+          .toBeGreaterThanOrEqual(report.expensesByCategory[i].amount);
+      }
+    });
+
+    it("no division by zero when totalExpenses is 0", () => {
+      const report = buildContaGerencia(makeReport({ expenses: [] }));
+      expect(report.totalExpenses).toBe(0);
+      expect(report.expensesByCategory).toHaveLength(0);
+    });
+  });
+
+  describe("unit debts accuracy", () => {
+    it("only includes units with unpaid quotas", () => {
+      const report = buildContaGerencia(makeReport({
+        quotas: [
+          { unitIdentifier: "A", ownerName: "Ana", amount: 100, status: "PAID", period: "2026-01" },
+          { unitIdentifier: "B", ownerName: "Bruno", amount: 100, status: "OVERDUE", period: "2026-01" },
+          { unitIdentifier: "C", ownerName: "Carlos", amount: 100, status: "PENDING", period: "2026-01" },
+        ],
+      }));
+
+      expect(report.unitDebts).toHaveLength(2); // B and C
+      expect(report.unitDebts.find(d => d.unitIdentifier === "A")).toBeUndefined();
+    });
+
+    it("per-unit debt = sum of pending + overdue for that unit", () => {
+      const report = buildContaGerencia(makeReport({
+        quotas: [
+          { unitIdentifier: "A", ownerName: "Ana", amount: 100, status: "OVERDUE", period: "2026-01" },
+          { unitIdentifier: "A", ownerName: "Ana", amount: 100, status: "OVERDUE", period: "2026-02" },
+          { unitIdentifier: "A", ownerName: "Ana", amount: 100, status: "PENDING", period: "2026-03" },
+          { unitIdentifier: "A", ownerName: "Ana", amount: 100, status: "PAID", period: "2026-04" },
+        ],
+      }));
+
+      expect(report.unitDebts).toHaveLength(1);
+      const debt = report.unitDebts[0];
+      expect(debt.overdueAmount).toBe(200);
+      expect(debt.pendingAmount).toBe(100);
+      expect(debt.totalDebt).toBe(300);
+    });
+
+    it("total unpaid across all units = totalQuotasPending + totalQuotasOverdue", () => {
+      const units = makeUnits([200, 300, 500]);
+      const quotas = generateYearQuotas(units, 2026, 1500, (m, i) => {
+        if (m <= 4) return "PAID";
+        if (m <= 8) return i === 0 ? "PAID" : "OVERDUE";
+        return "PENDING";
+      });
+      const report = buildContaGerencia(makeReport({ quotas }));
+
+      const totalDebtFromUnits = report.unitDebts.reduce((s, d) => s + d.totalDebt, 0);
+      expect(round2(totalDebtFromUnits)).toBe(round2(report.totalQuotasPending + report.totalQuotasOverdue));
+    });
+
+    it("sorted by totalDebt descending", () => {
+      const report = buildContaGerencia(makeReport({
+        quotas: [
+          { unitIdentifier: "A", ownerName: "Ana", amount: 50, status: "OVERDUE", period: "2026-01" },
+          { unitIdentifier: "B", ownerName: "Bruno", amount: 300, status: "OVERDUE", period: "2026-01" },
+          { unitIdentifier: "C", ownerName: "Carlos", amount: 150, status: "PENDING", period: "2026-01" },
+        ],
+      }));
+
+      expect(report.unitDebts[0].unitIdentifier).toBe("B");
+      expect(report.unitDebts[1].unitIdentifier).toBe("C");
+      expect(report.unitDebts[2].unitIdentifier).toBe("A");
+    });
+  });
+});
+
+// PLACEHOLDER — Part 3 will be added below
