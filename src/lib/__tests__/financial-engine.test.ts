@@ -51,12 +51,15 @@ function generateYearQuotas(
   for (let m = 1; m <= 12; m++) {
     for (let i = 0; i < units.length; i++) {
       const amount = round2((monthlyTotal * units[i].permilagem) / totalPermilagem);
+      const period = `${year}-${String(m).padStart(2, "0")}`;
       quotas.push({
+        unitId: `unit-${i}`,
         unitIdentifier: `Unit-${i}`,
         ownerName: `Owner ${i}`,
         amount,
         status: statusFn(m, i),
-        period: `${year}-${String(m).padStart(2, "0")}`,
+        period,
+        dueDate: `${period}-08`,
       });
     }
   }
@@ -247,12 +250,12 @@ describe("Financial Engine — Report Consistency Invariants", () => {
     it("holds for a simple scenario", () => {
       const report = buildContaGerencia(makeReport({
         quotas: [
-          { unitIdentifier: "A", ownerName: "Ana", amount: 100, status: "PAID", period: "2026-01" },
-          { unitIdentifier: "A", ownerName: "Ana", amount: 100, status: "PENDING", period: "2026-02" },
-          { unitIdentifier: "A", ownerName: "Ana", amount: 100, status: "OVERDUE", period: "2026-03" },
-          { unitIdentifier: "B", ownerName: "Bruno", amount: 200, status: "PAID", period: "2026-01" },
-          { unitIdentifier: "B", ownerName: "Bruno", amount: 200, status: "PAID", period: "2026-02" },
-          { unitIdentifier: "B", ownerName: "Bruno", amount: 200, status: "OVERDUE", period: "2026-03" },
+          { unitId: "a", unitIdentifier: "A", ownerName: "Ana", amount: 100, status: "PAID", period: "2026-01", dueDate: "2026-01-08" },
+          { unitId: "a", unitIdentifier: "A", ownerName: "Ana", amount: 100, status: "PENDING", period: "2026-02", dueDate: "2026-02-08" },
+          { unitId: "a", unitIdentifier: "A", ownerName: "Ana", amount: 100, status: "OVERDUE", period: "2026-03", dueDate: "2026-03-08" },
+          { unitId: "b", unitIdentifier: "B", ownerName: "Bruno", amount: 200, status: "PAID", period: "2026-01", dueDate: "2026-01-08" },
+          { unitId: "b", unitIdentifier: "B", ownerName: "Bruno", amount: 200, status: "PAID", period: "2026-02", dueDate: "2026-02-08" },
+          { unitId: "b", unitIdentifier: "B", ownerName: "Bruno", amount: 200, status: "OVERDUE", period: "2026-03", dueDate: "2026-03-08" },
         ],
       }));
 
@@ -298,7 +301,7 @@ describe("Financial Engine — Report Consistency Invariants", () => {
   describe("collection rate accuracy", () => {
     it("is 100% when all paid", () => {
       const quotas = [
-        { unitIdentifier: "A", ownerName: "Ana", amount: 500, status: "PAID" as const, period: "2026-01" },
+        { unitId: "a", unitIdentifier: "A", ownerName: "Ana", amount: 500, status: "PAID" as const, period: "2026-01", dueDate: "2026-01-08" },
       ];
       const report = buildContaGerencia(makeReport({ quotas }));
       expect(report.collectionRate).toBe(100);
@@ -306,7 +309,7 @@ describe("Financial Engine — Report Consistency Invariants", () => {
 
     it("is 0% when none paid", () => {
       const quotas = [
-        { unitIdentifier: "A", ownerName: "Ana", amount: 500, status: "PENDING" as const, period: "2026-01" },
+        { unitId: "a", unitIdentifier: "A", ownerName: "Ana", amount: 500, status: "PENDING" as const, period: "2026-01", dueDate: "2026-01-08" },
       ];
       const report = buildContaGerencia(makeReport({ quotas }));
       expect(report.collectionRate).toBe(0);
@@ -319,9 +322,9 @@ describe("Financial Engine — Report Consistency Invariants", () => {
 
     it("is correctly calculated for partial payment", () => {
       const quotas = [
-        { unitIdentifier: "A", ownerName: "Ana", amount: 100, status: "PAID" as const, period: "2026-01" },
-        { unitIdentifier: "A", ownerName: "Ana", amount: 100, status: "PAID" as const, period: "2026-02" },
-        { unitIdentifier: "A", ownerName: "Ana", amount: 100, status: "PENDING" as const, period: "2026-03" },
+        { unitId: "a", unitIdentifier: "A", ownerName: "Ana", amount: 100, status: "PAID" as const, period: "2026-01", dueDate: "2026-01-08" },
+        { unitId: "a", unitIdentifier: "A", ownerName: "Ana", amount: 100, status: "PAID" as const, period: "2026-02", dueDate: "2026-02-08" },
+        { unitId: "a", unitIdentifier: "A", ownerName: "Ana", amount: 100, status: "PENDING" as const, period: "2026-03", dueDate: "2026-03-08" },
       ];
       const report = buildContaGerencia(makeReport({ quotas }));
       expect(report.collectionRate).toBeCloseTo(66.67, 1);
@@ -346,7 +349,7 @@ describe("Financial Engine — Report Consistency Invariants", () => {
     it("positive balance when income > expenses", () => {
       const report = buildContaGerencia(makeReport({
         quotas: [
-          { unitIdentifier: "A", ownerName: "Ana", amount: 1000, status: "PAID", period: "2026-01" },
+          { unitId: "a", unitIdentifier: "A", ownerName: "Ana", amount: 1000, status: "PAID", period: "2026-01", dueDate: "2026-01-08" },
         ],
         expenses: [
           { category: "Limpeza", amount: 600, date: "2026-01-15" },
@@ -358,7 +361,7 @@ describe("Financial Engine — Report Consistency Invariants", () => {
     it("negative balance when expenses > income", () => {
       const report = buildContaGerencia(makeReport({
         quotas: [
-          { unitIdentifier: "A", ownerName: "Ana", amount: 200, status: "PAID", period: "2026-01" },
+          { unitId: "a", unitIdentifier: "A", ownerName: "Ana", amount: 200, status: "PAID", period: "2026-01", dueDate: "2026-01-08" },
         ],
         expenses: [
           { category: "Obras", amount: 5000, date: "2026-02-01" },
@@ -375,9 +378,9 @@ describe("Financial Engine — Report Consistency Invariants", () => {
     it("only PAID quotas count toward income (not pending/overdue)", () => {
       const report = buildContaGerencia(makeReport({
         quotas: [
-          { unitIdentifier: "A", ownerName: "Ana", amount: 500, status: "PAID", period: "2026-01" },
-          { unitIdentifier: "A", ownerName: "Ana", amount: 500, status: "PENDING", period: "2026-02" },
-          { unitIdentifier: "A", ownerName: "Ana", amount: 500, status: "OVERDUE", period: "2026-03" },
+          { unitId: "a", unitIdentifier: "A", ownerName: "Ana", amount: 500, status: "PAID", period: "2026-01", dueDate: "2026-01-08" },
+          { unitId: "a", unitIdentifier: "A", ownerName: "Ana", amount: 500, status: "PENDING", period: "2026-02", dueDate: "2026-02-08" },
+          { unitId: "a", unitIdentifier: "A", ownerName: "Ana", amount: 500, status: "OVERDUE", period: "2026-03", dueDate: "2026-03-08" },
         ],
         expenses: [
           { category: "Limpeza", amount: 300, date: "2026-01-15" },
@@ -445,9 +448,9 @@ describe("Financial Engine — Report Consistency Invariants", () => {
     it("only includes units with unpaid quotas", () => {
       const report = buildContaGerencia(makeReport({
         quotas: [
-          { unitIdentifier: "A", ownerName: "Ana", amount: 100, status: "PAID", period: "2026-01" },
-          { unitIdentifier: "B", ownerName: "Bruno", amount: 100, status: "OVERDUE", period: "2026-01" },
-          { unitIdentifier: "C", ownerName: "Carlos", amount: 100, status: "PENDING", period: "2026-01" },
+          { unitId: "a", unitIdentifier: "A", ownerName: "Ana", amount: 100, status: "PAID", period: "2026-01", dueDate: "2026-01-08" },
+          { unitId: "b", unitIdentifier: "B", ownerName: "Bruno", amount: 100, status: "OVERDUE", period: "2026-01", dueDate: "2026-01-08" },
+          { unitId: "c", unitIdentifier: "C", ownerName: "Carlos", amount: 100, status: "PENDING", period: "2026-01", dueDate: "2026-01-08" },
         ],
       }));
 
@@ -458,10 +461,10 @@ describe("Financial Engine — Report Consistency Invariants", () => {
     it("per-unit debt = sum of pending + overdue for that unit", () => {
       const report = buildContaGerencia(makeReport({
         quotas: [
-          { unitIdentifier: "A", ownerName: "Ana", amount: 100, status: "OVERDUE", period: "2026-01" },
-          { unitIdentifier: "A", ownerName: "Ana", amount: 100, status: "OVERDUE", period: "2026-02" },
-          { unitIdentifier: "A", ownerName: "Ana", amount: 100, status: "PENDING", period: "2026-03" },
-          { unitIdentifier: "A", ownerName: "Ana", amount: 100, status: "PAID", period: "2026-04" },
+          { unitId: "a", unitIdentifier: "A", ownerName: "Ana", amount: 100, status: "OVERDUE", period: "2026-01", dueDate: "2026-01-08" },
+          { unitId: "a", unitIdentifier: "A", ownerName: "Ana", amount: 100, status: "OVERDUE", period: "2026-02", dueDate: "2026-02-08" },
+          { unitId: "a", unitIdentifier: "A", ownerName: "Ana", amount: 100, status: "PENDING", period: "2026-03", dueDate: "2026-03-08" },
+          { unitId: "a", unitIdentifier: "A", ownerName: "Ana", amount: 100, status: "PAID", period: "2026-04", dueDate: "2026-04-08" },
         ],
       }));
 
@@ -488,9 +491,9 @@ describe("Financial Engine — Report Consistency Invariants", () => {
     it("sorted by totalDebt descending", () => {
       const report = buildContaGerencia(makeReport({
         quotas: [
-          { unitIdentifier: "A", ownerName: "Ana", amount: 50, status: "OVERDUE", period: "2026-01" },
-          { unitIdentifier: "B", ownerName: "Bruno", amount: 300, status: "OVERDUE", period: "2026-01" },
-          { unitIdentifier: "C", ownerName: "Carlos", amount: 150, status: "PENDING", period: "2026-01" },
+          { unitId: "a", unitIdentifier: "A", ownerName: "Ana", amount: 50, status: "OVERDUE", period: "2026-01", dueDate: "2026-01-08" },
+          { unitId: "b", unitIdentifier: "B", ownerName: "Bruno", amount: 300, status: "OVERDUE", period: "2026-01", dueDate: "2026-01-08" },
+          { unitId: "c", unitIdentifier: "C", ownerName: "Carlos", amount: 150, status: "PENDING", period: "2026-01", dueDate: "2026-01-08" },
         ],
       }));
 
@@ -605,7 +608,7 @@ describe("Financial Engine — Budget & Reserve Fund", () => {
   describe("reserve fund calculations", () => {
     it("contributions = paid × percentage", () => {
       const quotas = [
-        { unitIdentifier: "A", ownerName: "Ana", amount: 10000, status: "PAID" as const, period: "2026-01" },
+        { unitId: "a", unitIdentifier: "A", ownerName: "Ana", amount: 10000, status: "PAID" as const, period: "2026-01", dueDate: "2026-01-08" },
       ];
       const report = buildContaGerencia(makeReport({
         budget: { ...standardBudget, reserveFundPercentage: 10 },
@@ -618,7 +621,7 @@ describe("Financial Engine — Budget & Reserve Fund", () => {
 
     it("contributions with 15% rate", () => {
       const quotas = [
-        { unitIdentifier: "A", ownerName: "Ana", amount: 8000, status: "PAID" as const, period: "2026-01" },
+        { unitId: "a", unitIdentifier: "A", ownerName: "Ana", amount: 8000, status: "PAID" as const, period: "2026-01", dueDate: "2026-01-08" },
       ];
       const report = buildContaGerencia(makeReport({
         budget: { ...standardBudget, reserveFundPercentage: 15 },
@@ -630,7 +633,7 @@ describe("Financial Engine — Budget & Reserve Fund", () => {
 
     it("zero contributions when nothing paid", () => {
       const quotas = [
-        { unitIdentifier: "A", ownerName: "Ana", amount: 5000, status: "PENDING" as const, period: "2026-01" },
+        { unitId: "a", unitIdentifier: "A", ownerName: "Ana", amount: 5000, status: "PENDING" as const, period: "2026-01", dueDate: "2026-01-08" },
       ];
       const report = buildContaGerencia(makeReport({
         budget: standardBudget,
@@ -642,7 +645,7 @@ describe("Financial Engine — Budget & Reserve Fund", () => {
 
     it("defaults to 10% when no budget", () => {
       const quotas = [
-        { unitIdentifier: "A", ownerName: "Ana", amount: 6000, status: "PAID" as const, period: "2026-01" },
+        { unitId: "a", unitIdentifier: "A", ownerName: "Ana", amount: 6000, status: "PAID" as const, period: "2026-01", dueDate: "2026-01-08" },
       ];
       const report = buildContaGerencia(makeReport({ quotas }));
 
@@ -652,7 +655,7 @@ describe("Financial Engine — Budget & Reserve Fund", () => {
 
     it("reserve fund balance equals contributions (no withdrawals modeled)", () => {
       const quotas = [
-        { unitIdentifier: "A", ownerName: "Ana", amount: 12000, status: "PAID" as const, period: "2026-01" },
+        { unitId: "a", unitIdentifier: "A", ownerName: "Ana", amount: 12000, status: "PAID" as const, period: "2026-01", dueDate: "2026-01-08" },
       ];
       const report = buildContaGerencia(makeReport({
         budget: standardBudget,
@@ -668,10 +671,10 @@ describe("Financial Engine — Budget & Reserve Fund", () => {
       const report = buildContaGerencia(makeReport({
         year: 2026,
         quotas: [
-          { unitIdentifier: "A", ownerName: "Ana", amount: 100, status: "PAID", period: "2026-01" },
-          { unitIdentifier: "A", ownerName: "Ana", amount: 100, status: "PAID", period: "2026-12" },
-          { unitIdentifier: "A", ownerName: "Ana", amount: 999, status: "PAID", period: "2025-12" },
-          { unitIdentifier: "A", ownerName: "Ana", amount: 999, status: "PAID", period: "2027-01" },
+          { unitId: "a", unitIdentifier: "A", ownerName: "Ana", amount: 100, status: "PAID", period: "2026-01", dueDate: "2026-01-08" },
+          { unitId: "a", unitIdentifier: "A", ownerName: "Ana", amount: 100, status: "PAID", period: "2026-12", dueDate: "2026-12-08" },
+          { unitId: "a", unitIdentifier: "A", ownerName: "Ana", amount: 999, status: "PAID", period: "2025-12", dueDate: "2025-12-08" },
+          { unitId: "a", unitIdentifier: "A", ownerName: "Ana", amount: 999, status: "PAID", period: "2027-01", dueDate: "2027-01-08" },
         ],
       }));
 
@@ -697,8 +700,8 @@ describe("Financial Engine — Budget & Reserve Fund", () => {
       const report = buildContaGerencia(makeReport({
         year: 2026,
         quotas: [
-          { unitIdentifier: "A", ownerName: "Ana", amount: 1, status: "PAID", period: "2026-01" },
-          { unitIdentifier: "A", ownerName: "Ana", amount: 1, status: "PAID", period: "2026-12" },
+          { unitId: "a", unitIdentifier: "A", ownerName: "Ana", amount: 1, status: "PAID", period: "2026-01", dueDate: "2026-01-08" },
+          { unitId: "a", unitIdentifier: "A", ownerName: "Ana", amount: 1, status: "PAID", period: "2026-12", dueDate: "2026-12-08" },
         ],
         expenses: [
           { category: "X", amount: 1, date: "2026-01-01" },
@@ -714,7 +717,7 @@ describe("Financial Engine — Budget & Reserve Fund", () => {
       const report = buildContaGerencia(makeReport({
         year: 2024,
         quotas: [
-          { unitIdentifier: "A", ownerName: "Ana", amount: 100, status: "PAID", period: "2026-01" },
+          { unitId: "a", unitIdentifier: "A", ownerName: "Ana", amount: 100, status: "PAID", period: "2026-01", dueDate: "2026-01-08" },
         ],
         expenses: [
           { category: "X", amount: 500, date: "2026-06-15" },
@@ -979,12 +982,15 @@ describe("Financial Engine — Realistic Scenario: Edifício Aurora 2026", () =>
       } else {
         status = "PENDING";
       }
+      const period = `2026-${String(m).padStart(2, "0")}`;
       auroraQuotas.push({
+        unitId: `unit-${i}`,
         unitIdentifier: `Unit-${i}`,
         ownerName: `Owner ${i}`,
         amount,
         status,
-        period: `2026-${String(m).padStart(2, "0")}`,
+        period,
+        dueDate: `${period}-08`,
       });
     }
   }
@@ -1177,8 +1183,8 @@ describe("Financial Engine — Cross-Cutting Invariants", () => {
   describe("multi-year report independence", () => {
     it("two reports for different years on same data produce different results", () => {
       const quotas = [
-        { unitIdentifier: "A", ownerName: "Ana", amount: 100, status: "PAID" as const, period: "2025-06" },
-        { unitIdentifier: "A", ownerName: "Ana", amount: 200, status: "PAID" as const, period: "2026-06" },
+        { unitId: "a", unitIdentifier: "A", ownerName: "Ana", amount: 100, status: "PAID" as const, period: "2025-06", dueDate: "2025-06-08" },
+        { unitId: "a", unitIdentifier: "A", ownerName: "Ana", amount: 200, status: "PAID" as const, period: "2026-06", dueDate: "2026-06-08" },
       ];
       const expenses = [
         { category: "X", amount: 50, date: "2025-06-01" },
@@ -1198,8 +1204,8 @@ describe("Financial Engine — Cross-Cutting Invariants", () => {
 
     it("empty year between two active years returns zeros", () => {
       const quotas = [
-        { unitIdentifier: "A", ownerName: "Ana", amount: 100, status: "PAID" as const, period: "2024-01" },
-        { unitIdentifier: "A", ownerName: "Ana", amount: 100, status: "PAID" as const, period: "2026-01" },
+        { unitId: "a", unitIdentifier: "A", ownerName: "Ana", amount: 100, status: "PAID" as const, period: "2024-01", dueDate: "2024-01-08" },
+        { unitId: "a", unitIdentifier: "A", ownerName: "Ana", amount: 100, status: "PAID" as const, period: "2026-01", dueDate: "2026-01-08" },
       ];
       const r2025 = buildContaGerencia(makeReport({ year: 2025, quotas }));
 
@@ -1283,9 +1289,9 @@ describe("Part 6 — Soft-delete filtering & ledger integrity", () => {
       const report = buildContaGerencia(makeReport({
         year: 2026,
         quotas: [
-          { unitIdentifier: "A", ownerName: "A", amount: 100, status: "PAID", period: "2026-01" },
-          { unitIdentifier: "A", ownerName: "A", amount: 100, status: "PAID", period: "2025-12" },
-          { unitIdentifier: "A", ownerName: "A", amount: 100, status: "PAID", period: "2027-01" },
+          { unitId: "a", unitIdentifier: "A", ownerName: "A", amount: 100, status: "PAID", period: "2026-01", dueDate: "2026-01-08" },
+          { unitId: "a", unitIdentifier: "A", ownerName: "A", amount: 100, status: "PAID", period: "2025-12", dueDate: "2025-12-08" },
+          { unitId: "a", unitIdentifier: "A", ownerName: "A", amount: 100, status: "PAID", period: "2027-01", dueDate: "2027-01-08" },
         ],
       }));
       expect(report.totalQuotasGenerated).toBe(100);
@@ -1313,9 +1319,9 @@ describe("Part 6 — Soft-delete filtering & ledger integrity", () => {
 
     it("report totals change when a deleted quota is removed from input", () => {
       const allQuotas = [
-        { unitIdentifier: "A", ownerName: "A", amount: 100, status: "PAID" as const, period: "2026-01" },
-        { unitIdentifier: "B", ownerName: "B", amount: 100, status: "PAID" as const, period: "2026-01" },
-        { unitIdentifier: "C", ownerName: "C", amount: 100, status: "PAID" as const, period: "2026-01" },
+        { unitId: "a", unitIdentifier: "A", ownerName: "A", amount: 100, status: "PAID" as const, period: "2026-01", dueDate: "2026-01-08" },
+        { unitId: "b", unitIdentifier: "B", ownerName: "B", amount: 100, status: "PAID" as const, period: "2026-01", dueDate: "2026-01-08" },
+        { unitId: "c", unitIdentifier: "C", ownerName: "C", amount: 100, status: "PAID" as const, period: "2026-01", dueDate: "2026-01-08" },
       ];
 
       // Full report includes all 3
@@ -1350,7 +1356,7 @@ describe("Part 6 — Soft-delete filtering & ledger integrity", () => {
 
     it("net balance reflects removal of deleted expenses", () => {
       const quotas = [
-        { unitIdentifier: "A", ownerName: "A", amount: 1000, status: "PAID" as const, period: "2026-01" },
+        { unitId: "a", unitIdentifier: "A", ownerName: "A", amount: 1000, status: "PAID" as const, period: "2026-01", dueDate: "2026-01-08" },
       ];
       const expenses = [
         { category: "Limpeza", amount: 400, date: "2026-01-15" },
@@ -1370,9 +1376,9 @@ describe("Part 6 — Soft-delete filtering & ledger integrity", () => {
 
     it("unit debts update when a quota is soft-deleted", () => {
       const quotas = [
-        { unitIdentifier: "A", ownerName: "A", amount: 100, status: "OVERDUE" as const, period: "2026-01" },
-        { unitIdentifier: "A", ownerName: "A", amount: 100, status: "OVERDUE" as const, period: "2026-02" },
-        { unitIdentifier: "B", ownerName: "B", amount: 100, status: "PENDING" as const, period: "2026-01" },
+        { unitId: "a", unitIdentifier: "A", ownerName: "A", amount: 100, status: "OVERDUE" as const, period: "2026-01", dueDate: "2026-01-08" },
+        { unitId: "a", unitIdentifier: "A", ownerName: "A", amount: 100, status: "OVERDUE" as const, period: "2026-02", dueDate: "2026-02-08" },
+        { unitId: "b", unitIdentifier: "B", ownerName: "B", amount: 100, status: "PENDING" as const, period: "2026-01", dueDate: "2026-01-08" },
       ];
 
       const full = buildContaGerencia(makeReport({ quotas }));
@@ -1478,8 +1484,8 @@ describe("Part 6 — Soft-delete filtering & ledger integrity", () => {
     it("collection rate is 100 when all quotas are paid", () => {
       const report = buildContaGerencia(makeReport({
         quotas: [
-          { unitIdentifier: "A", ownerName: "A", amount: 100, status: "PAID", period: "2026-01" },
-          { unitIdentifier: "B", ownerName: "B", amount: 200, status: "PAID", period: "2026-01" },
+          { unitId: "a", unitIdentifier: "A", ownerName: "A", amount: 100, status: "PAID", period: "2026-01", dueDate: "2026-01-08" },
+          { unitId: "b", unitIdentifier: "B", ownerName: "B", amount: 200, status: "PAID", period: "2026-01", dueDate: "2026-01-08" },
         ],
       }));
       expect(report.collectionRate).toBe(100);
@@ -1488,8 +1494,8 @@ describe("Part 6 — Soft-delete filtering & ledger integrity", () => {
     it("collection rate is 0 when no quotas are paid", () => {
       const report = buildContaGerencia(makeReport({
         quotas: [
-          { unitIdentifier: "A", ownerName: "A", amount: 100, status: "PENDING", period: "2026-01" },
-          { unitIdentifier: "B", ownerName: "B", amount: 200, status: "OVERDUE", period: "2026-01" },
+          { unitId: "a", unitIdentifier: "A", ownerName: "A", amount: 100, status: "PENDING", period: "2026-01", dueDate: "2026-01-08" },
+          { unitId: "b", unitIdentifier: "B", ownerName: "B", amount: 200, status: "OVERDUE", period: "2026-01", dueDate: "2026-01-08" },
         ],
       }));
       expect(report.collectionRate).toBe(0);
@@ -1498,7 +1504,7 @@ describe("Part 6 — Soft-delete filtering & ledger integrity", () => {
     it("collection rate handles tiny amounts without NaN or Infinity", () => {
       const report = buildContaGerencia(makeReport({
         quotas: [
-          { unitIdentifier: "A", ownerName: "A", amount: 0.01, status: "PAID", period: "2026-01" },
+          { unitId: "a", unitIdentifier: "A", ownerName: "A", amount: 0.01, status: "PAID", period: "2026-01", dueDate: "2026-01-08" },
         ],
       }));
       expect(report.collectionRate).toBe(100);
@@ -1509,7 +1515,7 @@ describe("Part 6 — Soft-delete filtering & ledger integrity", () => {
 
   describe("Reserve fund with varying percentages", () => {
     const quotas = [
-      { unitIdentifier: "A", ownerName: "A", amount: 1000, status: "PAID" as const, period: "2026-01" },
+      { unitId: "a", unitIdentifier: "A", ownerName: "A", amount: 1000, status: "PAID" as const, period: "2026-01", dueDate: "2026-01-08" },
     ];
 
     it("defaults to 10% when no budget", () => {
@@ -1568,9 +1574,9 @@ describe("Part 6 — Soft-delete filtering & ledger integrity", () => {
 
     it("quota status correctly affects report categorization", () => {
       const quotas = [
-        { unitIdentifier: "A", ownerName: "A", amount: 100, status: "PAID" as const, period: "2026-01" },
-        { unitIdentifier: "A", ownerName: "A", amount: 100, status: "PENDING" as const, period: "2026-02" },
-        { unitIdentifier: "A", ownerName: "A", amount: 100, status: "OVERDUE" as const, period: "2026-03" },
+        { unitId: "a", unitIdentifier: "A", ownerName: "A", amount: 100, status: "PAID" as const, period: "2026-01", dueDate: "2026-01-08" },
+        { unitId: "a", unitIdentifier: "A", ownerName: "A", amount: 100, status: "PENDING" as const, period: "2026-02", dueDate: "2026-02-08" },
+        { unitId: "a", unitIdentifier: "A", ownerName: "A", amount: 100, status: "OVERDUE" as const, period: "2026-03", dueDate: "2026-03-08" },
       ];
       const report = buildContaGerencia(makeReport({ quotas }));
       expect(report.totalQuotasPaid).toBe(100);
@@ -1606,7 +1612,7 @@ describe("Part 6 — Soft-delete filtering & ledger integrity", () => {
     it("report with only quotas shows positive net balance", () => {
       const report = buildContaGerencia(makeReport({
         quotas: [
-          { unitIdentifier: "A", ownerName: "A", amount: 500, status: "PAID", period: "2026-01" },
+          { unitId: "a", unitIdentifier: "A", ownerName: "A", amount: 500, status: "PAID", period: "2026-01", dueDate: "2026-01-08" },
         ],
       }));
       expect(report.netBalance).toBe(500);
@@ -1629,9 +1635,9 @@ describe("Part 6 — Soft-delete filtering & ledger integrity", () => {
   describe("Unit debts sorting and aggregation", () => {
     it("units are sorted by total debt descending", () => {
       const quotas = [
-        { unitIdentifier: "A", ownerName: "A", amount: 100, status: "OVERDUE" as const, period: "2026-01" },
-        { unitIdentifier: "B", ownerName: "B", amount: 300, status: "OVERDUE" as const, period: "2026-01" },
-        { unitIdentifier: "C", ownerName: "C", amount: 200, status: "PENDING" as const, period: "2026-01" },
+        { unitId: "a", unitIdentifier: "A", ownerName: "A", amount: 100, status: "OVERDUE" as const, period: "2026-01", dueDate: "2026-01-08" },
+        { unitId: "b", unitIdentifier: "B", ownerName: "B", amount: 300, status: "OVERDUE" as const, period: "2026-01", dueDate: "2026-01-08" },
+        { unitId: "c", unitIdentifier: "C", ownerName: "C", amount: 200, status: "PENDING" as const, period: "2026-01", dueDate: "2026-01-08" },
       ];
       const report = buildContaGerencia(makeReport({ quotas }));
       expect(report.unitDebts[0].unitIdentifier).toBe("B");
@@ -1642,9 +1648,9 @@ describe("Part 6 — Soft-delete filtering & ledger integrity", () => {
 
     it("aggregates multiple months of debt per unit", () => {
       const quotas = [
-        { unitIdentifier: "A", ownerName: "A", amount: 100, status: "OVERDUE" as const, period: "2026-01" },
-        { unitIdentifier: "A", ownerName: "A", amount: 100, status: "PENDING" as const, period: "2026-02" },
-        { unitIdentifier: "A", ownerName: "A", amount: 100, status: "OVERDUE" as const, period: "2026-03" },
+        { unitId: "a", unitIdentifier: "A", ownerName: "A", amount: 100, status: "OVERDUE" as const, period: "2026-01", dueDate: "2026-01-08" },
+        { unitId: "a", unitIdentifier: "A", ownerName: "A", amount: 100, status: "PENDING" as const, period: "2026-02", dueDate: "2026-02-08" },
+        { unitId: "a", unitIdentifier: "A", ownerName: "A", amount: 100, status: "OVERDUE" as const, period: "2026-03", dueDate: "2026-03-08" },
       ];
       const report = buildContaGerencia(makeReport({ quotas }));
       expect(report.unitDebts).toHaveLength(1);
@@ -1655,8 +1661,8 @@ describe("Part 6 — Soft-delete filtering & ledger integrity", () => {
 
     it("PAID units do not appear in debts", () => {
       const quotas = [
-        { unitIdentifier: "A", ownerName: "A", amount: 100, status: "PAID" as const, period: "2026-01" },
-        { unitIdentifier: "B", ownerName: "B", amount: 100, status: "PAID" as const, period: "2026-01" },
+        { unitId: "a", unitIdentifier: "A", ownerName: "A", amount: 100, status: "PAID" as const, period: "2026-01", dueDate: "2026-01-08" },
+        { unitId: "b", unitIdentifier: "B", ownerName: "B", amount: 100, status: "PAID" as const, period: "2026-01", dueDate: "2026-01-08" },
       ];
       const report = buildContaGerencia(makeReport({ quotas }));
       expect(report.unitDebts).toHaveLength(0);
