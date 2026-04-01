@@ -35,6 +35,7 @@ model User {
   sessions                Session[]
   usedInvites             Invite[]
   notificationPreferences NotificationPreference[]
+  recordedQuotas          Quota[]          @relation("QuotaRecorder")
 }
 
 model Account {
@@ -262,12 +263,15 @@ model Quota {
   paymentMethod   PaymentMethod?
   paymentNotes    String?
   receiptUrl      String?
+  recordedBy      String?       // userId of admin who recorded the payment
+  recordedAt      DateTime?     // when the payment was recorded (audit trail)
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
   deletedAt       DateTime?
 
   condominium   Condominium   @relation(fields: [condominiumId], references: [id], onDelete: Cascade)
   unit          Unit          @relation(fields: [unitId], references: [id], onDelete: Cascade)
+  recorder      User?         @relation("QuotaRecorder", fields: [recordedBy], references: [id], onDelete: SetNull)
   transactions  Transaction[]
 
   @@unique([condominiumId, unitId, period])

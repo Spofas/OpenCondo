@@ -141,6 +141,8 @@ export const recordPayment = withAdmin(async (ctx, quotaId: string, input: Quota
         paymentDate,
         paymentMethod: parsed.data.paymentMethod,
         paymentNotes: parsed.data.paymentNotes || null,
+        recordedBy: ctx.userId,
+        recordedAt: new Date(),
       },
     });
 
@@ -185,6 +187,8 @@ export const undoPayment = withAdmin(async (ctx, quotaId: string) => {
         paymentDate: null,
         paymentMethod: null,
         paymentNotes: null,
+        recordedBy: ctx.userId,
+        recordedAt: new Date(),
       },
     }),
     db.transaction.updateMany({
