@@ -35,7 +35,7 @@ export const contractSchema = z.object({
   insuredValue: z.number().optional(),
   coverageType: z.string().max(200).optional(),
   // Document
-  documentUrl: z.string().max(2048).optional(),
+  documentUrl: z.string().url("URL inválido").max(2048).optional(),
   // Supplier
   supplierName: z.string().max(200).optional(),
   supplierNif: z.string().max(20).optional(),

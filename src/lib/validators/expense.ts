@@ -23,7 +23,7 @@ export const expenseSchema = z.object({
     .positive("Valor deve ser positivo"),
   category: z.enum(EXPENSE_CATEGORIES, { message: "Categoria é obrigatória" }),
   notes: z.string().max(2000, "Notas demasiado longas").optional(),
-  invoiceUrl: z.string().max(2048).optional(),
+  invoiceUrl: z.string().url("URL inválido").max(2048).optional(),
 });
 
 export type ExpenseInput = z.infer<typeof expenseSchema>;
