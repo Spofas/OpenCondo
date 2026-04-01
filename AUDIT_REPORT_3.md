@@ -661,7 +661,7 @@ Removed: Despesas Recorrentes (dead), Devedores (merged into Quotas)
 | Priority | Item | Effort | Payoff |
 |----------|------|--------|--------|
 | Critical | Remove overdue marking from all 5 page loads | 1 hour | Eliminates 5 redundant DB writes |
-| Critical | Remove Despesas-Recorrentes nav item | 5 min | No more dead link |
+| ⚠️ ~~Remove Despesas-Recorrentes nav item~~ | N/A | **Not in sidebar** — redirect page exists but is not linked from navigation. Non-issue. |
 | Critical | Merge Devedores into Quotas page (already a tab) | 2 hours | Eliminates duplicate page + query |
 | High | Unify debtor calculation (refactor Conta de Gerencia) | 2 hours | Single source of truth |
 | High | Add Budget vs. Actual to Orcamento | 4 hours | Makes budget page complete |
@@ -686,8 +686,8 @@ Removed: Despesas Recorrentes (dead), Devedores (merged into Quotas)
 | 1 | Remove `devToken` from password reset response | Security P0 | 30 min |
 | 2 | Restrict expenses page to admin-only (add redirect) | Security P0 | 30 min |
 | 3 | Remove `updateMany()` from all 5 page loads | Performance P0 | 1 hour |
-| 4 | Remove Despesas-Recorrentes nav item | UX Critical | 5 min |
-| 5 | Delete unused `markOverdueQuotas` action | Cleanup | 5 min |
+| ~~4~~ | ~~Remove Despesas-Recorrentes nav item~~ | ~~UX Critical~~ | ⚠️ **Not in sidebar** — v2 and v3 both wrong. Redirect page exists but no nav link to remove. |
+| 4 | Delete unused `markOverdueQuotas` action | Cleanup | 5 min |
 
 ## Short-Term (Next 2 Weeks)
 
@@ -762,5 +762,7 @@ All factual errors found in AUDIT_REPORT_2.md, compiled in one place:
 | 7 | "65 revalidatePath calls" | **~49 calls** — pattern issue still valid | LOW — inflated count |
 | 8 | "Soft-delete missing on Announcement updates" (4.9) | **Moot** — Announcements don't have `deletedAt` field | LOW — wrong example |
 | 9 | "Atas use hard delete" | **No delete action exists** for Atas | LOW — mischaracterization |
+| 10 | "Despesas Recorrentes dead nav link in sidebar" | **Not in sidebar** — redirect page exists at `/despesas-recorrentes/page.tsx` but no nav item links to it | LOW — non-issue presented as "Critical" |
 
-**v2 accuracy: ~74%** (26 of 35 distinct claims correct, 9 wrong or misleading)
+**v2 accuracy: ~71%** (25 of 35 distinct claims correct, 10 wrong or misleading)
+**v3 initially repeated error #10** — caught only after manual user review.
