@@ -1,7 +1,11 @@
 "use server";
 
-import { randomBytes } from "crypto";
+import { randomBytes, createHash } from "crypto";
 import { hash } from "bcryptjs";
+
+function sha256(value: string): string {
+  return createHash("sha256").update(value).digest("hex");
+}
 import { headers } from "next/headers";
 import { db } from "@/lib/db";
 import { sendPasswordResetEmail } from "@/lib/email";
@@ -31,12 +35,13 @@ export async function requestPasswordReset(email: string) {
   }
 
   const token = randomBytes(32).toString("hex");
+  const tokenHash = sha256(token);
   const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
 
   await db.user.update({
     where: { id: user.id },
     data: {
-      passwordResetToken: token,
+      passwordResetToken: tokenHash,
       passwordResetExpiresAt: expiresAt,
     },
   });
@@ -59,9 +64,11 @@ export async function resetPassword(token: string, newPassword: string) {
     return { error: "Dados inválidos" };
   }
 
+  const tokenHash = sha256(token);
+
   const user = await db.user.findFirst({
     where: {
-      passwordResetToken: token,
+      passwordResetToken: tokenHash,
       passwordResetExpiresAt: { gt: new Date() },
     },
   });
