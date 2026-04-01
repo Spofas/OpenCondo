@@ -19,6 +19,7 @@ import {
   recordVotes,
   saveAta,
   deleteMeeting,
+  getMeetingDetail,
 } from "./actions";
 import { useCondominium } from "@/lib/condominium-context";
 import {
@@ -31,6 +32,7 @@ import {
 } from "@/lib/validators/meeting";
 import type {
   MeetingData,
+  MeetingDetailData,
   UnitData,
   MemberData,
 } from "./meeting-page-client";
@@ -58,6 +60,49 @@ export function MeetingList({
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [actionError, setActionError] = useState("");
   const [ataText, setAtaText] = useState("");
+  const [detailCache, setDetailCache] = useState<Record<string, MeetingDetailData>>({});
+  const [loadingDetail, setLoadingDetail] = useState(false);
+
+  async function handleExpand(meetingId: string) {
+    if (expandedId === meetingId) {
+      setExpandedId(null);
+      return;
+    }
+    setExpandedId(meetingId);
+    setActiveTab("agenda");
+
+    // Fetch detail if not cached
+    if (!detailCache[meetingId]) {
+      setLoadingDetail(true);
+      const result = await getMeetingDetail(condominiumId, meetingId);
+      if ("error" in result && result.error) {
+        setActionError(result.error);
+      } else if ("attendees" in result) {
+        const r = result as unknown as MeetingDetailData & { success: true };
+        const detail: MeetingDetailData = {
+          attendees: r.attendees,
+          votes: r.votes,
+          hasAta: r.hasAta,
+          ataId: r.ataId,
+          ataContent: r.ataContent,
+        };
+        setDetailCache((prev) => ({ ...prev, [meetingId]: detail }));
+        if (detail.ataContent) setAtaText(detail.ataContent);
+      }
+      setLoadingDetail(false);
+    } else {
+      const cached = detailCache[meetingId];
+      if (cached.ataContent) setAtaText(cached.ataContent);
+    }
+  }
+
+  function invalidateDetail(meetingId: string) {
+    setDetailCache((prev) => {
+      const next = { ...prev };
+      delete next[meetingId];
+      return next;
+    });
+  }
   const [, startTransition] = useTransition();
 
   type OptimisticAction = { type: "delete"; id: string };
@@ -90,11 +135,11 @@ export function MeetingList({
     userId: string,
     status: "PRESENTE" | "REPRESENTADO" | "AUSENTE"
   ) {
-    const meeting = meetings.find((m) => m.id === meetingId);
-    if (!meeting) return;
+    const detail = detailCache[meetingId];
+    if (!detail) return;
 
     const attendees = members.map((member) => {
-      const existing = meeting.attendees.find(
+      const existing = detail.attendees.find(
         (a) => a.userId === member.userId
       );
       return {
@@ -108,6 +153,7 @@ export function MeetingList({
 
     const result = await saveAttendance(condominiumId, meetingId, { attendees });
     if (result.error) setActionError(result.error);
+    else invalidateDetail(meetingId);
   }
 
   async function handleVote(
@@ -116,10 +162,10 @@ export function MeetingList({
     unitId: string,
     vote: "A_FAVOR" | "CONTRA" | "ABSTENCAO"
   ) {
-    const meeting = meetings.find((m) => m.id === meetingId);
-    if (!meeting) return;
+    const detail = detailCache[meetingId];
+    if (!detail) return;
 
-    const existingVotes = meeting.votes
+    const existingVotes = detail.votes
       .filter((v) => v.agendaItemId === agendaItemId)
       .map((v) => ({ unitId: v.unitId, vote: v.vote as "A_FAVOR" | "CONTRA" | "ABSTENCAO" }));
 
@@ -131,12 +177,14 @@ export function MeetingList({
       votes: updated,
     });
     if (result.error) setActionError(result.error);
+    else invalidateDetail(meetingId);
   }
 
   async function handleSaveAta(meetingId: string) {
     if (!ataText.trim()) return;
     const result = await saveAta(condominiumId, meetingId, { content: ataText });
     if (result.error) setActionError(result.error);
+    else invalidateDetail(meetingId);
   }
 
   if (optimisticMeetings.length === 0) {
@@ -165,13 +213,14 @@ export function MeetingList({
         {optimisticMeetings.map((meeting) => {
           const isExpanded = expandedId === meeting.id;
           const meetingDate = new Date(meeting.date);
+          const detail = detailCache[meeting.id];
 
-          // Calculate quorum
-          const presentPermilagem = meeting.attendees
-            .filter(
-              (a) => a.status === "PRESENTE" || a.status === "REPRESENTADO"
-            )
-            .reduce((sum, a) => sum + a.permilagem, 0);
+          // Calculate quorum from loaded detail
+          const presentPermilagem = detail
+            ? detail.attendees
+                .filter((a) => a.status === "PRESENTE" || a.status === "REPRESENTADO")
+                .reduce((sum, a) => sum + a.permilagem, 0)
+            : 0;
 
           return (
             <div
@@ -181,11 +230,7 @@ export function MeetingList({
               {/* Header */}
               <div
                 className="flex cursor-pointer items-center justify-between p-5"
-                onClick={() => {
-                  setExpandedId(isExpanded ? null : meeting.id);
-                  setActiveTab("agenda");
-                  if (meeting.ataContent) setAtaText(meeting.ataContent);
-                }}
+                onClick={() => handleExpand(meeting.id)}
               >
                 <div className="flex items-center gap-4">
                   <div>
@@ -348,6 +393,12 @@ export function MeetingList({
                   {/* Attendance tab */}
                   {activeTab === "presencas" && (
                     <div className="mt-4">
+                      {!detail && loadingDetail ? (
+                        <p className="py-8 text-center text-sm text-muted-foreground animate-pulse">A carregar presenças...</p>
+                      ) : !detail ? (
+                        <p className="py-8 text-center text-sm text-muted-foreground">Sem dados</p>
+                      ) : (
+                      <>
                       <div className="mb-3 rounded-lg bg-muted/50 p-3 text-sm">
                         <span className="font-medium">Quórum: </span>
                         {presentPermilagem}‰ de 1000‰
@@ -363,7 +414,7 @@ export function MeetingList({
                       </div>
                       <div className="space-y-2">
                         {members.map((member) => {
-                          const attendee = meeting.attendees.find(
+                          const attendee = detail.attendees.find(
                             (a) => a.userId === member.userId
                           );
                           const currentStatus =
@@ -404,14 +455,20 @@ export function MeetingList({
                           );
                         })}
                       </div>
+                      </>
+                      )}
                     </div>
                   )}
 
                   {/* Voting tab */}
                   {activeTab === "votacao" && (
                     <div className="mt-4 space-y-4">
-                      {meeting.agendaItems.map((item) => {
-                        const itemVotes = meeting.votes.filter(
+                      {!detail && loadingDetail ? (
+                        <p className="py-8 text-center text-sm text-muted-foreground animate-pulse">A carregar votação...</p>
+                      ) : !detail ? (
+                        <p className="py-8 text-center text-sm text-muted-foreground">Sem dados</p>
+                      ) : meeting.agendaItems.map((item) => {
+                        const itemVotes = detail.votes.filter(
                           (v) => v.agendaItemId === item.id
                         );
                         const summary = {
@@ -512,7 +569,11 @@ export function MeetingList({
                   {/* Ata tab */}
                   {activeTab === "ata" && (
                     <div className="mt-4">
-                      {isAdmin ? (
+                      {!detail && loadingDetail ? (
+                        <p className="py-8 text-center text-sm text-muted-foreground animate-pulse">A carregar ata...</p>
+                      ) : !detail ? (
+                        <p className="py-8 text-center text-sm text-muted-foreground">Sem dados</p>
+                      ) : isAdmin ? (
                         <>
                           <textarea
                             rows={10}
@@ -522,9 +583,9 @@ export function MeetingList({
                             className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary resize-none"
                           />
                           <div className="mt-3 flex justify-end gap-2">
-                            {meeting.ataId && (
+                            {detail.ataId && (
                               <a
-                                href={`/api/atas/${meeting.ataId}`}
+                                href={`/api/atas/${detail.ataId}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="flex items-center gap-2 rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted transition-colors"
@@ -542,15 +603,15 @@ export function MeetingList({
                             </button>
                           </div>
                         </>
-                      ) : meeting.ataContent ? (
+                      ) : detail.ataContent ? (
                         <>
                           <div className="whitespace-pre-wrap rounded-lg border border-border/50 p-4 text-sm text-foreground">
-                            {meeting.ataContent}
+                            {detail.ataContent}
                           </div>
-                          {meeting.ataId && (
+                          {detail.ataId && (
                             <div className="mt-3 flex justify-end">
                               <a
-                                href={`/api/atas/${meeting.ataId}`}
+                                href={`/api/atas/${detail.ataId}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="flex items-center gap-2 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted transition-colors"

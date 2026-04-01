@@ -36,6 +36,14 @@ export interface MeetingData {
   type: string;
   status: string;
   agendaItems: AgendaItemData[];
+  attendeeCount: number;
+  voteCount: number;
+  hasAta: boolean;
+  ataId: string | null;
+}
+
+/** Detail data loaded on demand when a meeting is expanded */
+export interface MeetingDetailData {
   attendees: AttendeeData[];
   votes: VoteData[];
   hasAta: boolean;

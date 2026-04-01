@@ -12,7 +12,7 @@ import {
   type AtaInput,
 } from "@/lib/validators/meeting";
 import { revalidatePath } from "next/cache";
-import { withAdmin } from "@/lib/auth/admin-context";
+import { withAdmin, withMember } from "@/lib/auth/admin-context";
 import { sendMeetingNotification } from "@/lib/email";
 
 export const createMeeting = withAdmin(async (ctx, input: MeetingInput) => {
@@ -223,6 +223,47 @@ export const saveAta = withAdmin(async (ctx, meetingId: string, input: AtaInput)
 
   revalidatePath(`/c/${ctx.slug}`);
   return { success: true };
+});
+
+/**
+ * Fetch meeting detail (attendees, votes, ata) on demand — called when user expands a meeting.
+ */
+export const getMeetingDetail = withMember(async (ctx, meetingId: string) => {
+  const meeting = await db.meeting.findFirst({
+    where: { id: meetingId, condominiumId: ctx.condominiumId },
+    include: {
+      attendees: {
+        include: { user: { select: { name: true } } },
+      },
+      votes: {
+        include: { unit: { select: { identifier: true } } },
+      },
+      ata: { select: { id: true, content: true } },
+    },
+  });
+
+  if (!meeting) return { error: "Assembleia não encontrada" };
+
+  return {
+    success: true,
+    attendees: meeting.attendees.map((a) => ({
+      userId: a.userId,
+      userName: a.user.name,
+      status: a.status,
+      permilagem: a.permilagem,
+      representedBy: a.representedBy,
+    })),
+    votes: meeting.votes.map((v) => ({
+      agendaItemId: v.agendaItemId,
+      unitId: v.unitId,
+      unitIdentifier: v.unit.identifier,
+      vote: v.vote,
+      permilagem: v.permilagem,
+    })),
+    hasAta: !!meeting.ata,
+    ataId: meeting.ata?.id || null,
+    ataContent: meeting.ata?.content || null,
+  };
 });
 
 export const deleteMeeting = withAdmin(async (ctx, meetingId: string) => {

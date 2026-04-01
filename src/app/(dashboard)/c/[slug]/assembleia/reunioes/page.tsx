@@ -38,13 +38,8 @@ async function MeetingsContent({
       where: { condominiumId: condoId },
       include: {
         agendaItems: { orderBy: { order: "asc" } },
-        attendees: {
-          include: { user: { select: { name: true } } },
-        },
-        votes: {
-          include: { unit: { select: { identifier: true } } },
-        },
-        ata: { select: { id: true, content: true } },
+        _count: { select: { attendees: true, votes: true } },
+        ata: { select: { id: true } },
       },
       orderBy: { date: "desc" },
       take: 20,
@@ -72,23 +67,10 @@ async function MeetingsContent({
       title: a.title,
       description: a.description,
     })),
-    attendees: m.attendees.map((a) => ({
-      userId: a.userId,
-      userName: a.user.name,
-      status: a.status,
-      permilagem: a.permilagem,
-      representedBy: a.representedBy,
-    })),
-    votes: m.votes.map((v) => ({
-      agendaItemId: v.agendaItemId,
-      unitId: v.unitId,
-      unitIdentifier: v.unit.identifier,
-      vote: v.vote,
-      permilagem: v.permilagem,
-    })),
+    attendeeCount: m._count.attendees,
+    voteCount: m._count.votes,
     hasAta: !!m.ata,
     ataId: m.ata?.id || null,
-    ataContent: m.ata?.content || null,
   }));
 
   const serializedUnits = units.map((u) => ({
