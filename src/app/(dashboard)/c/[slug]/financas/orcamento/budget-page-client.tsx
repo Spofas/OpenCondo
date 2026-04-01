@@ -11,6 +11,7 @@ interface BudgetItemData {
   category: string;
   description: string | null;
   plannedAmount: number;
+  actualAmount: number;
 }
 
 interface BudgetData {
