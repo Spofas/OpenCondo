@@ -84,7 +84,7 @@ export const deleteAnnouncement = withAdmin(async (ctx, announcementId: string) 
 
   if (!announcement) return { error: "Aviso não encontrado" };
 
-  await db.announcement.delete({ where: { id: announcementId } });
+  await db.announcement.update({ where: { id: announcementId }, data: { deletedAt: new Date() } });
 
   revalidatePath(`/c/${ctx.slug}`);
   return { success: true };

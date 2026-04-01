@@ -125,7 +125,7 @@ export const deleteContract = withAdmin(async (ctx, contractId: string) => {
 
   if (!contract) return { error: "Contrato não encontrado" };
 
-  await db.contract.delete({ where: { id: contractId } });
+  await db.contract.update({ where: { id: contractId }, data: { deletedAt: new Date() } });
 
   revalidatePath(`/c/${ctx.slug}`);
   return { success: true };

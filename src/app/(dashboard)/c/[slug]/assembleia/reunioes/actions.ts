@@ -219,7 +219,7 @@ export const deleteMeeting = withAdmin(async (ctx, meetingId: string) => {
 
   if (!meeting) return { error: "Assembleia não encontrada" };
 
-  await db.meeting.delete({ where: { id: meetingId } });
+  await db.meeting.update({ where: { id: meetingId }, data: { deletedAt: new Date() } });
 
   revalidatePath(`/c/${ctx.slug}`);
   return { success: true };

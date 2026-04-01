@@ -66,7 +66,7 @@ export const deleteDocument = withAdmin(async (ctx, documentId: string) => {
 
   if (!doc) return { error: "Documento não encontrado" };
 
-  await db.document.delete({ where: { id: documentId } });
+  await db.document.update({ where: { id: documentId }, data: { deletedAt: new Date() } });
 
   revalidatePath(`/c/${ctx.slug}`);
   return { success: true };

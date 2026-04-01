@@ -8,6 +8,10 @@ const SOFT_DELETE_MODELS: ReadonlySet<string> = new Set([
   "Quota",
   "Expense",
   "Transaction",
+  "Announcement",
+  "Document",
+  "Meeting",
+  "Contract",
 ]);
 
 function isSoftDeleteModel(model: string | undefined): boolean {
