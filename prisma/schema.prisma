@@ -17,6 +17,8 @@ model User {
   passwordHash          String?
   passwordResetToken    String?   @unique
   passwordResetExpiresAt DateTime?
+  emailVerificationToken    String?   @unique
+  emailVerificationExpiresAt DateTime?
   phone          String?
   nif            String?
   image          String?
