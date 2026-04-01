@@ -5,12 +5,14 @@ import type { ActionReturn } from "@/lib/action-result";
 export type MemberContext = {
   userId: string;
   condominiumId: string;
+  slug: string;
   role: "ADMIN" | "OWNER" | "TENANT";
 };
 
 export type AdminContext = {
   userId: string;
   condominiumId: string;
+  slug: string;
 };
 
 /**
@@ -27,6 +29,7 @@ export async function getMemberContext(condominiumId: string): Promise<MemberCon
         condominiumId,
       },
     },
+    include: { condominium: { select: { slug: true } } },
   });
 
   if (!membership) return null;
@@ -34,6 +37,7 @@ export async function getMemberContext(condominiumId: string): Promise<MemberCon
   return {
     userId: session.user.id,
     condominiumId: membership.condominiumId,
+    slug: membership.condominium.slug,
     role: membership.role as "ADMIN" | "OWNER" | "TENANT",
   };
 }
@@ -44,7 +48,18 @@ export async function getMemberContext(condominiumId: string): Promise<MemberCon
 export async function getAdminContext(condominiumId: string): Promise<AdminContext | null> {
   const ctx = await getMemberContext(condominiumId);
   if (!ctx || ctx.role !== "ADMIN") return null;
-  return { userId: ctx.userId, condominiumId: ctx.condominiumId };
+  return { userId: ctx.userId, condominiumId: ctx.condominiumId, slug: ctx.slug };
+}
+
+/**
+ * Look up a condominium's slug by its ID. Used for revalidatePath scoping.
+ */
+export async function getCondoSlug(condominiumId: string): Promise<string> {
+  const condo = await db.condominium.findUnique({
+    where: { id: condominiumId },
+    select: { slug: true },
+  });
+  return condo?.slug ?? "";
 }
 
 /**

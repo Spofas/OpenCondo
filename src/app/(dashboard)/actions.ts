@@ -7,6 +7,7 @@ import { revalidatePath } from "next/cache";
 import { sendInviteEmail } from "@/lib/email";
 import { notificationPreferencesSchema, NOTIFICATION_DEFAULTS } from "@/lib/validators/notification-preferences";
 import { generateUniqueSlug } from "@/lib/utils/slug";
+import { getCondoSlug } from "@/lib/auth/admin-context";
 
 export async function createInvite(data: {
   condominiumId: string;
@@ -188,7 +189,7 @@ export async function importUnitsFromCsv(condominiumId: string, csvText: string)
     created++;
   }
 
-  revalidatePath(`/c/`);
+  revalidatePath(`/c/${await getCondoSlug(condominiumId)}`);
 
   const parts: string[] = [];
   parts.push(`${created} fração${created !== 1 ? "ões" : ""} importada${created !== 1 ? "s" : ""}`);
@@ -241,7 +242,7 @@ export async function assignUnitMember(
     data: role === "owner" ? { ownerId: userId } : { tenantId: userId },
   });
 
-  revalidatePath(`/c/`);
+  revalidatePath(`/c/${await getCondoSlug(condominiumId)}`);
   return { success: true };
 }
 
@@ -290,7 +291,7 @@ export async function updateCondominium(
     },
   });
 
-  revalidatePath(`/c/`);
+  revalidatePath(`/c/${await getCondoSlug(condominiumId)}`);
   return { success: true, slug };
 }
 
@@ -317,7 +318,7 @@ export async function updateUnitIdentifier(condominiumId: string, unitId: string
     return { error: "Já existe uma fração com esta identificação" };
   }
 
-  revalidatePath(`/c/`);
+  revalidatePath(`/c/${await getCondoSlug(condominiumId)}`);
   return { success: true };
 }
 
@@ -350,7 +351,7 @@ export async function updateUnitPermilagem(condominiumId: string, unitId: string
     data: { permilagem },
   });
 
-  revalidatePath(`/c/`);
+  revalidatePath(`/c/${await getCondoSlug(condominiumId)}`);
   return { success: true };
 }
 
@@ -398,6 +399,6 @@ export async function saveNotificationPreferences(condominiumId: string, data: R
     update: parsed.data,
   });
 
-  revalidatePath(`/c/`);
+  revalidatePath(`/c/${await getCondoSlug(condominiumId)}`);
   return { success: true };
 }

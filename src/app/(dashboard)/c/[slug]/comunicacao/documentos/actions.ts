@@ -25,7 +25,7 @@ export const createDocument = withAdmin(async (ctx, input: DocumentInput) => {
     },
   });
 
-  revalidatePath("/c/");
+  revalidatePath(`/c/${ctx.slug}`);
   return { success: true };
 });
 
@@ -55,7 +55,7 @@ export const updateDocument = withAdmin(async (ctx, documentId: string, input: D
     },
   });
 
-  revalidatePath("/c/");
+  revalidatePath(`/c/${ctx.slug}`);
   return { success: true };
 });
 
@@ -68,6 +68,6 @@ export const deleteDocument = withAdmin(async (ctx, documentId: string) => {
 
   await db.document.delete({ where: { id: documentId } });
 
-  revalidatePath("/c/");
+  revalidatePath(`/c/${ctx.slug}`);
   return { success: true };
 });

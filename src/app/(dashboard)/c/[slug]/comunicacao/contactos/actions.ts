@@ -25,7 +25,7 @@ export const createContact = withAdmin(async (ctx, input: ContactInput) => {
     },
   });
 
-  revalidatePath("/c/");
+  revalidatePath(`/c/${ctx.slug}`);
   return { success: true };
 });
 
@@ -54,7 +54,7 @@ export const updateContact = withAdmin(async (ctx, contactId: string, input: Con
     },
   });
 
-  revalidatePath("/c/");
+  revalidatePath(`/c/${ctx.slug}`);
   return { success: true };
 });
 
@@ -78,6 +78,6 @@ export const deleteContact = withAdmin(async (ctx, contactId: string) => {
 
   await db.supplier.delete({ where: { id: contactId } });
 
-  revalidatePath("/c/");
+  revalidatePath(`/c/${ctx.slug}`);
   return { success: true };
 });

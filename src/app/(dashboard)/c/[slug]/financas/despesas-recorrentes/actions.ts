@@ -26,7 +26,7 @@ export const createRecurringExpense = withAdmin(async (ctx, input: RecurringExpe
     },
   });
 
-  revalidatePath("/c/");
+  revalidatePath(`/c/${ctx.slug}`);
   return { success: true };
 });
 
@@ -51,7 +51,7 @@ export const updateRecurringExpense = withAdmin(async (ctx, id: string, input: R
     },
   });
 
-  revalidatePath("/c/");
+  revalidatePath(`/c/${ctx.slug}`);
   return { success: true };
 });
 
@@ -66,7 +66,7 @@ export const toggleRecurringExpense = withAdmin(async (ctx, id: string) => {
     data: { isActive: !existing.isActive },
   });
 
-  revalidatePath("/c/");
+  revalidatePath(`/c/${ctx.slug}`);
   return { success: true };
 });
 
@@ -78,7 +78,7 @@ export const deleteRecurringExpense = withAdmin(async (ctx, id: string) => {
 
   await db.recurringExpense.delete({ where: { id } });
 
-  revalidatePath("/c/");
+  revalidatePath(`/c/${ctx.slug}`);
   return { success: true };
 });
 
@@ -158,7 +158,7 @@ export const generateRecurringExpenses = withAdmin(async (ctx, period: string) =
     return { generated: gen, skipped: skip };
   });
 
-  revalidatePath("/c/");
+  revalidatePath(`/c/${ctx.slug}`);
 
   return {
     success: true,

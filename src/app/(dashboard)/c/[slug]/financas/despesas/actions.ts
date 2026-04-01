@@ -37,7 +37,7 @@ export const createExpense = withAdmin(async (ctx, input: ExpenseInput) => {
     });
   });
 
-  revalidatePath("/c/");
+  revalidatePath(`/c/${ctx.slug}`);
   return { success: true };
 });
 
@@ -77,7 +77,7 @@ export const updateExpense = withAdmin(async (ctx, expenseId: string, input: Exp
     }),
   ]);
 
-  revalidatePath("/c/");
+  revalidatePath(`/c/${ctx.slug}`);
   return { success: true };
 });
 
@@ -100,6 +100,6 @@ export const deleteExpense = withAdmin(async (ctx, expenseId: string) => {
     });
   });
 
-  revalidatePath("/c/");
+  revalidatePath(`/c/${ctx.slug}`);
   return { success: true };
 });

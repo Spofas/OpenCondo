@@ -54,7 +54,7 @@ export const createMeeting = withAdmin(async (ctx, input: MeetingInput) => {
     type as "ORDINARIA" | "EXTRAORDINARIA"
   ).catch(() => {});
 
-  revalidatePath("/c/");
+  revalidatePath(`/c/${ctx.slug}`);
   return { success: true };
 });
 
@@ -70,7 +70,7 @@ export const updateMeetingStatus = withAdmin(async (ctx, meetingId: string, stat
     data: { status: status as "AGENDADA" | "REALIZADA" | "CANCELADA" },
   });
 
-  revalidatePath("/c/");
+  revalidatePath(`/c/${ctx.slug}`);
   return { success: true };
 });
 
@@ -125,7 +125,7 @@ export const saveAttendance = withAdmin(async (ctx, meetingId: string, input: At
     )
   );
 
-  revalidatePath("/c/");
+  revalidatePath(`/c/${ctx.slug}`);
   return { success: true };
 });
 
@@ -177,7 +177,7 @@ export const recordVotes = withAdmin(async (ctx, meetingId: string, input: VoteI
     )
   );
 
-  revalidatePath("/c/");
+  revalidatePath(`/c/${ctx.slug}`);
   return { success: true };
 });
 
@@ -208,7 +208,7 @@ export const saveAta = withAdmin(async (ctx, meetingId: string, input: AtaInput)
     },
   });
 
-  revalidatePath("/c/");
+  revalidatePath(`/c/${ctx.slug}`);
   return { success: true };
 });
 
@@ -221,6 +221,6 @@ export const deleteMeeting = withAdmin(async (ctx, meetingId: string) => {
 
   await db.meeting.delete({ where: { id: meetingId } });
 
-  revalidatePath("/c/");
+  revalidatePath(`/c/${ctx.slug}`);
   return { success: true };
 });

@@ -45,7 +45,7 @@ export const createBudget = withAdmin(async (ctx, input: BudgetInput) => {
     },
   });
 
-  revalidatePath("/c/");
+  revalidatePath(`/c/${ctx.slug}`);
   return { success: true, budgetId: budget.id };
 });
 
@@ -101,7 +101,7 @@ export const updateBudget = withAdmin(async (ctx, budgetId: string, input: Budge
     });
   });
 
-  revalidatePath("/c/");
+  revalidatePath(`/c/${ctx.slug}`);
   return { success: true };
 });
 
@@ -120,7 +120,7 @@ export const approveBudget = withAdmin(async (ctx, budgetId: string) => {
     data: { status: "APPROVED", approvedAt: new Date() },
   });
 
-  revalidatePath("/c/");
+  revalidatePath(`/c/${ctx.slug}`);
   return { success: true };
 });
 
@@ -137,6 +137,6 @@ export const deleteBudget = withAdmin(async (ctx, budgetId: string) => {
 
   await db.budget.delete({ where: { id: budgetId } });
 
-  revalidatePath("/c/");
+  revalidatePath(`/c/${ctx.slug}`);
   return { success: true };
 });

@@ -105,7 +105,7 @@ export const generateQuotas = withAdmin(async (ctx, input: QuotaGenerateInput) =
     }
   }
 
-  revalidatePath("/c/");
+  revalidatePath(`/c/${ctx.slug}`);
   return {
     success: true,
     created,
@@ -159,7 +159,7 @@ export const recordPayment = withAdmin(async (ctx, quotaId: string, input: Quota
   });
 
   if ("success" in result) {
-    revalidatePath("/c/");
+    revalidatePath(`/c/${ctx.slug}`);
   }
   return result;
 });
@@ -193,7 +193,7 @@ export const undoPayment = withAdmin(async (ctx, quotaId: string) => {
     }),
   ]);
 
-  revalidatePath("/c/");
+  revalidatePath(`/c/${ctx.slug}`);
   return { success: true };
 });
 
@@ -212,7 +212,7 @@ export const deleteQuotasByPeriod = withAdmin(async (ctx, period: string) => {
     data: { deletedAt: new Date() },
   });
 
-  revalidatePath("/c/");
+  revalidatePath(`/c/${ctx.slug}`);
   return {
     success: true,
     deleted: result.count,

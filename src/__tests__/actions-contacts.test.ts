@@ -60,6 +60,7 @@ function mockAdminSession() {
   mockMembershipFindUnique.mockResolvedValue({
     role: "ADMIN",
     condominiumId: "condo-1",
+    condominium: { slug: "test-condo" },
   });
 }
 
@@ -68,6 +69,7 @@ function mockNonAdminSession() {
   mockMembershipFindUnique.mockResolvedValue({
     role: "OWNER",
     condominiumId: "condo-1",
+    condominium: { slug: "test-condo" },
   });
 }
 
