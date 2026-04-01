@@ -2,7 +2,7 @@ import { z } from "zod";
 import { EXPENSE_CATEGORIES } from "./expense";
 
 export const recurringExpenseSchema = z.object({
-  description: z.string().min(1, "Descrição é obrigatória"),
+  description: z.string().min(1, "Descrição é obrigatória").max(200, "Descrição demasiado longa"),
   amount: z
     .number({ message: "Valor é obrigatório" })
     .positive("Valor deve ser positivo"),

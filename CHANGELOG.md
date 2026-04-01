@@ -41,6 +41,12 @@ All notable changes to OpenCondo are recorded here in reverse-chronological orde
 - All 7 soft-delete models now registered in the extension (Quota, Expense, Transaction + 4 new)
 - Migration: `20260401000001_add_soft_delete_to_four_entities`
 
+**Input validation — strict enum validation (P1 #11):**
+- Replaced `z.string()` with `z.enum()` in 15 category/type/status fields across 9 Zod validators
+- Affected validators: announcement, expense, meeting, document, contract, maintenance, budget, recurring-expense, contact
+- Updated 8 form components with type casts for server data → enum types
+- Prevents invalid category/type/status values from reaching the database
+
 **Documentation:**
 - Added "Documentation updates (on every push)" section to CLAUDE.md
 - Updated CLAUDE.md patterns to reflect HOF usage and slug-based routing

@@ -20,7 +20,7 @@ export const BUDGET_CATEGORIES = [
 export const budgetItemSchema = z.object({
   id: z.string().optional(), // present when editing existing items
   category: z.enum(BUDGET_CATEGORIES, { message: "Categoria é obrigatória" }),
-  description: z.string(),
+  description: z.string().max(2000, "Descrição demasiado longa"),
   plannedAmount: z
     .number({ message: "Valor deve ser um número" })
     .positive("Valor deve ser positivo"),
