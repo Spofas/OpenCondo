@@ -59,13 +59,12 @@ export async function POST(request: Request) {
       },
     });
 
-    if (process.env.NODE_ENV === "production") {
-      await sendVerificationEmail(email, verificationToken).catch(() => {
-        // Non-blocking — user can resend later
-      });
-    } else {
-      console.log(`[DEV] Email verification token for ${email}: ${verificationToken}`);
-    }
+    // Send verification email in all environments
+    // In dev without RESEND_API_KEY, sendVerificationEmail logs to console
+    console.log(`[AUTH] Verification link for ${email}: ${process.env.NEXTAUTH_URL ?? "http://localhost:3000"}/verificar-email/${verificationToken}`);
+    await sendVerificationEmail(email, verificationToken).catch(() => {
+      // Non-blocking — user can resend later
+    });
 
     return NextResponse.json(
       { user: { id: user.id, name: user.name, email: user.email } },

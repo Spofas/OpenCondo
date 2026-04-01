@@ -9,7 +9,9 @@ export function getResend() {
 }
 
 const FROM = process.env.EMAIL_FROM ?? "OpenCondo <noreply@opencondo.app>";
-const BASE_URL = process.env.NEXTAUTH_URL ?? "http://localhost:3000";
+const BASE_URL =
+  process.env.NEXTAUTH_URL ??
+  (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
 
 // ─── Shared email layout ─────────────────────────────────────────────────────
 
