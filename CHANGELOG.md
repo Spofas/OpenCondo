@@ -6,6 +6,25 @@ All notable changes to OpenCondo are recorded here in reverse-chronological orde
 
 ## [Unreleased]
 
+### 2026-04-01 — Audit 4 fixes: security, performance, accessibility
+
+**Security hardening:**
+- `requireMembership()` now rejects inactive members (deactivated users can no longer access condo)
+- File upload filename sanitized to prevent path traversal attacks
+- CRON_SECRET validated for presence before comparison (prevents silent misconfiguration)
+- Conta de gerência page restricted to admin role (was accessible to all members)
+- URL format validation added to invoiceUrl, fileUrl, documentUrl fields (z.string().url())
+
+**Performance:**
+- CSV import: batch-fetch existing units and owner emails upfront (eliminates N+1 queries)
+- Meetings page: lazy-load attendees, votes, and ata on expand (getMeetingDetail server action)
+- Initial meetings query reduced to agenda items + counts only
+
+**Accessibility & UX:**
+- ModalForm: Escape key to close, focus return to trigger, click-outside-to-close, ARIA attributes
+- Email verification: links now use VERCEL_URL fallback when NEXTAUTH_URL is not set
+- Verification emails sent in all environments (not just production)
+
 ### 2026-04-01 — Performance P1 and UX/Architecture improvements
 
 **Performance — pagination:**
