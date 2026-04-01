@@ -6,15 +6,15 @@ export const ATTENDEE_STATUSES = ["PRESENTE", "REPRESENTADO", "AUSENTE"] as cons
 export const VOTE_VALUES = ["A_FAVOR", "CONTRA", "ABSTENCAO"] as const;
 
 export const meetingSchema = z.object({
-  date: z.string().min(1, "Data é obrigatória"),
-  time: z.string().min(1, "Hora é obrigatória"),
-  location: z.string().min(1, "Local é obrigatório"),
-  type: z.string().min(1, "Tipo é obrigatório"),
+  date: z.string().min(1, "Data é obrigatória").max(20),
+  time: z.string().min(1, "Hora é obrigatória").max(10),
+  location: z.string().min(1, "Local é obrigatório").max(200, "Local demasiado longo"),
+  type: z.enum(MEETING_TYPES, { message: "Tipo é obrigatório" }),
   agendaItems: z
     .array(
       z.object({
-        title: z.string().min(1, "Título do ponto é obrigatório"),
-        description: z.string().optional(),
+        title: z.string().min(1, "Título do ponto é obrigatório").max(200, "Título demasiado longo"),
+        description: z.string().max(2000, "Descrição demasiado longa").optional(),
       })
     )
     .min(1, "Pelo menos um ponto de ordem é obrigatório"),
@@ -26,8 +26,8 @@ export const attendanceSchema = z.object({
   attendees: z.array(
     z.object({
       userId: z.string(),
-      status: z.string(),
-      representedBy: z.string().optional(),
+      status: z.enum(ATTENDEE_STATUSES),
+      representedBy: z.string().max(200).optional(),
     })
   ),
 });
@@ -39,7 +39,7 @@ export const voteSchema = z.object({
   votes: z.array(
     z.object({
       unitId: z.string(),
-      vote: z.string(),
+      vote: z.enum(VOTE_VALUES),
     })
   ),
 });
@@ -47,7 +47,7 @@ export const voteSchema = z.object({
 export type VoteInput = z.infer<typeof voteSchema>;
 
 export const ataSchema = z.object({
-  content: z.string().min(1, "Conteúdo da ata é obrigatório"),
+  content: z.string().min(1, "Conteúdo da ata é obrigatório").max(50000, "Conteúdo demasiado longo"),
 });
 
 export type AtaInput = z.infer<typeof ataSchema>;

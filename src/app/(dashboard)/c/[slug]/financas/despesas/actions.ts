@@ -37,7 +37,7 @@ export const createExpense = withAdmin(async (ctx, input: ExpenseInput) => {
     });
   });
 
-  revalidatePath("/c/");
+  revalidatePath(`/c/${ctx.slug}`);
   return { success: true };
 });
 
@@ -68,7 +68,7 @@ export const updateExpense = withAdmin(async (ctx, expenseId: string, input: Exp
       },
     }),
     db.transaction.updateMany({
-      where: { expenseId },
+      where: { expenseId, deletedAt: null },
       data: {
         date: new Date(date),
         amount: -amount,
@@ -77,13 +77,13 @@ export const updateExpense = withAdmin(async (ctx, expenseId: string, input: Exp
     }),
   ]);
 
-  revalidatePath("/c/");
+  revalidatePath(`/c/${ctx.slug}`);
   return { success: true };
 });
 
 export const deleteExpense = withAdmin(async (ctx, expenseId: string) => {
   const expense = await db.expense.findFirst({
-    where: { id: expenseId, condominiumId: ctx.condominiumId, deletedAt: null },
+    where: { id: expenseId, condominiumId: ctx.condominiumId },
   });
 
   if (!expense) return { error: "Despesa não encontrada" };
@@ -100,6 +100,6 @@ export const deleteExpense = withAdmin(async (ctx, expenseId: string) => {
     });
   });
 
-  revalidatePath("/c/");
+  revalidatePath(`/c/${ctx.slug}`);
   return { success: true };
 });

@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
+import { randomBytes, createHash } from "crypto";
 import { hash } from "bcryptjs";
 import { db } from "@/lib/db";
 import { registerSchema } from "@/lib/validators/auth";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { sendVerificationEmail } from "@/lib/email";
 
 export async function POST(request: Request) {
   try {
@@ -43,13 +45,27 @@ export async function POST(request: Request) {
 
     const passwordHash = await hash(password, 12);
 
+    const verificationToken = randomBytes(32).toString("hex");
+    const tokenHash = createHash("sha256").update(verificationToken).digest("hex");
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
     const user = await db.user.create({
       data: {
         name,
         email,
         passwordHash,
+        emailVerificationToken: tokenHash,
+        emailVerificationExpiresAt: expiresAt,
       },
     });
+
+    if (process.env.NODE_ENV === "production") {
+      await sendVerificationEmail(email, verificationToken).catch(() => {
+        // Non-blocking — user can resend later
+      });
+    } else {
+      console.log(`[DEV] Email verification token for ${email}: ${verificationToken}`);
+    }
 
     return NextResponse.json(
       { user: { id: user.id, name: user.name, email: user.email } },

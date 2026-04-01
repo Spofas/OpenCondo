@@ -99,15 +99,17 @@ Write notes next to anything that fails so it can be fixed later.
 
 ## 4. Finances — Devedores (Debt Tracker)
 
-- [ ] Go to Finanças → Devedores
-- [ ] The unpaid quotas appear here, grouped by unit or owner
-- [ ] The unit that paid in the previous section does NOT appear here
-- [ ] Total outstanding debt shown matches the sum of unpaid quota amounts
+- [ ] Navigate to Finanças → Devedores — you are **redirected** to Finanças → Quotas (devedores is no longer a standalone page)
+- [ ] Debtor/overdue information is visible within the quotas page
 
 ---
 
 ## 5. Finances — Expenses (Despesas)
 
+### Expense page access control (non-admin)
+- [ ] Log in as a Proprietário — navigate to `/c/{slug}/financas/despesas` — you are **redirected** to `/c/{slug}/painel` (expenses are admin-only)
+
+### Expense CRUD (admin)
 - [ ] Go to Finanças → Despesas
 - [ ] Create a new expense: Limpeza, 100€, today's date, description "Limpeza mensal"
 - [ ] It appears in the list with the correct category and amount
@@ -268,6 +270,16 @@ To test this properly you need a second user. Use the invite flow from section 1
 - [ ] Try accessing `/painel` directly while logged out — you're redirected to login
 - [ ] Try accessing `/definicoes` while logged in as a Proprietário — you're redirected or see an error
 - [ ] Forgot password flow: on the login page, click "Esqueceu a password?", enter your email, check for the reset email, follow the link, set a new password, log in ✅
+
+### 17.1 Email Verification
+
+- [ ] Register a new account — after login, you should be redirected to `/verificar-email` (not dashboard)
+- [ ] The verification pending page shows a "Reenviar email de verificação" button
+- [ ] Click the resend button — in dev mode, check console for the verification token; in production, check email
+- [ ] Try accessing `/painel` or `/onboarding` with an unverified account — you're redirected to `/verificar-email`
+- [ ] Visit `/verificar-email/<token>` with the correct token — shows "Email verificado" success message
+- [ ] After verification, accessing `/painel` works normally (no more redirect)
+- [ ] Visit `/verificar-email/<invalid-token>` — shows "Link inválido ou expirado" error message
 
 ---
 

@@ -54,7 +54,7 @@ export const createContract = withAdmin(async (ctx, input: ContractInput) => {
     },
   });
 
-  revalidatePath("/c/");
+  revalidatePath(`/c/${ctx.slug}`);
   return { success: true };
 });
 
@@ -96,7 +96,7 @@ export const updateContract = withAdmin(async (ctx, contractId: string, input: C
     },
   });
 
-  revalidatePath("/c/");
+  revalidatePath(`/c/${ctx.slug}`);
   return { success: true };
 });
 
@@ -114,7 +114,7 @@ export const updateContractStatus = withAdmin(async (ctx, contractId: string, st
     },
   });
 
-  revalidatePath("/c/");
+  revalidatePath(`/c/${ctx.slug}`);
   return { success: true };
 });
 
@@ -125,8 +125,8 @@ export const deleteContract = withAdmin(async (ctx, contractId: string) => {
 
   if (!contract) return { error: "Contrato não encontrado" };
 
-  await db.contract.delete({ where: { id: contractId } });
+  await db.contract.update({ where: { id: contractId }, data: { deletedAt: new Date() } });
 
-  revalidatePath("/c/");
+  revalidatePath(`/c/${ctx.slug}`);
   return { success: true };
 });

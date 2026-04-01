@@ -19,6 +19,7 @@ interface BudgetItemData {
   category: string;
   description: string | null;
   plannedAmount: number;
+  actualAmount: number;
 }
 
 interface BudgetData {
@@ -151,19 +152,34 @@ export function BudgetList({
                 <div className="border-t border-border px-6 py-4">
                   {/* Mobile cards */}
                   <div className="space-y-2 md:hidden">
-                    {budget.items.map((item) => (
-                      <div key={item.id} className="flex items-center justify-between rounded-lg border border-border/50 bg-background p-3">
-                        <div className="min-w-0 flex-1">
-                          <p className="font-medium text-foreground">{item.category}</p>
-                          {item.description && (
-                            <p className="text-xs text-muted-foreground">{item.description}</p>
+                    {budget.items.map((item) => {
+                      const variance = Math.round((item.plannedAmount - item.actualAmount) * 100) / 100;
+                      return (
+                        <div key={item.id} className="rounded-lg border border-border/50 bg-background p-3">
+                          <div className="flex items-center justify-between">
+                            <div className="min-w-0 flex-1">
+                              <p className="font-medium text-foreground">{item.category}</p>
+                              {item.description && (
+                                <p className="text-xs text-muted-foreground">{item.description}</p>
+                              )}
+                            </div>
+                            <p className="ml-3 font-medium text-foreground whitespace-nowrap">
+                              €{item.plannedAmount.toLocaleString("pt-PT", { minimumFractionDigits: 2 })}
+                            </p>
+                          </div>
+                          {item.actualAmount > 0 && (
+                            <div className="mt-1.5 flex items-center justify-between text-xs">
+                              <span className="text-muted-foreground">
+                                Gasto: €{item.actualAmount.toLocaleString("pt-PT", { minimumFractionDigits: 2 })}
+                              </span>
+                              <span className={variance >= 0 ? "text-green-600" : "text-red-600"}>
+                                {variance >= 0 ? "+" : ""}€{variance.toLocaleString("pt-PT", { minimumFractionDigits: 2 })}
+                              </span>
+                            </div>
                           )}
                         </div>
-                        <p className="ml-3 font-medium text-foreground whitespace-nowrap">
-                          €{item.plannedAmount.toLocaleString("pt-PT", { minimumFractionDigits: 2 })}
-                        </p>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
 
                   {/* Items table (desktop) */}
@@ -172,66 +188,91 @@ export function BudgetList({
                       <tr className="border-b border-border text-left text-muted-foreground">
                         <th className="pb-2 font-medium">Categoria</th>
                         <th className="pb-2 font-medium">Descrição</th>
-                        <th className="pb-2 text-right font-medium">Valor</th>
+                        <th className="pb-2 text-right font-medium">Previsto</th>
+                        <th className="pb-2 text-right font-medium">Gasto</th>
+                        <th className="pb-2 text-right font-medium">Desvio</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {budget.items.map((item) => (
-                        <tr
-                          key={item.id}
-                          className="border-b border-border/50"
-                        >
-                          <td className="py-2.5 font-medium text-foreground">
-                            {item.category}
-                          </td>
-                          <td className="py-2.5 text-muted-foreground">
-                            {item.description || "—"}
-                          </td>
-                          <td className="py-2.5 text-right text-foreground">
-                            €
-                            {item.plannedAmount.toLocaleString("pt-PT", {
-                              minimumFractionDigits: 2,
-                            })}
-                          </td>
-                        </tr>
-                      ))}
+                      {budget.items.map((item) => {
+                        const variance = Math.round((item.plannedAmount - item.actualAmount) * 100) / 100;
+                        return (
+                          <tr
+                            key={item.id}
+                            className="border-b border-border/50"
+                          >
+                            <td className="py-2.5 font-medium text-foreground">
+                              {item.category}
+                            </td>
+                            <td className="py-2.5 text-muted-foreground">
+                              {item.description || "—"}
+                            </td>
+                            <td className="py-2.5 text-right text-foreground">
+                              €{item.plannedAmount.toLocaleString("pt-PT", { minimumFractionDigits: 2 })}
+                            </td>
+                            <td className="py-2.5 text-right text-foreground">
+                              €{item.actualAmount.toLocaleString("pt-PT", { minimumFractionDigits: 2 })}
+                            </td>
+                            <td className={`py-2.5 text-right font-medium ${variance >= 0 ? "text-green-600" : "text-red-600"}`}>
+                              {variance >= 0 ? "+" : ""}€{variance.toLocaleString("pt-PT", { minimumFractionDigits: 2 })}
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
 
                   {/* Totals */}
-                  <div className="mt-4 space-y-1 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">
-                        Subtotal rubricas
-                      </span>
-                      <span className="font-medium">
-                        €
-                        {budget.totalAmount.toLocaleString("pt-PT", {
-                          minimumFractionDigits: 2,
-                        })}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">
-                        Fundo de reserva ({budget.reserveFundPercentage}%)
-                      </span>
-                      <span className="font-medium">
-                        €
-                        {reserveAmount.toLocaleString("pt-PT", {
-                          minimumFractionDigits: 2,
-                        })}
-                      </span>
-                    </div>
-                    <div className="flex justify-between border-t border-border pt-2 font-semibold">
-                      <span>Total</span>
-                      <span>
-                        €
-                        {grandTotal.toLocaleString("pt-PT", {
-                          minimumFractionDigits: 2,
-                        })}
-                      </span>
-                    </div>
-                  </div>
+                  {(() => {
+                    const totalActual = Math.round(budget.items.reduce((s, i) => s + i.actualAmount, 0) * 100) / 100;
+                    const totalVariance = Math.round((budget.totalAmount - totalActual) * 100) / 100;
+                    return (
+                      <div className="mt-4 space-y-1 text-sm">
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">
+                            Subtotal rubricas
+                          </span>
+                          <span className="font-medium">
+                            €{budget.totalAmount.toLocaleString("pt-PT", { minimumFractionDigits: 2 })}
+                          </span>
+                        </div>
+                        {totalActual > 0 && (
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">
+                              Total gasto
+                            </span>
+                            <span className="font-medium">
+                              €{totalActual.toLocaleString("pt-PT", { minimumFractionDigits: 2 })}
+                            </span>
+                          </div>
+                        )}
+                        {totalActual > 0 && (
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">
+                              Desvio total
+                            </span>
+                            <span className={`font-medium ${totalVariance >= 0 ? "text-green-600" : "text-red-600"}`}>
+                              {totalVariance >= 0 ? "+" : ""}€{totalVariance.toLocaleString("pt-PT", { minimumFractionDigits: 2 })}
+                            </span>
+                          </div>
+                        )}
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">
+                            Fundo de reserva ({budget.reserveFundPercentage}%)
+                          </span>
+                          <span className="font-medium">
+                            €{reserveAmount.toLocaleString("pt-PT", { minimumFractionDigits: 2 })}
+                          </span>
+                        </div>
+                        <div className="flex justify-between border-t border-border pt-2 font-semibold">
+                          <span>Total</span>
+                          <span>
+                            €{grandTotal.toLocaleString("pt-PT", { minimumFractionDigits: 2 })}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })()}
 
                   {/* Actions (admin only, draft only) */}
                   {isAdmin && budget.status === "DRAFT" && (

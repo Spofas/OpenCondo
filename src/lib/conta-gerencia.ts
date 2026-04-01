@@ -6,6 +6,9 @@
  * reserve fund status, and outstanding debts per unit.
  */
 
+// Debtor logic is inlined here (status-based) rather than reusing
+// buildDebtorSummary (date-based aging) to match the report's semantics.
+
 export interface BudgetLineReport {
   category: string;
   description: string | null;
@@ -68,11 +71,13 @@ export interface ContaGerenciaInput {
   } | null;
 
   quotas: {
+    unitId: string;
     unitIdentifier: string;
     ownerName: string | null;
     amount: number;
     status: "PENDING" | "PAID" | "OVERDUE";
     period: string;
+    dueDate: string;
   }[];
 
   expenses: {
@@ -134,31 +139,21 @@ export function buildContaGerencia(input: ContaGerenciaInput): ContaGerenciaRepo
   const reservePct = budget?.reserveFundPercentage ?? 10;
   const reserveContributions = round(totalQuotasPaid * (reservePct / 100));
 
-  // Debts per unit
-  const unitMap = new Map<
-    string,
-    { ownerName: string | null; pending: number; overdue: number }
-  >();
+  // Debts per unit — uses status field (not date-based aging)
+  const debtMap = new Map<string, UnitDebtReport>();
   for (const q of yearQuotas) {
     if (q.status === "PAID") continue;
-    const key = q.unitIdentifier;
-    const entry = unitMap.get(key) || {
-      ownerName: q.ownerName,
-      pending: 0,
-      overdue: 0,
-    };
-    if (q.status === "PENDING") entry.pending += q.amount;
-    if (q.status === "OVERDUE") entry.overdue += q.amount;
-    unitMap.set(key, entry);
+    let entry = debtMap.get(q.unitIdentifier);
+    if (!entry) {
+      entry = { unitIdentifier: q.unitIdentifier, ownerName: q.ownerName, pendingAmount: 0, overdueAmount: 0, totalDebt: 0 };
+      debtMap.set(q.unitIdentifier, entry);
+    }
+    if (q.status === "OVERDUE") entry.overdueAmount += q.amount;
+    else entry.pendingAmount += q.amount;
+    entry.totalDebt += q.amount;
   }
-  const unitDebts: UnitDebtReport[] = Array.from(unitMap.entries())
-    .map(([unitIdentifier, d]) => ({
-      unitIdentifier,
-      ownerName: d.ownerName,
-      pendingAmount: round(d.pending),
-      overdueAmount: round(d.overdue),
-      totalDebt: round(d.pending + d.overdue),
-    }))
+  const unitDebts: UnitDebtReport[] = Array.from(debtMap.values())
+    .map((d) => ({ ...d, pendingAmount: round(d.pendingAmount), overdueAmount: round(d.overdueAmount), totalDebt: round(d.totalDebt) }))
     .sort((a, b) => b.totalDebt - a.totalDebt);
 
   return {

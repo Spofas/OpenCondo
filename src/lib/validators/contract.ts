@@ -22,25 +22,25 @@ export const PAYMENT_FREQUENCIES = [
 ] as const;
 
 export const contractSchema = z.object({
-  description: z.string().min(1, "Descrição é obrigatória"),
-  type: z.string().min(1, "Tipo é obrigatório"),
-  startDate: z.string().min(1, "Data de início é obrigatória"),
-  endDate: z.string().optional(),
-  renewalType: z.string().optional(),
+  description: z.string().min(1, "Descrição é obrigatória").max(200, "Descrição demasiado longa"),
+  type: z.enum(CONTRACT_TYPES, { message: "Tipo é obrigatório" }),
+  startDate: z.string().min(1, "Data de início é obrigatória").max(20),
+  endDate: z.string().max(20).optional(),
+  renewalType: z.enum(RENEWAL_TYPES).optional(),
   annualCost: z.number({ message: "Custo é obrigatório" }).positive("Custo deve ser positivo"),
-  paymentFrequency: z.string().optional(),
-  notes: z.string().optional(),
+  paymentFrequency: z.enum(PAYMENT_FREQUENCIES).optional(),
+  notes: z.string().max(2000, "Notas demasiado longas").optional(),
   // Insurance-specific
-  policyNumber: z.string().optional(),
+  policyNumber: z.string().max(50).optional(),
   insuredValue: z.number().optional(),
-  coverageType: z.string().optional(),
+  coverageType: z.string().max(200).optional(),
   // Document
-  documentUrl: z.string().optional(),
+  documentUrl: z.string().max(2048).optional(),
   // Supplier
-  supplierName: z.string().optional(),
-  supplierNif: z.string().optional(),
-  supplierPhone: z.string().optional(),
-  supplierEmail: z.string().optional(),
+  supplierName: z.string().max(200).optional(),
+  supplierNif: z.string().max(20).optional(),
+  supplierPhone: z.string().max(30).optional(),
+  supplierEmail: z.string().max(254).optional(),
 });
 
 export type ContractInput = z.infer<typeof contractSchema>;

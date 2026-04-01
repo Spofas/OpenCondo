@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRouter, usePathname } from "next/navigation";
 import {
   FileText,
   Download,
@@ -30,10 +30,14 @@ export function ContaGerenciaClient({
   isAdmin: boolean;
   condominiumId: string;
 }) {
-  const [selectedYear, setSelectedYear] = useState(defaultYear);
-  // The report is server-rendered for the default year.
-  // Year switching triggers PDF download from the API route.
+  const router = useRouter();
+  const pathname = usePathname();
+  const selectedYear = defaultYear;
   const r = report;
+
+  function handleYearChange(year: number) {
+    router.push(`${pathname}?year=${year}`);
+  }
 
   return (
     <div>
@@ -47,7 +51,7 @@ export function ContaGerenciaClient({
         <div className="flex items-center gap-3">
           <select
             value={selectedYear}
-            onChange={(e) => setSelectedYear(Number(e.target.value))}
+            onChange={(e) => handleYearChange(Number(e.target.value))}
             className="rounded-lg border border-input bg-background px-3 py-2 text-sm"
           >
             {availableYears.map((y) => (

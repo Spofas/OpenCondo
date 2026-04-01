@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import dynamic from "next/dynamic";
 import { Plus } from "lucide-react";
 import { ContractList } from "./contract-list";
-import { ContractForm } from "./contract-form";
+const ContractForm = dynamic(() => import("./contract-form").then(m => m.ContractForm));
 
 export interface ContractData {
   id: string;

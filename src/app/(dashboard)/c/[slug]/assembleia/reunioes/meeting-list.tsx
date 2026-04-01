@@ -88,7 +88,7 @@ export function MeetingList({
   async function handleAttendanceChange(
     meetingId: string,
     userId: string,
-    status: string
+    status: "PRESENTE" | "REPRESENTADO" | "AUSENTE"
   ) {
     const meeting = meetings.find((m) => m.id === meetingId);
     if (!meeting) return;
@@ -99,10 +99,9 @@ export function MeetingList({
       );
       return {
         userId: member.userId,
-        status:
-          member.userId === userId
+        status: (member.userId === userId
             ? status
-            : existing?.status || "AUSENTE",
+            : existing?.status || "AUSENTE") as "PRESENTE" | "REPRESENTADO" | "AUSENTE",
         representedBy: existing?.representedBy || undefined,
       };
     });
@@ -115,14 +114,14 @@ export function MeetingList({
     meetingId: string,
     agendaItemId: string,
     unitId: string,
-    vote: string
+    vote: "A_FAVOR" | "CONTRA" | "ABSTENCAO"
   ) {
     const meeting = meetings.find((m) => m.id === meetingId);
     if (!meeting) return;
 
     const existingVotes = meeting.votes
       .filter((v) => v.agendaItemId === agendaItemId)
-      .map((v) => ({ unitId: v.unitId, vote: v.vote }));
+      .map((v) => ({ unitId: v.unitId, vote: v.vote as "A_FAVOR" | "CONTRA" | "ABSTENCAO" }));
 
     const updated = existingVotes.filter((v) => v.unitId !== unitId);
     updated.push({ unitId, vote });
@@ -385,7 +384,7 @@ export function MeetingList({
                                     handleAttendanceChange(
                                       meeting.id,
                                       member.userId,
-                                      e.target.value
+                                      e.target.value as "PRESENTE" | "REPRESENTADO" | "AUSENTE"
                                     )
                                   }
                                   className="rounded-lg border border-input bg-background px-2 py-1 text-xs text-foreground outline-none focus:border-primary"

@@ -1,6 +1,6 @@
 # OpenCondo — Project Status & Architecture Guide
 
-**Last updated:** 2026-03-31
+**Last updated:** 2026-04-01
 **For:** Anyone following along, regardless of programming experience
 
 ---
@@ -230,7 +230,7 @@ A budget is the annual spending plan for the building — "we expect to spend �
 **Technical choices:**
 
 - **Server Actions for mutations**: Creating/updating/deleting budgets uses Next.js Server Actions — functions that run on the server when the form is submitted. This keeps database logic out of the browser.
-- **Helper function `getAdminContext()`**: Every budget action first checks: (a) is the user logged in? (b) which condominium are they viewing? (c) are they an admin of that condominium? If any check fails, the action returns an error. This is the "bouncer at the door" pattern — check permissions before doing anything.
+- **`withAdmin` / `withMember` HOFs**: Every budget action is wrapped in `withAdmin(async (ctx, ...args) => { ... })` which checks: (a) is the user logged in? (b) are they a member of this condominium? (c) are they an admin? If any check fails, the action returns an error. The `ctx` object provides `userId`, `condominiumId`, `slug`, and `role`. This is the "bouncer at the door" pattern — check permissions before doing anything.
 - **Modal form**: The budget form opens as a modal (overlay on top of the page) rather than navigating to a separate page. This feels faster and keeps context — you can see the existing budgets behind the form.
 - **Field array (useFieldArray)**: The line items section uses React Hook Form's `useFieldArray`, which lets you dynamically add and remove rows. Each row is independently validated.
 - **Decimal handling**: Budget amounts come from the database as Prisma `Decimal` type (precise money values). We convert to JavaScript `number` when sending to the client, since the UI doesn't need accounting-level precision for display.
@@ -266,7 +266,7 @@ A budget is the annual spending plan for the building — "we expect to spend �
 
 5. **Undo payment**: If a payment was recorded in error, admin can click "Anular" to set it back to pending/overdue.
 
-6. **Overdue detection**: Every time the page loads, any PENDING quotas past their due date are automatically marked as OVERDUE. No manual action needed.
+6. **Overdue detection**: A nightly cron job (`/api/cron/process`) marks PENDING quotas past their due date as OVERDUE. No manual action needed.
 
 7. **Delete by period**: Admin can delete all unpaid quotas for a given month (e.g., if quotas were generated with wrong amounts). Paid quotas are preserved.
 
@@ -385,16 +385,12 @@ A budget is the annual spending plan for the building — "we expect to spend �
 - PDF export via API route
 - Available at `/financas/conta-gerencia`
 
-#### Debtor Tracking (complete)
+#### Debtor Tracking (redirects to quotas)
 
-**What:** Dedicated view for tracking overdue units with aging analysis.
+**What:** Originally a dedicated view for debtor tracking with aging analysis. The standalone page now redirects to `/financas/quotas` — debtor information is displayed within the quotas page instead of duplicating data across two views.
 
-- **Aging buckets**: Current (not yet due), 1-30 days, 31-60 days, 61-90 days, 90+ days overdue
-- **Per-unit breakdown**: Owner name/email, unpaid count, visual aging bar, amounts per bucket
-- **Summary cards**: Total debt, total overdue, units with debt, units with overdue
-- **Color-coded**: Blue (current) → amber (1-30d) → orange (31-60d) → red (61-90d) → dark red (90d+)
-- Pure logic in `src/lib/debtor-calculations.ts` (8 unit tests + 12 scenario tests)
-- Available at `/financas/devedores` (admin only)
+- Pure logic still in `src/lib/debtor-calculations.ts` (8 unit tests + 12 scenario tests)
+- The client component `debtor-client.tsx` is imported by the quotas page for debtor display
 
 #### Recurring Expenses (complete)
 
@@ -532,10 +528,11 @@ Applied to 6 pages: quotas, livro-caixa, devedores, conta-gerência, reuniões, 
 | 2026-03-30 | Remove "Lembrar-me" checkbox | JWT sessions last 30 days by default — effectively always "remember me". The checkbox was cosmetic (never wired). Browser credential managers handle the "remember login" UX. |
 | 2026-03-30 | Mobile-first bottom navigation | Role-adaptive bottom nav bar replaces hamburger menu on mobile. Admin gets category-based tabs with sheets; Owner/Tenant gets 5 direct-link tabs. Desktop sidebar unchanged. |
 | 2026-03-25 | Soft deletes on Expense/Quota/Transaction | Recoverable deletions, audit trail, no orphaned financial data; hard deletes permanently destroy payment history |
+| 2026-04-01 | Soft deletes on Announcement/Document/Meeting/Contract | Extended soft-delete to all user-managed entities. Prisma Client Extension auto-filters `deletedAt: null` on reads |
 | 2026-03-25 | URL search param for quota year filter | Avoids loading full quota history on every render; bookmarkable and shareable links |
 | 2026-03-25 | requireMembership() centralized helper | Every server page repeated the same auth+membership boilerplate — extracted to `src/lib/auth/require-membership.ts` |
 | 2026-03-25 | Centralized serializers | Prisma Decimal→number and Date→string conversions scattered across pages; consolidated in `src/lib/serializers.ts` |
-| 2026-03-25 | Vercel Cron for overdue + recurring | Nightly job at 02:00 UTC covers all condominiums; removes per-page side-effects for overdue marking (still kept as fallback on page load) |
+| 2026-03-25 | Vercel Cron for overdue + recurring | Nightly job at 02:00 UTC covers all condominiums; sole mechanism for overdue marking (page-load side-effects removed 2026-04-01) |
 | 2026-03-25 | Receipt endpoint ownership check | Non-admin users could previously download any unit's receipt; restricted to units they own/rent |
 | 2026-03-30 | Slug-based URL routing | Cookie-based condo selection replaced with `/c/[slug]/` URL path segments — enables bookmarkable multi-tenant URLs, eliminates cookie drift issues, and aligns with standard SaaS URL patterns |
 | 2026-03-30 | CondominiumProvider context | Client components get `slug` and `condominiumId` from React context (`useCondominium()`) instead of reading cookies — cleaner, type-safe, and derived from the URL |
@@ -548,6 +545,10 @@ Applied to 6 pages: quotas, livro-caixa, devedores, conta-gerência, reuniões, 
 | 2026-03-31 | No custom wrapper on NextAuth route | Custom POST wrappers on `[...nextauth]/route.ts` interfere with NextAuth's response format. Rate limiting should be done in proxy/middleware instead, not by wrapping the route handler |
 | 2026-03-31 | Vercel Blob for file storage | Direct file uploads replace external-URL-only approach. Vercel Blob is native to the hosting platform, requires no additional infrastructure, and provides CDN-backed public URLs |
 | 2026-03-31 | jsPDF for all PDF exports | Consistent PDF generation library across receipts, atas, budgets, and conta de gerência. Server-side generation via API routes, no client-side dependencies |
+| 2026-04-01 | Scoped revalidatePath to condo slug | `revalidatePath("/c/")` invalidated cache for ALL condominiums on every mutation. Scoped to `revalidatePath(`/c/${ctx.slug}`)` — only the active condo's pages are revalidated |
+| 2026-04-01 | Slug added to AdminContext/MemberContext | `slug` field added to context types, resolved via Prisma join on membership query — enables scoped revalidation without extra DB calls |
+| 2026-04-01 | Removed page-load overdue marking | 5 pages ran `updateMany` on every load to mark overdue quotas — moved entirely to nightly cron. Eliminates unnecessary DB writes on page views |
+| 2026-04-01 | dashboard/actions.ts migrated to HOFs | 9 actions used manual auth+membership checks — migrated to `withAdmin`/`withMember` HOF pattern for consistency. Removed 131 lines of boilerplate |
 
 ---
 
@@ -556,12 +557,12 @@ Applied to 6 pages: quotas, livro-caixa, devedores, conta-gerência, reuniões, 
 This section exists so that if we start a fresh Claude Code session, I (Claude) can read this file
 and get back up to speed without needing the conversation history.
 
-### Current state (2026-03-31)
+### Current state (2026-04-01)
 - **Branch:** `claude/opencondo-development-Ch14I`
 - **Build status:** Passing (`next build` succeeds, all routes compile)
 - **Database:** Prisma Migrate in use (migration history committed). Latest migration: `20260330000002_add_pending_email_queue` (PendingEmail table for email retry queue).
-- **Test suite:** 444 tests passing (33 test files)
-- **Latest features (2026-03-31):** PDF export for atas and budgets (joining existing receipt + conta de gerência PDFs). File upload system via Vercel Blob (documents, expenses, contracts). Auth flow fixes — login race condition (server action after signIn), logout race condition (cookie not cleared before navigation), removed broken rate limiting wrapper from auth route.
+- **Test suite:** 582 tests passing (34 test files)
+- **Latest changes (2026-04-01):** Security audit fixes (devToken removal, admin-only expense page, devedores redirect, overdue marking cleanup). Scoped `revalidatePath` to condo-level (`/c/${slug}`) across all 14 action files. Migrated `dashboard/actions.ts` (9 actions) to `withAdmin`/`withMember` HOF pattern. Prisma soft-delete extension auto-filters reads on 7 models. Soft-delete added to Announcement, Document, Meeting, Contract. Latest migration: `20260401000001_add_soft_delete_to_four_entities`.
 - **Note:** `pnpm lint` is broken on Next.js 16.1.7 (`next lint` misparses args). The build catches type errors, so this is non-blocking.
 - **Note:** File uploads require `BLOB_READ_WRITE_TOKEN` env var on Vercel (Storage → Create Blob Store).
 
@@ -593,7 +594,7 @@ and get back up to speed without needing the conversation history.
 - **`db` singleton** in `lib/db/index.ts` with global caching to prevent connection leaks in dev
 - **`requireMembership(slug)`** in `lib/auth/require-membership.ts` — call at the top of every server page; resolves slug → condominium and verifies membership
 - **Serializers** in `lib/serializers.ts` — call `serializeExpense(e)`, `serializeTransaction(t)`, etc. to convert Prisma Decimals and Dates before passing to client components
-- **Soft deletes** — all `Expense`, `Quota`, `Transaction` writes filter `deletedAt: null`; deletions set `deletedAt = now()` instead of removing rows
+- **Soft deletes** — 7 models (Expense, Quota, Transaction, Announcement, Document, Meeting, Contract) use `deletedAt` column; Prisma Client Extension in `src/lib/db/soft-delete-extension.ts` auto-filters reads; deletions set `deletedAt = now()` instead of removing rows
 - **useOptimistic** — 9 list components use `useOptimistic` + `useTransition` for instant delete/toggle feedback
 - **Suspense** — 6 heavy data pages wrapped in `<Suspense>` with skeleton fallbacks
 - **Email queue** — non-urgent notifications queued in `PendingEmail` table; cron processes in batches with retries
@@ -609,9 +610,24 @@ and get back up to speed without needing the conversation history.
 - **File upload system** — ✅ Complete. Vercel Blob storage with reusable `FileUpload` component. Documents, expenses (invoice), and contracts (document) support direct file upload.
 
 ### What still needs to be built
-1. **Deployment to production** — Staging is live at `staging.opencondo.app`. Production (`main`) deploy pending final review. See `DEPLOYMENT_GUIDE.md` for Vercel + Neon setup.
+1. **Deployment to production** — Develop environment is live at `develop.opencondo.app`, preview at `preview.opencondo.app`. Production (`main`) deploy pending final review. See `DEPLOYMENT_GUIDE.md` for Vercel + Neon setup.
 2. **`BLOB_READ_WRITE_TOKEN`** — needs to be added to Vercel env vars for file uploads to work (Storage → Create Blob Store).
 3. **Announcement file attachments** — `AnnouncementAttachment` model exists but no upload UI in the announcement form.
 4. **Maintenance photos** — `MaintenancePhoto` model exists but no upload UI.
 5. **Member role management** — admins can't change member roles or deactivate members from settings.
 6. **Remaining ModalForm migrations** — 7 form components can be mechanically refactored to use the shared `<ModalForm>` component.
+
+### Audit backlog (from AUDIT_REPORT_3.md)
+Items remaining from the security/architecture audit:
+
+**P0 — Data integrity:** (completed)
+- ~~Soft-delete for 4 hard-delete entities~~ — Done (2026-04-01)
+- ~~Prisma middleware for soft-delete auto-filtering~~ — Done (2026-04-01)
+
+**Security P1:** (all completed 2026-04-01)
+- ~~Hash password reset tokens~~ — Done (SHA-256 hash stored, raw token sent via email)
+- ~~Email verification~~ — Done (verification flow with token, resend UI, dashboard gate)
+- ~~z.enum validation~~ — Done (15 fields across 9 validators)
+- ~~String max length limits~~ — Done (~49 fields across 13 validators)
+- ~~Payment audit log~~ — Done (recordedBy/recordedAt on Quota)
+- ~~Attendance validation~~ — Done (membership check in saveAttendance)

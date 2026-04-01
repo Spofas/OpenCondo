@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { isDueThisPeriod } from "../cron-utils";
+import { isDueThisPeriod, periodSuffix } from "../cron-utils";
 
 function date(month: number): Date {
   return new Date(2026, month - 1, 15); // 15th of the given month, 1-indexed
@@ -85,6 +85,48 @@ describe("isDueThisPeriod — PONTUAL and unknown", () => {
     expect(isDueThisPeriod("WEEKLY", date(1))).toBe(false);
     expect(isDueThisPeriod("", date(6))).toBe(false);
     expect(isDueThisPeriod("RANDOM", date(3))).toBe(false);
+  });
+});
+
+describe("periodSuffix — MENSAL", () => {
+  it("returns Portuguese month name + year", () => {
+    expect(periodSuffix("MENSAL", new Date(2026, 0, 15))).toBe("Janeiro 2026");
+    expect(periodSuffix("MENSAL", new Date(2026, 2, 15))).toBe("Março 2026");
+    expect(periodSuffix("MENSAL", new Date(2026, 11, 15))).toBe("Dezembro 2026");
+  });
+});
+
+describe("periodSuffix — TRIMESTRAL", () => {
+  it("returns correct quarter", () => {
+    expect(periodSuffix("TRIMESTRAL", new Date(2026, 0, 15))).toBe("Q1 2026");
+    expect(periodSuffix("TRIMESTRAL", new Date(2026, 3, 15))).toBe("Q2 2026");
+    expect(periodSuffix("TRIMESTRAL", new Date(2026, 6, 15))).toBe("Q3 2026");
+    expect(periodSuffix("TRIMESTRAL", new Date(2026, 9, 15))).toBe("Q4 2026");
+  });
+});
+
+describe("periodSuffix — SEMESTRAL", () => {
+  it("returns 1st semester for Jan-Jun", () => {
+    expect(periodSuffix("SEMESTRAL", new Date(2026, 0, 15))).toBe("1.º Sem. 2026");
+    expect(periodSuffix("SEMESTRAL", new Date(2026, 5, 15))).toBe("1.º Sem. 2026");
+  });
+
+  it("returns 2nd semester for Jul-Dec", () => {
+    expect(periodSuffix("SEMESTRAL", new Date(2026, 6, 15))).toBe("2.º Sem. 2026");
+    expect(periodSuffix("SEMESTRAL", new Date(2026, 11, 15))).toBe("2.º Sem. 2026");
+  });
+});
+
+describe("periodSuffix — ANUAL", () => {
+  it("returns just the year", () => {
+    expect(periodSuffix("ANUAL", new Date(2026, 0, 15))).toBe("2026");
+    expect(periodSuffix("ANUAL", new Date(2025, 0, 15))).toBe("2025");
+  });
+});
+
+describe("periodSuffix — unknown frequency", () => {
+  it("falls back to month + year", () => {
+    expect(periodSuffix("PONTUAL", new Date(2026, 2, 15))).toBe("Março 2026");
   });
 });
 

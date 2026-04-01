@@ -1,20 +1,23 @@
 import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
+import { softDeleteExtension } from "./soft-delete-extension";
+
+type ExtendedClient = ReturnType<typeof createExtendedClient>;
 
 const globalForPrisma = globalThis as unknown as {
-  prisma: PrismaClient | undefined;
+  prisma: ExtendedClient | undefined;
 };
 
-function createPrismaClient() {
+function createExtendedClient() {
   const connectionString = process.env.DATABASE_URL;
   if (!connectionString) {
     throw new Error("DATABASE_URL is not set");
   }
   const adapter = new PrismaPg({ connectionString });
-  return new PrismaClient({ adapter });
+  return new PrismaClient({ adapter }).$extends(softDeleteExtension);
 }
 
-function getClient(): PrismaClient {
+function getClient(): ExtendedClient {
   // In dev, clear stale cached client when schema changes (e.g. after prisma generate)
   if (process.env.NODE_ENV !== "production" && globalForPrisma.prisma) {
     const cached = globalForPrisma.prisma as unknown as Record<string, unknown>;
@@ -24,7 +27,7 @@ function getClient(): PrismaClient {
   }
 
   if (!globalForPrisma.prisma) {
-    globalForPrisma.prisma = createPrismaClient();
+    globalForPrisma.prisma = createExtendedClient();
   }
   return globalForPrisma.prisma;
 }

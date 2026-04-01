@@ -43,12 +43,12 @@ export function ContractForm({ onClose, existingContract }: ContractFormProps) {
     defaultValues: existingContract
       ? {
           description: existingContract.description,
-          type: existingContract.type,
+          type: existingContract.type as ContractInput["type"],
           startDate: existingContract.startDate.split("T")[0],
           endDate: existingContract.endDate?.split("T")[0] || "",
-          renewalType: existingContract.renewalType,
+          renewalType: existingContract.renewalType as ContractInput["renewalType"],
           annualCost: existingContract.annualCost,
-          paymentFrequency: existingContract.paymentFrequency,
+          paymentFrequency: existingContract.paymentFrequency as ContractInput["paymentFrequency"],
           notes: existingContract.notes || "",
           documentUrl: existingContract.documentUrl || "",
           policyNumber: existingContract.policyNumber || "",
@@ -58,7 +58,7 @@ export function ContractForm({ onClose, existingContract }: ContractFormProps) {
         }
       : {
           description: "",
-          type: "",
+          type: "Outros" as ContractInput["type"],
           startDate: "",
           endDate: "",
           renewalType: "MANUAL",

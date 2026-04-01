@@ -1,11 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
 import { Plus, RefreshCw } from "lucide-react";
 import { ExpenseList } from "./expense-list";
-import { ExpenseForm } from "./expense-form";
+const ExpenseForm = dynamic(() => import("./expense-form").then(m => m.ExpenseForm));
 import { RecurringExpenseList } from "../despesas-recorrentes/recurring-expense-list";
-import { RecurringExpenseForm } from "../despesas-recorrentes/recurring-expense-form";
+const RecurringExpenseForm = dynamic(() => import("../despesas-recorrentes/recurring-expense-form").then(m => m.RecurringExpenseForm));
 import { generateRecurringExpenses } from "../despesas-recorrentes/actions";
 import { useCondominium } from "@/lib/condominium-context";
 import type { RecurringExpenseData } from "../despesas-recorrentes/recurring-expense-page-client";
@@ -26,12 +28,19 @@ export function ExpensePageClient({
   expenses,
   isAdmin,
   recurringTemplates,
+  page,
+  totalPages,
+  totalExpenses,
 }: {
   expenses: ExpenseData[];
   isAdmin: boolean;
   recurringTemplates: RecurringExpenseData[];
+  page: number;
+  totalPages: number;
+  totalExpenses: number;
 }) {
   const { condominiumId } = useCondominium();
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<Tab>("despesas");
   const [showForm, setShowForm] = useState(false);
   const [editingExpense, setEditingExpense] = useState<ExpenseData | null>(null);
@@ -146,6 +155,30 @@ export function ExpensePageClient({
             onEdit={(t) => setEditingTemplate(t)}
           />
         </>
+      )}
+
+      {activeTab === "despesas" && totalPages > 1 && (
+        <div className="mt-4 flex items-center justify-between rounded-xl border border-border bg-card px-4 py-3">
+          <span className="text-sm text-muted-foreground">
+            {totalExpenses} despesa{totalExpenses !== 1 ? "s" : ""} · Página {page} de {totalPages}
+          </span>
+          <div className="flex gap-1">
+            <button
+              onClick={() => router.push(`?page=${page - 1}`)}
+              disabled={page <= 1}
+              className="rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-foreground hover:bg-secondary disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              Anterior
+            </button>
+            <button
+              onClick={() => router.push(`?page=${page + 1}`)}
+              disabled={page >= totalPages}
+              className="rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-foreground hover:bg-secondary disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              Seguinte
+            </button>
+          </div>
+        </div>
       )}
 
       {showForm && <ExpenseForm onClose={() => setShowForm(false)} />}

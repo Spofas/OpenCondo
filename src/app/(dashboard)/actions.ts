@@ -1,45 +1,25 @@
 "use server";
 
-import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { parseCsvUnits } from "@/lib/csv-import";
 import { revalidatePath } from "next/cache";
 import { sendInviteEmail } from "@/lib/email";
 import { notificationPreferencesSchema, NOTIFICATION_DEFAULTS } from "@/lib/validators/notification-preferences";
 import { generateUniqueSlug } from "@/lib/utils/slug";
+import { withAdmin, withMember } from "@/lib/auth/admin-context";
 
-export async function createInvite(data: {
-  condominiumId: string;
+export const createInvite = withAdmin(async (ctx, data: {
   role: "OWNER" | "TENANT";
   email?: string;
-}) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return { error: "Não autenticado" };
-  }
-
-  // Verify the user is an ADMIN of this condominium
-  const membership = await db.membership.findUnique({
-    where: {
-      userId_condominiumId: {
-        userId: session.user.id,
-        condominiumId: data.condominiumId,
-      },
-    },
-  });
-
-  if (!membership || membership.role !== "ADMIN") {
-    return { error: "Apenas administradores podem criar convites" };
-  }
-
+}) => {
   const condominium = await db.condominium.findUnique({
-    where: { id: data.condominiumId },
+    where: { id: ctx.condominiumId },
     select: { name: true },
   });
 
   const invite = await db.invite.create({
     data: {
-      condominiumId: data.condominiumId,
+      condominiumId: ctx.condominiumId,
       role: data.role,
       email: data.email || null,
       expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
@@ -55,58 +35,24 @@ export async function createInvite(data: {
   }
 
   return { success: true, token: invite.token };
-}
+});
 
-export async function listInvites(condominiumId: string) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return { error: "Não autenticado" };
-  }
-
-  const membership = await db.membership.findUnique({
-    where: {
-      userId_condominiumId: {
-        userId: session.user.id,
-        condominiumId,
-      },
-    },
-  });
-
-  if (!membership || membership.role !== "ADMIN") {
-    return { error: "Sem permissão" };
-  }
-
+export const listInvites = withAdmin(async (ctx) => {
   const invites = await db.invite.findMany({
-    where: { condominiumId },
+    where: { condominiumId: ctx.condominiumId },
     include: { usedByUser: { select: { name: true, email: true } } },
     orderBy: { createdAt: "desc" },
   });
 
-  return { invites };
-}
+  return { success: true, invites };
+});
 
 /**
  * Import units from CSV text.
  * Creates units that don't already exist (by identifier).
  * Optionally assigns owners if ownerEmail column is present and user exists.
  */
-export async function importUnitsFromCsv(condominiumId: string, csvText: string) {
-  const session = await auth();
-  if (!session?.user?.id) return { error: "Não autenticado" };
-
-  const membership = await db.membership.findUnique({
-    where: {
-      userId_condominiumId: {
-        userId: session.user.id,
-        condominiumId,
-      },
-    },
-  });
-
-  if (!membership || membership.role !== "ADMIN") {
-    return { error: "Sem permissão" };
-  }
-
+export const importUnitsFromCsv = withAdmin(async (ctx, csvText: string) => {
   const { units, errors } = parseCsvUnits(csvText);
 
   if (units.length === 0) {
@@ -115,7 +61,7 @@ export async function importUnitsFromCsv(condominiumId: string, csvText: string)
 
   // Get condominium name for invite emails
   const condominium = await db.condominium.findUnique({
-    where: { id: condominiumId },
+    where: { id: ctx.condominiumId },
     select: { name: true },
   });
 
@@ -129,7 +75,7 @@ export async function importUnitsFromCsv(condominiumId: string, csvText: string)
     const existing = await db.unit.findUnique({
       where: {
         condominiumId_identifier: {
-          condominiumId,
+          condominiumId: ctx.condominiumId,
           identifier: unit.identifier,
         },
       },
@@ -156,7 +102,7 @@ export async function importUnitsFromCsv(condominiumId: string, csvText: string)
           try {
             const invite = await db.invite.create({
               data: {
-                condominiumId,
+                condominiumId: ctx.condominiumId,
                 role: "OWNER",
                 email: unit.ownerEmail,
                 expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
@@ -176,7 +122,7 @@ export async function importUnitsFromCsv(condominiumId: string, csvText: string)
 
     await db.unit.create({
       data: {
-        condominiumId,
+        condominiumId: ctx.condominiumId,
         identifier: unit.identifier,
         floor: unit.floor ?? null,
         typology: unit.typology || null,
@@ -188,7 +134,7 @@ export async function importUnitsFromCsv(condominiumId: string, csvText: string)
     created++;
   }
 
-  revalidatePath(`/c/`);
+  revalidatePath(`/c/${ctx.slug}`);
 
   const parts: string[] = [];
   parts.push(`${created} fração${created !== 1 ? "ões" : ""} importada${created !== 1 ? "s" : ""}`);
@@ -203,35 +149,19 @@ export async function importUnitsFromCsv(condominiumId: string, csvText: string)
     errors: importErrors,
     message: parts.join(", "),
   };
-}
+});
 
 /**
  * Assign an owner or tenant to a unit.
  */
-export async function assignUnitMember(
-  condominiumId: string,
+export const assignUnitMember = withAdmin(async (
+  ctx,
   unitId: string,
   userId: string | null,
   role: "owner" | "tenant"
-) {
-  const session = await auth();
-  if (!session?.user?.id) return { error: "Não autenticado" };
-
-  const membership = await db.membership.findUnique({
-    where: {
-      userId_condominiumId: {
-        userId: session.user.id,
-        condominiumId,
-      },
-    },
-  });
-
-  if (!membership || membership.role !== "ADMIN") {
-    return { error: "Sem permissão" };
-  }
-
+) => {
   const unit = await db.unit.findFirst({
-    where: { id: unitId, condominiumId },
+    where: { id: unitId, condominiumId: ctx.condominiumId },
   });
 
   if (!unit) return { error: "Fração não encontrada" };
@@ -241,33 +171,25 @@ export async function assignUnitMember(
     data: role === "owner" ? { ownerId: userId } : { tenantId: userId },
   });
 
-  revalidatePath(`/c/`);
+  revalidatePath(`/c/${ctx.slug}`);
   return { success: true };
-}
+});
 
 /**
  * Update condominium basic info (admin only).
  * Regenerates slug if name changes.
  */
-export async function updateCondominium(
-  condominiumId: string,
+export const updateCondominium = withAdmin(async (
+  ctx,
   data: { name: string; address: string; city?: string; nif?: string }
-) {
-  const session = await auth();
-  if (!session?.user?.id) return { error: "Não autenticado" };
-
-  const membership = await db.membership.findUnique({
-    where: { userId_condominiumId: { userId: session.user.id, condominiumId } },
-  });
-  if (!membership || membership.role !== "ADMIN") return { error: "Sem permissão" };
-
+) => {
   if (!data.name?.trim() || !data.address?.trim()) {
     return { error: "Nome e morada são obrigatórios" };
   }
 
   // Check if name changed — regenerate slug if so
   const current = await db.condominium.findUnique({
-    where: { id: condominiumId },
+    where: { id: ctx.condominiumId },
     select: { name: true, slug: true },
   });
 
@@ -275,12 +197,12 @@ export async function updateCondominium(
   if (current && data.name.trim() !== current.name) {
     slug = await generateUniqueSlug(data.name.trim(), async (s) => {
       const existing = await db.condominium.findUnique({ where: { slug: s } });
-      return !!existing && existing.id !== condominiumId;
+      return !!existing && existing.id !== ctx.condominiumId;
     });
   }
 
   await db.condominium.update({
-    where: { id: condominiumId },
+    where: { id: ctx.condominiumId },
     data: {
       name: data.name.trim(),
       slug,
@@ -290,25 +212,17 @@ export async function updateCondominium(
     },
   });
 
-  revalidatePath(`/c/`);
+  revalidatePath(`/c/${ctx.slug}`);
   return { success: true, slug };
-}
+});
 
 /**
  * Update a unit's identifier (name). Admin only.
  */
-export async function updateUnitIdentifier(condominiumId: string, unitId: string, identifier: string) {
-  const session = await auth();
-  if (!session?.user?.id) return { error: "Não autenticado" };
-
-  const membership = await db.membership.findUnique({
-    where: { userId_condominiumId: { userId: session.user.id, condominiumId } },
-  });
-  if (!membership || membership.role !== "ADMIN") return { error: "Sem permissão" };
-
+export const updateUnitIdentifier = withAdmin(async (ctx, unitId: string, identifier: string) => {
   if (!identifier?.trim()) return { error: "Identificação é obrigatória" };
 
-  const unit = await db.unit.findFirst({ where: { id: unitId, condominiumId } });
+  const unit = await db.unit.findFirst({ where: { id: unitId, condominiumId: ctx.condominiumId } });
   if (!unit) return { error: "Fração não encontrada" };
 
   try {
@@ -317,30 +231,14 @@ export async function updateUnitIdentifier(condominiumId: string, unitId: string
     return { error: "Já existe uma fração com esta identificação" };
   }
 
-  revalidatePath(`/c/`);
+  revalidatePath(`/c/${ctx.slug}`);
   return { success: true };
-}
+});
 
 /**
  * Update a unit's permilagem.
  */
-export async function updateUnitPermilagem(condominiumId: string, unitId: string, permilagem: number) {
-  const session = await auth();
-  if (!session?.user?.id) return { error: "Não autenticado" };
-
-  const membership = await db.membership.findUnique({
-    where: {
-      userId_condominiumId: {
-        userId: session.user.id,
-        condominiumId,
-      },
-    },
-  });
-
-  if (!membership || membership.role !== "ADMIN") {
-    return { error: "Sem permissão" };
-  }
-
+export const updateUnitPermilagem = withAdmin(async (ctx, unitId: string, permilagem: number) => {
   if (permilagem < 0 || permilagem > 1000) {
     return { error: "Permilagem deve estar entre 0 e 1000" };
   }
@@ -350,54 +248,27 @@ export async function updateUnitPermilagem(condominiumId: string, unitId: string
     data: { permilagem },
   });
 
-  revalidatePath(`/c/`);
+  revalidatePath(`/c/${ctx.slug}`);
   return { success: true };
-}
-
-/**
- * Get notification preferences for the current user and condominium.
- */
-export async function getNotificationPreferences(condominiumId: string) {
-  const session = await auth();
-  if (!session?.user?.id) return null;
-
-  const pref = await db.notificationPreference.findUnique({
-    where: { userId_condominiumId: { userId: session.user.id, condominiumId } },
-  });
-
-  if (!pref) {
-    return { ...NOTIFICATION_DEFAULTS };
-  }
-
-  return {
-    quotas: pref.quotas,
-    announcements: pref.announcements,
-    meetings: pref.meetings,
-    maintenance: pref.maintenance,
-    contracts: pref.contracts,
-  };
-}
+});
 
 /**
  * Save notification preferences for the current user and condominium.
  */
-export async function saveNotificationPreferences(condominiumId: string, data: Record<string, boolean>) {
-  const session = await auth();
-  if (!session?.user?.id) return { error: "Não autenticado" };
-
+export const saveNotificationPreferences = withMember(async (ctx, data: Record<string, boolean>) => {
   const parsed = notificationPreferencesSchema.safeParse(data);
   if (!parsed.success) return { error: "Dados inválidos" };
 
   await db.notificationPreference.upsert({
-    where: { userId_condominiumId: { userId: session.user.id, condominiumId } },
+    where: { userId_condominiumId: { userId: ctx.userId, condominiumId: ctx.condominiumId } },
     create: {
-      userId: session.user.id,
-      condominiumId,
+      userId: ctx.userId,
+      condominiumId: ctx.condominiumId,
       ...parsed.data,
     },
     update: parsed.data,
   });
 
-  revalidatePath(`/c/`);
+  revalidatePath(`/c/${ctx.slug}`);
   return { success: true };
-}
+});

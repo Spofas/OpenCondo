@@ -195,9 +195,9 @@ describe("Conta de gerência: empty/minimal data", () => {
       condominiumAddress: "Test",
       budget: null,
       quotas: [
-        { unitIdentifier: "A", ownerName: null, amount: 100, status: "PAID", period: "2025-12" },
-        { unitIdentifier: "A", ownerName: null, amount: 100, status: "PAID", period: "2026-01" },
-        { unitIdentifier: "A", ownerName: null, amount: 100, status: "PAID", period: "2027-01" },
+        { unitId: "a", unitIdentifier: "A", ownerName: null, amount: 100, status: "PAID", period: "2025-12", dueDate: "2025-12-08" },
+        { unitId: "a", unitIdentifier: "A", ownerName: null, amount: 100, status: "PAID", period: "2026-01", dueDate: "2026-01-08" },
+        { unitId: "a", unitIdentifier: "A", ownerName: null, amount: 100, status: "PAID", period: "2027-01", dueDate: "2027-01-08" },
       ],
       expenses: [
         { category: "Limpeza", amount: 50, date: "2025-12-15" },
@@ -219,8 +219,8 @@ describe("Conta de gerência: empty/minimal data", () => {
       condominiumAddress: "Test",
       budget: null,
       quotas: [
-        { unitIdentifier: "A", ownerName: null, amount: 100, status: "PAID", period: "2026-01" },
-        { unitIdentifier: "B", ownerName: null, amount: 200, status: "PAID", period: "2026-01" },
+        { unitId: "a", unitIdentifier: "A", ownerName: null, amount: 100, status: "PAID", period: "2026-01", dueDate: "2026-01-08" },
+        { unitId: "b", unitIdentifier: "B", ownerName: null, amount: 200, status: "PAID", period: "2026-01", dueDate: "2026-01-08" },
       ],
       expenses: [],
     });
@@ -237,7 +237,7 @@ describe("Conta de gerência: empty/minimal data", () => {
       condominiumAddress: "Test",
       budget: null,
       quotas: [
-        { unitIdentifier: "A", ownerName: "Ana", amount: 100, status: "OVERDUE", period: "2026-01" },
+        { unitId: "a", unitIdentifier: "A", ownerName: "Ana", amount: 100, status: "OVERDUE", period: "2026-01", dueDate: "2026-01-08" },
       ],
       expenses: [],
     });

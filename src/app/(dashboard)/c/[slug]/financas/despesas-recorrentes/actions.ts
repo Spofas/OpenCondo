@@ -8,6 +8,7 @@ import {
 } from "@/lib/validators/recurring-expense";
 import { revalidatePath } from "next/cache";
 import { withAdmin } from "@/lib/auth/admin-context";
+import { periodSuffix } from "@/lib/cron-utils";
 
 export const createRecurringExpense = withAdmin(async (ctx, input: RecurringExpenseInput) => {
   const parsed = recurringExpenseSchema.safeParse(input);
@@ -25,7 +26,7 @@ export const createRecurringExpense = withAdmin(async (ctx, input: RecurringExpe
     },
   });
 
-  revalidatePath("/c/");
+  revalidatePath(`/c/${ctx.slug}`);
   return { success: true };
 });
 
@@ -50,7 +51,7 @@ export const updateRecurringExpense = withAdmin(async (ctx, id: string, input: R
     },
   });
 
-  revalidatePath("/c/");
+  revalidatePath(`/c/${ctx.slug}`);
   return { success: true };
 });
 
@@ -65,7 +66,7 @@ export const toggleRecurringExpense = withAdmin(async (ctx, id: string) => {
     data: { isActive: !existing.isActive },
   });
 
-  revalidatePath("/c/");
+  revalidatePath(`/c/${ctx.slug}`);
   return { success: true };
 });
 
@@ -77,7 +78,7 @@ export const deleteRecurringExpense = withAdmin(async (ctx, id: string) => {
 
   await db.recurringExpense.delete({ where: { id } });
 
-  revalidatePath("/c/");
+  revalidatePath(`/c/${ctx.slug}`);
   return { success: true };
 });
 
@@ -120,14 +121,29 @@ export const generateRecurringExpenses = withAdmin(async (ctx, period: string) =
         continue;
       }
 
-      await tx.expense.create({
+      const expenseDate = new Date(year, month - 1, 1);
+      const suffix = periodSuffix(tmpl.frequency, expenseDate);
+      const expenseDescription = `${tmpl.description} — ${suffix}`;
+
+      const expense = await tx.expense.create({
         data: {
           condominiumId: ctx.condominiumId,
-          date: new Date(year, month - 1, 1),
-          description: tmpl.description,
+          date: expenseDate,
+          description: expenseDescription,
           amount: tmpl.amount,
           category: tmpl.category,
           isRecurring: true,
+        },
+      });
+
+      await tx.transaction.create({
+        data: {
+          condominiumId: ctx.condominiumId,
+          date: expenseDate,
+          amount: -Number(tmpl.amount),
+          type: "EXPENSE",
+          description: expenseDescription,
+          expenseId: expense.id,
         },
       });
 
@@ -142,7 +158,7 @@ export const generateRecurringExpenses = withAdmin(async (ctx, period: string) =
     return { generated: gen, skipped: skip };
   });
 
-  revalidatePath("/c/");
+  revalidatePath(`/c/${ctx.slug}`);
 
   return {
     success: true,

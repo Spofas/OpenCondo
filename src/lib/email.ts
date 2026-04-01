@@ -39,7 +39,29 @@ function emailButton(href: string, label: string) {
   `;
 }
 
-// ─── Auth emails (password reset, invites) ───────────────────────────────────
+// ─── Auth emails (verification, password reset, invites) ─────────────────────
+
+export async function sendVerificationEmail(to: string, token: string) {
+  const verifyUrl = `${BASE_URL}/verificar-email/${token}`;
+
+  await getResend().emails.send({
+    from: FROM,
+    to,
+    subject: "Verificar email — OpenCondo",
+    html: emailWrapper(`
+      <h2 style="margin:0 0 8px;font-size:20px">Confirme o seu email</h2>
+      <p style="color:#6b7280;margin:0 0 24px;font-size:14px">
+        Obrigado por criar conta no OpenCondo.
+        Clique no botão abaixo para verificar o seu endereço de email.
+        O link é válido durante <strong>24 horas</strong>.
+      </p>
+      ${emailButton(verifyUrl, "Verificar email")}
+      <p style="color:#9ca3af;font-size:13px;margin:24px 0 0">
+        Se não criou esta conta, pode ignorar este email.
+      </p>
+    `),
+  });
+}
 
 export async function sendPasswordResetEmail(to: string, token: string) {
   const resetUrl = `${BASE_URL}/recuperar-password/${token}`;
@@ -294,7 +316,6 @@ export async function sendBulkQuotaReminders(condominiumId: string, daysBeforeDu
     where: {
       condominiumId,
       status: "PENDING",
-      deletedAt: null,
       dueDate: { lte: reminderCutoff, gte: now },
     },
     include: {

@@ -45,7 +45,7 @@ export const createAnnouncement = withAdmin(async (ctx, input: AnnouncementInput
     ctx.userId
   ).catch(() => {});
 
-  revalidatePath("/c/");
+  revalidatePath(`/c/${ctx.slug}`);
   return { success: true };
 });
 
@@ -73,7 +73,7 @@ export const updateAnnouncement = withAdmin(async (ctx, announcementId: string, 
     },
   });
 
-  revalidatePath("/c/");
+  revalidatePath(`/c/${ctx.slug}`);
   return { success: true };
 });
 
@@ -84,9 +84,9 @@ export const deleteAnnouncement = withAdmin(async (ctx, announcementId: string) 
 
   if (!announcement) return { error: "Aviso não encontrado" };
 
-  await db.announcement.delete({ where: { id: announcementId } });
+  await db.announcement.update({ where: { id: announcementId }, data: { deletedAt: new Date() } });
 
-  revalidatePath("/c/");
+  revalidatePath(`/c/${ctx.slug}`);
   return { success: true };
 });
 
@@ -102,6 +102,6 @@ export const togglePin = withAdmin(async (ctx, announcementId: string) => {
     data: { pinned: !announcement.pinned },
   });
 
-  revalidatePath("/c/");
+  revalidatePath(`/c/${ctx.slug}`);
   return { success: true };
 });

@@ -29,7 +29,7 @@ export const createMaintenanceRequest = withMember(async (ctx, input: Maintenanc
     },
   });
 
-  revalidatePath("/c/");
+  revalidatePath(`/c/${ctx.slug}`);
   return { success: true };
 });
 
@@ -63,7 +63,7 @@ export const updateMaintenanceStatus = withAdmin(async (ctx, requestId: string, 
     }),
   ]);
 
-  revalidatePath("/c/");
+  revalidatePath(`/c/${ctx.slug}`);
   return { success: true };
 });
 
@@ -76,6 +76,6 @@ export const deleteMaintenanceRequest = withAdmin(async (ctx, requestId: string)
 
   await db.maintenanceRequest.delete({ where: { id: requestId } });
 
-  revalidatePath("/c/");
+  revalidatePath(`/c/${ctx.slug}`);
   return { success: true };
 });

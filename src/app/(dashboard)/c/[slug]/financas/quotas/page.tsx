@@ -44,17 +44,8 @@ async function QuotasContent({
   selectedYear: number;
   slug: string;
 }) {
-  // Mark overdue quotas before fetching
+  // Overdue marking removed — handled by nightly cron job (api/cron/process)
   const now = new Date();
-  await db.quota.updateMany({
-    where: {
-      condominiumId: condoId,
-      status: "PENDING",
-      dueDate: { lt: now },
-      deletedAt: null,
-    },
-    data: { status: "OVERDUE" },
-  });
 
   // Non-admin: only show quotas for units they own/rent
   let unitIdFilter: { in: string[] } | undefined;
@@ -73,7 +64,7 @@ async function QuotasContent({
   const baseWhere = {
     condominiumId: condoId,
     period: { startsWith: `${selectedYear}-` },
-    deletedAt: null,
+
     ...(unitIdFilter ? { unitId: unitIdFilter } : {}),
   };
 
@@ -81,7 +72,7 @@ async function QuotasContent({
   const allPeriods = await db.quota.findMany({
     where: {
       condominiumId: condoId,
-      deletedAt: null,
+  
       ...(unitIdFilter ? { unitId: unitIdFilter } : {}),
     },
     select: { period: true },
@@ -120,7 +111,7 @@ async function QuotasContent({
       where: {
         condominiumId: condoId,
         status: { in: ["PENDING", "OVERDUE"] },
-        deletedAt: null,
+    
       },
       include: {
         unit: {

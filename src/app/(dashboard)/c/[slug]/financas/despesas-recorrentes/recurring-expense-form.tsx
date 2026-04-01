@@ -35,13 +35,13 @@ export function RecurringExpenseForm({ onClose, existingTemplate }: Props) {
       ? {
           description: existingTemplate.description,
           amount: existingTemplate.amount,
-          category: existingTemplate.category,
+          category: existingTemplate.category as RecurringExpenseInput["category"],
           frequency: existingTemplate.frequency as RecurringExpenseInput["frequency"],
         }
       : {
           description: "",
           amount: 0,
-          category: "",
+          category: "Outros" as RecurringExpenseInput["category"],
           frequency: "MENSAL",
         },
   });

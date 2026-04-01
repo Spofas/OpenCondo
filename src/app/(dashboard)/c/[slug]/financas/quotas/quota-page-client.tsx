@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import dynamic from "next/dynamic";
 import { Plus } from "lucide-react";
 import { QuotaList } from "./quota-list";
-import { QuotaGenerateForm } from "./quota-generate-form";
+const QuotaGenerateForm = dynamic(() => import("./quota-generate-form").then(m => m.QuotaGenerateForm));
 import { DebtorClient } from "../devedores/debtor-client";
 import type { DebtorSummary } from "@/lib/debtor-calculations";
 

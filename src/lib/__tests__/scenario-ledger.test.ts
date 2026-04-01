@@ -127,11 +127,13 @@ const contaInput: ContaGerenciaInput = {
   condominiumAddress: "Rua da Aurora 42, Lisboa",
   budget: AURORA_BUDGET,
   quotas: allQuotas.map((q) => ({
+    unitId: q.unitId,
     unitIdentifier: q.unitIdentifier,
     ownerName: q.ownerName,
     amount: q.amount,
     status: q.status,
     period: q.period,
+    dueDate: q.dueDate,
   })),
   expenses: allExpenses,
 };

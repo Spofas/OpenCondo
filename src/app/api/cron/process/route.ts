@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { isDueThisPeriod } from "@/lib/cron-utils";
+import { isDueThisPeriod, periodSuffix } from "@/lib/cron-utils";
 import { sendBulkQuotaReminders } from "@/lib/email";
 import { processPendingEmails } from "@/lib/email-queue";
 import { checkRateLimit } from "@/lib/rate-limit";
@@ -56,11 +56,14 @@ export async function GET(request: NextRequest) {
     if (!isDueThisPeriod(template.frequency, now)) continue;
 
     await db.$transaction(async (tx) => {
+      const suffix = periodSuffix(template.frequency, now);
+      const expenseDescription = `${template.description} — ${suffix}`;
+
       const expense = await tx.expense.create({
         data: {
           condominiumId: template.condominiumId,
           date: now,
-          description: template.description,
+          description: expenseDescription,
           amount: template.amount,
           category: template.category,
           isRecurring: true,
@@ -73,7 +76,7 @@ export async function GET(request: NextRequest) {
           date: now,
           amount: -Number(template.amount),
           type: "EXPENSE",
-          description: template.description,
+          description: expenseDescription,
           expenseId: expense.id,
         },
       });

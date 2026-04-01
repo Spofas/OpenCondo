@@ -106,9 +106,9 @@ export function UnitManager({
     setImporting(true);
     const result = await importUnitsFromCsv(condominiumId, csvText);
     setImporting(false);
-    if (result.error) { showMsg("error", result.error); }
+    if (!result.success) { showMsg("error", result.error ?? "Erro desconhecido"); }
     else {
-      showMsg("success", result.message || "Importação concluída");
+      showMsg("success", (result.message as string) || "Importação concluída");
       setCsvText(""); setShowImport(false);
       setImportStep("input"); setPreviewRows([]); setParseErrors([]);
     }

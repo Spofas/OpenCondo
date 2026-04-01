@@ -38,21 +38,20 @@ export function InviteManager({ condominiumId, invites }: InviteManagerProps) {
     setIsCreating(true);
     setNewToken(null);
 
-    const result = await createInvite({
-      condominiumId,
+    const result = await createInvite(condominiumId, {
       role,
       email: email.trim() || undefined,
     });
 
     setIsCreating(false);
 
-    if (result.error) {
-      setError(result.error);
+    if (!result.success) {
+      setError(result.error ?? "Erro desconhecido");
       return;
     }
 
     if (result.token) {
-      setNewToken(result.token);
+      setNewToken(result.token as string);
       setEmail("");
     }
   }

@@ -43,7 +43,7 @@ export function MaintenanceList({
     }
   );
 
-  async function handleStatusChange(requestId: string, newStatus: string) {
+  async function handleStatusChange(requestId: string, newStatus: "SUBMETIDO" | "EM_ANALISE" | "EM_CURSO" | "CONCLUIDO") {
     setActionError("");
     const result = await updateMaintenanceStatus(condominiumId, requestId, { status: newStatus });
     if (result.error) setActionError(result.error);
@@ -141,7 +141,7 @@ export function MaintenanceList({
                   {request.status !== "CONCLUIDO" && (
                     <select
                       value={request.status}
-                      onChange={(e) => handleStatusChange(request.id, e.target.value)}
+                      onChange={(e) => handleStatusChange(request.id, e.target.value as "SUBMETIDO" | "EM_ANALISE" | "EM_CURSO" | "CONCLUIDO")}
                       className="rounded-lg border border-input bg-background px-2 py-1 text-xs text-foreground outline-none focus:border-primary"
                     >
                       {MAINTENANCE_STATUSES.map((s) => (

@@ -1,11 +1,12 @@
 import { z } from "zod";
+import { EXPENSE_CATEGORIES } from "./expense";
 
 export const recurringExpenseSchema = z.object({
-  description: z.string().min(1, "Descrição é obrigatória"),
+  description: z.string().min(1, "Descrição é obrigatória").max(200, "Descrição demasiado longa"),
   amount: z
     .number({ message: "Valor é obrigatório" })
     .positive("Valor deve ser positivo"),
-  category: z.string().min(1, "Categoria é obrigatória"),
+  category: z.enum(EXPENSE_CATEGORIES, { message: "Categoria é obrigatória" }),
   frequency: z.enum(["MENSAL", "TRIMESTRAL", "SEMESTRAL", "ANUAL"]),
 });
 

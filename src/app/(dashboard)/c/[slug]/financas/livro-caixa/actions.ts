@@ -42,7 +42,7 @@ export const setOpeningBalance = withAdmin(async (ctx, input: OpeningBalanceInpu
     });
   }
 
-  revalidatePath("/c/");
+  revalidatePath(`/c/${ctx.slug}`);
   return { success: true };
 });
 
@@ -65,7 +65,7 @@ export const addAdjustment = withAdmin(async (ctx, input: AdjustmentInput) => {
     },
   });
 
-  revalidatePath("/c/");
+  revalidatePath(`/c/${ctx.slug}`);
   return { success: true };
 });
 
@@ -84,6 +84,6 @@ export const deleteAdjustment = withAdmin(async (ctx, transactionId: string) => 
 
   await db.transaction.delete({ where: { id: transactionId } });
 
-  revalidatePath("/c/");
+  revalidatePath(`/c/${ctx.slug}`);
   return { success: true };
 });

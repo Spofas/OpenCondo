@@ -25,7 +25,7 @@ export const createDocument = withAdmin(async (ctx, input: DocumentInput) => {
     },
   });
 
-  revalidatePath("/c/");
+  revalidatePath(`/c/${ctx.slug}`);
   return { success: true };
 });
 
@@ -55,7 +55,7 @@ export const updateDocument = withAdmin(async (ctx, documentId: string, input: D
     },
   });
 
-  revalidatePath("/c/");
+  revalidatePath(`/c/${ctx.slug}`);
   return { success: true };
 });
 
@@ -66,8 +66,8 @@ export const deleteDocument = withAdmin(async (ctx, documentId: string) => {
 
   if (!doc) return { error: "Documento não encontrado" };
 
-  await db.document.delete({ where: { id: documentId } });
+  await db.document.update({ where: { id: documentId }, data: { deletedAt: new Date() } });
 
-  revalidatePath("/c/");
+  revalidatePath(`/c/${ctx.slug}`);
   return { success: true };
 });

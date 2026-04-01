@@ -1,15 +1,17 @@
 "use client";
 
 import { useState } from "react";
+import dynamic from "next/dynamic";
 import { Plus } from "lucide-react";
 import { BudgetList } from "./budget-list";
-import { BudgetForm } from "./budget-form";
+const BudgetForm = dynamic(() => import("./budget-form").then(m => m.BudgetForm));
 
 interface BudgetItemData {
   id: string;
   category: string;
   description: string | null;
   plannedAmount: number;
+  actualAmount: number;
 }
 
 interface BudgetData {

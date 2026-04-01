@@ -20,8 +20,8 @@ export type QuotaConfigInput = z.infer<typeof quotaConfigSchema>;
 // Schema for generating quota records for a period range
 export const quotaGenerateSchema = z
   .object({
-    startMonth: z.string().min(1, "Mês inicial é obrigatório"), // "2026-01"
-    endMonth: z.string().min(1, "Mês final é obrigatório"), // "2026-12"
+    startMonth: z.string().min(1, "Mês inicial é obrigatório").max(10), // "2026-01"
+    endMonth: z.string().min(1, "Mês final é obrigatório").max(10), // "2026-12"
     totalMonthlyAmount: z
       .number({ message: "Valor mensal é obrigatório" })
       .positive("Valor deve ser positivo"),
@@ -52,12 +52,12 @@ export type QuotaGenerateInput = z.infer<typeof quotaGenerateSchema>;
 
 // Schema for recording a payment
 export const quotaPaymentSchema = z.object({
-  paymentDate: z.string().min(1, "Data de pagamento é obrigatória"),
+  paymentDate: z.string().min(1, "Data de pagamento é obrigatória").max(20),
   paymentMethod: z.enum(
     ["TRANSFERENCIA", "NUMERARIO", "CHEQUE", "MBWAY", "MULTIBANCO", "OUTRO"],
     { message: "Método de pagamento é obrigatório" }
   ),
-  paymentNotes: z.string().optional(),
+  paymentNotes: z.string().max(2000, "Notas demasiado longas").optional(),
 });
 
 export type QuotaPaymentInput = z.infer<typeof quotaPaymentSchema>;

@@ -105,7 +105,7 @@ export const generateQuotas = withAdmin(async (ctx, input: QuotaGenerateInput) =
     }
   }
 
-  revalidatePath("/c/");
+  revalidatePath(`/c/${ctx.slug}`);
   return {
     success: true,
     created,
@@ -141,6 +141,8 @@ export const recordPayment = withAdmin(async (ctx, quotaId: string, input: Quota
         paymentDate,
         paymentMethod: parsed.data.paymentMethod,
         paymentNotes: parsed.data.paymentNotes || null,
+        recordedBy: ctx.userId,
+        recordedAt: new Date(),
       },
     });
 
@@ -159,7 +161,7 @@ export const recordPayment = withAdmin(async (ctx, quotaId: string, input: Quota
   });
 
   if ("success" in result) {
-    revalidatePath("/c/");
+    revalidatePath(`/c/${ctx.slug}`);
   }
   return result;
 });
@@ -185,6 +187,8 @@ export const undoPayment = withAdmin(async (ctx, quotaId: string) => {
         paymentDate: null,
         paymentMethod: null,
         paymentNotes: null,
+        recordedBy: ctx.userId,
+        recordedAt: new Date(),
       },
     }),
     db.transaction.updateMany({
@@ -193,7 +197,7 @@ export const undoPayment = withAdmin(async (ctx, quotaId: string) => {
     }),
   ]);
 
-  revalidatePath("/c/");
+  revalidatePath(`/c/${ctx.slug}`);
   return { success: true };
 });
 
@@ -212,7 +216,7 @@ export const deleteQuotasByPeriod = withAdmin(async (ctx, period: string) => {
     data: { deletedAt: new Date() },
   });
 
-  revalidatePath("/c/");
+  revalidatePath(`/c/${ctx.slug}`);
   return {
     success: true,
     deleted: result.count,
@@ -220,25 +224,4 @@ export const deleteQuotasByPeriod = withAdmin(async (ctx, period: string) => {
   };
 });
 
-/**
- * Mark overdue quotas — called when loading the page.
- * Updates any PENDING quotas past their due date to OVERDUE.
- */
-export const markOverdueQuotas = withAdmin(async (ctx) => {
-  const now = new Date();
-  const result = await db.quota.updateMany({
-    where: {
-      condominiumId: ctx.condominiumId,
-      status: "PENDING",
-      dueDate: { lt: now },
-      deletedAt: null,
-    },
-    data: { status: "OVERDUE" },
-  });
-
-  if (result.count > 0) {
-    revalidatePath("/c/");
-  }
-
-  return { success: true, updated: result.count };
-});
+// markOverdueQuotas removed — overdue marking handled by nightly cron job (api/cron/process)

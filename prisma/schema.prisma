@@ -17,6 +17,8 @@ model User {
   passwordHash          String?
   passwordResetToken    String?   @unique
   passwordResetExpiresAt DateTime?
+  emailVerificationToken    String?   @unique
+  emailVerificationExpiresAt DateTime?
   phone          String?
   nif            String?
   image          String?
@@ -35,6 +37,7 @@ model User {
   sessions                Session[]
   usedInvites             Invite[]
   notificationPreferences NotificationPreference[]
+  recordedQuotas          Quota[]          @relation("QuotaRecorder")
 }
 
 model Account {
@@ -262,17 +265,21 @@ model Quota {
   paymentMethod   PaymentMethod?
   paymentNotes    String?
   receiptUrl      String?
+  recordedBy      String?       // userId of admin who recorded the payment
+  recordedAt      DateTime?     // when the payment was recorded (audit trail)
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
   deletedAt       DateTime?
 
   condominium   Condominium   @relation(fields: [condominiumId], references: [id], onDelete: Cascade)
   unit          Unit          @relation(fields: [unitId], references: [id], onDelete: Cascade)
+  recorder      User?         @relation("QuotaRecorder", fields: [recordedBy], references: [id], onDelete: SetNull)
   transactions  Transaction[]
 
   @@unique([condominiumId, unitId, period])
   @@index([condominiumId, status])
   @@index([condominiumId, status, dueDate])
+  @@index([condominiumId, deletedAt])
 }
 
 // ─── Financial: Expenses ─────────────────────────────────────────────────────
@@ -299,6 +306,7 @@ model Expense {
   transactions  Transaction[]
 
   @@index([condominiumId, date])
+  @@index([condominiumId, deletedAt])
 }
 
 // ─── Financial: Ledger Transactions ─────────────────────────────────────────
@@ -327,6 +335,7 @@ model Transaction {
   expense     Expense?    @relation(fields: [expenseId], references: [id], onDelete: Cascade)
 
   @@index([condominiumId, date])
+  @@index([condominiumId, deletedAt])
 }
 
 // ─── Financial: Recurring Expenses ──────────────────────────────────────────
@@ -366,6 +375,7 @@ model Announcement {
   pinned         Boolean              @default(false)
   createdAt      DateTime             @default(now())
   updatedAt      DateTime             @updatedAt
+  deletedAt      DateTime?
 
   condominium  Condominium        @relation(fields: [condominiumId], references: [id], onDelete: Cascade)
   author       User               @relation(fields: [authorId], references: [id])
@@ -373,6 +383,7 @@ model Announcement {
   attachments  AnnouncementAttachment[]
 
   @@index([condominiumId, createdAt])
+  @@index([condominiumId, deletedAt])
 }
 
 model AnnouncementAttachment {
@@ -482,8 +493,11 @@ model Document {
   version        Int                @default(1)
   createdAt      DateTime           @default(now())
   updatedAt      DateTime           @updatedAt
+  deletedAt      DateTime?
 
   condominium Condominium @relation(fields: [condominiumId], references: [id], onDelete: Cascade)
+
+  @@index([condominiumId, deletedAt])
 }
 
 // ─── Meetings (Assembleias) ──────────────────────────────────────────────────
@@ -509,6 +523,7 @@ model Meeting {
   convocatoriaUrl String?
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
+  deletedAt      DateTime?
 
   condominium  Condominium      @relation(fields: [condominiumId], references: [id], onDelete: Cascade)
   agendaItems  AgendaItem[]
@@ -518,6 +533,7 @@ model Meeting {
 
   @@index([condominiumId, status])
   @@index([condominiumId, date])
+  @@index([condominiumId, deletedAt])
 }
 
 model AgendaItem {
@@ -657,11 +673,13 @@ model Contract {
   notes            String?
   createdAt        DateTime         @default(now())
   updatedAt        DateTime         @updatedAt
+  deletedAt        DateTime?
 
   condominium Condominium @relation(fields: [condominiumId], references: [id], onDelete: Cascade)
   supplier    Supplier?   @relation(fields: [supplierId], references: [id], onDelete: SetNull)
 
   @@index([condominiumId])
+  @@index([condominiumId, deletedAt])
 }
 
 // ─── Suppliers (Fornecedores) ────────────────────────────────────────────────

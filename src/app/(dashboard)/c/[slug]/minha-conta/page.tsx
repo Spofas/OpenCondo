@@ -24,16 +24,8 @@ export default async function MyAccountPage({ params }: { params: Promise<{ slug
 
   const allUnitIds = [...ownedUnits, ...rentedUnits].map((u) => u.id);
 
-  // Mark overdue
+  // Overdue marking removed — handled by nightly cron job (api/cron/process)
   const now = new Date();
-  await db.quota.updateMany({
-    where: {
-      condominiumId: condoId,
-      status: "PENDING",
-      dueDate: { lt: now },
-    },
-    data: { status: "OVERDUE" },
-  });
 
   // Fetch quotas for user's units
   const quotas = allUnitIds.length > 0

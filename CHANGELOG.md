@@ -6,6 +6,100 @@ All notable changes to OpenCondo are recorded here in reverse-chronological orde
 
 ## [Unreleased]
 
+### 2026-04-01 — Performance P1 and UX/Architecture improvements
+
+**Performance — pagination:**
+- Server-side pagination on Expenses (30/page) and Announcements (20/page) pages
+- Anterior/Seguinte navigation with page count display
+
+**Performance — query optimization:**
+- Meetings page limited to 20 results with narrowed ata select (`{ id, content }` only)
+- 9 modal form components converted to `next/dynamic` lazy imports (split into separate chunks)
+- 7 soft-delete composite indexes added (`[condominiumId, deletedAt]`)
+
+**Feature — Budget vs. Actual variance on Orçamento page:**
+- Desktop table shows Previsto/Gasto/Desvio columns per budget category
+- Mobile cards show spending and variance inline when expenses exist
+- Totals section displays aggregate variance (Total gasto / Desvio total)
+- Expense data fetched server-side per budget year
+
+**Refactoring:**
+- Simplified `buildContaGerencia()` debtor logic with status-based map grouping
+- Added `unitId` and `dueDate` to `ContaGerenciaInput` type
+- Extracted `useFormAction()` hook for common form submission pattern (error/submitting state)
+- Converted `announcement-form.tsx` as first consumer of the hook
+
+### 2026-04-01 — Security audit fixes and architecture improvements
+
+**Security fixes (from AUDIT_REPORT_3 findings):**
+- Removed devToken exposure in password reset — reset tokens no longer returned to the client; logged to console in dev mode only
+- Added admin-only redirect on despesas (expenses) page — non-admin members are redirected to painel instead of seeing admin data
+- Removed devedores (debtors) standalone page — redirects to quotas page (debtor info shown there instead)
+
+**Performance — overdue marking cleanup:**
+- Removed 5 `updateMany` calls that ran on every page load (painel admin + member, quotas, devedores, minha-conta)
+- Overdue quota marking now handled solely by the nightly cron job (`/api/cron/process`)
+- Removed unused `markOverdueQuotas` server action from quotas actions
+
+**Architecture — revalidatePath scoping (P0 #6):**
+- All ~48 `revalidatePath("/c/")` calls replaced with `revalidatePath(`/c/${ctx.slug}`)` across 14 files
+- Added `slug` field to `AdminContext` and `MemberContext` types (resolved via Prisma join on membership query)
+- Added `getCondoSlug()` helper for non-HOF actions in `dashboard/actions.ts`
+- Prevents cross-condo cache invalidation — only the active condo's pages are revalidated
+
+**Architecture — HOF migration (P0 #7):**
+- Migrated all 9 actions in `dashboard/actions.ts` from manual auth/membership checks to `withAdmin`/`withMember` HOF pattern
+- Removed dead code: `getNotificationPreferences` (defined but never imported anywhere)
+- Net reduction of ~131 lines of boilerplate auth code
+- Updated callers (`invite-manager.tsx`, `unit-manager.tsx`) and tests for new signatures
+
+**Architecture — Prisma soft-delete extension (P0 #9):**
+- New `src/lib/db/soft-delete-extension.ts` — Prisma Client Extension that auto-adds `deletedAt: null` to all read queries on soft-delete models
+- Removed 30 manual `deletedAt: null` filters from 11 files
+- Write-side filters (updateMany in soft-delete operations) intentionally preserved
+
+**Data integrity — soft-delete for 4 entities (P0 #8):**
+- Added `deletedAt` column to Announcement, Document, Meeting, and Contract models
+- Converted 4 hard `delete()` calls to `update({ deletedAt: new Date() })`
+- All 7 soft-delete models now registered in the extension (Quota, Expense, Transaction + 4 new)
+- Migration: `20260401000001_add_soft_delete_to_four_entities`
+
+**Security — email verification on registration (P1 #10):**
+- New email verification flow: registration generates SHA-256 hashed token (24h expiry), sends verification email
+- New `/verificar-email` page with resend button for unverified users
+- New `/verificar-email/[token]` server page that verifies token and sets `emailVerified`
+- Dashboard and onboarding layouts redirect unverified users to verification page
+- Migration: `20260401000003_add_email_verification_token`
+
+**Security — hashed password reset tokens (P1 #9):**
+- Password reset tokens now hashed with SHA-256 before storage in the database
+- Raw token sent via email/URL; only the hash is stored and compared on reset
+
+**Security — payment audit trail (P1 #13):**
+- Added `recordedBy` (userId) and `recordedAt` fields to Quota model
+- Both `recordPayment` and `undoPayment` actions populate these audit fields
+- Migration: `20260401000002_add_quota_payment_audit_fields`
+
+**Security — attendance membership validation (P1 #14):**
+- `saveAttendance` action now validates all attendee userIds are members of the condominium
+- Prevents injecting attendance records for arbitrary user IDs
+
+**Input validation — string max length limits (P1 #12):**
+- Added `.max()` constraints to ~49 string fields across 13 Zod validators
+- Limits: titles/names 200, descriptions/notes 2000, body/ata 50000, URLs 2048, dates 20, short fields 30-50, email 254, password 128
+
+**Input validation — strict enum validation (P1 #11):**
+- Replaced `z.string()` with `z.enum()` in 15 category/type/status fields across 9 Zod validators
+- Affected validators: announcement, expense, meeting, document, contract, maintenance, budget, recurring-expense, contact
+- Updated 8 form components with type casts for server data → enum types
+- Prevents invalid category/type/status values from reaching the database
+
+**Documentation:**
+- Added "Documentation updates (on every push)" section to CLAUDE.md
+- Updated CLAUDE.md patterns to reflect HOF usage and slug-based routing
+
+---
+
 ### 2026-03-31 — PDF exports, file uploads, and auth fixes
 
 **PDF exports:**

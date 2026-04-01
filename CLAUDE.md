@@ -12,6 +12,23 @@ At the beginning of every session, read these two files before doing anything el
 - `PROJECT_STATUS.md` — current branch, build state, architecture, key patterns, gotchas, and what still needs building
 - `CHANGELOG.md` — what changed in the most recent sessions (read top-to-bottom, stop after the third entry)
 
+## Documentation updates (on every push)
+
+After every `git push`, update the following documentation files where relevant. Not every file needs updating on every push — use judgement based on what changed:
+
+| File | When to update | What to write |
+|------|----------------|---------------|
+| `CHANGELOG.md` | **Every push** — always add an entry | New entry at the top of `[Unreleased]` with date, summary of changes, and details grouped by category |
+| `PROJECT_STATUS.md` | When architecture, build state, patterns, or module status changes | Update the "Last updated" date, and any sections affected by the changes (e.g., new modules, changed patterns, updated file structure) |
+| `MANUAL_TESTS.md` | When new user-facing flows are added or existing flows change behavior | Add new test items or update existing ones to reflect the new behavior |
+| `PRODUCT_SPEC.md` | When features are added, removed, or significantly redesigned | Update the relevant feature section to match what was actually built |
+
+**Rules:**
+- Keep entries concise — focus on what changed and why, not implementation details
+- CHANGELOG entries use the same date-based format as existing entries
+- Don't rewrite entire files — surgically update the affected sections
+- If a push is purely internal (refactoring, test fixes) with no user-facing or architectural impact, CHANGELOG is still required but the others can be skipped
+
 ## Quick Reference
 
 ```bash
@@ -93,9 +110,11 @@ src/
 ### Key patterns
 
 **Server actions (`actions.ts`):**
-- Every mutation starts with `getAdminContext()` — checks auth, cookie, and ADMIN role
-- Returns `{ error: string }` on failure, `{ success: true, ... }` on success
-- Calls `revalidatePath()` after mutations
+- Admin mutations use `withAdmin(async (ctx, ...args) => { ... })` HOF — checks auth, membership, and ADMIN role automatically
+- Member-level actions use `withMember(async (ctx, ...args) => { ... })` — checks auth and membership (any role)
+- Both HOFs provide `ctx` with `userId`, `condominiumId`, `slug`, and `role`
+- Returns `ActionReturn` type: `{ error: string }` on failure, `{ success: true, ... }` on success
+- Calls `revalidatePath(`/c/${ctx.slug}`)` after mutations (scoped to the active condo)
 - Validates input with Zod before touching the database
 
 **Server pages (`page.tsx`):**
@@ -161,12 +180,12 @@ Three roles: `ADMIN`, `OWNER`, `TENANT`
 | Register expenses | Yes | No | No |
 | Create announcements | Yes | No | No |
 
-Admin checks use `getAdminContext()` in server actions. View-level access is controlled by passing `isAdmin` to client components which conditionally render action buttons.
+Admin checks use `withAdmin` HOF in server actions. View-level access is controlled by passing `isAdmin` to client components which conditionally render action buttons.
 
 ## Common pitfalls
 
 - **Decimal serialization**: Prisma returns `Decimal` objects. Always `Number()` them before passing to client components, or you'll get serialization errors.
-- **Cookie-based condo selection**: The active condominium comes from `activeCondominiumId` cookie. Always read it in server components/actions; never hardcode a condo ID.
+- **Slug-based condo routing**: The active condominium comes from the URL slug (`/c/[slug]/...`). Server pages use `requireMembership(slug)`, actions use `withAdmin(condominiumId, ...)` / `withMember(condominiumId, ...)`. Never hardcode a condo ID.
 - **Date month indexing**: JavaScript `new Date(year, month, day)` uses 0-indexed months. When parsing "2026-01", month is `0`, not `1`.
 - **Rounding**: Money splits may not sum exactly to the total due to rounding. This is expected — the important thing is each unit's amount is individually correct to 2 decimal places.
 
@@ -177,7 +196,7 @@ Admin checks use `getAdminContext()` in server actions. View-level access is con
 | Branch | Purpose | Merges into | Deploys to |
 |--------|---------|-------------|------------|
 | `main` | Stable, deployable code. Always working. | — | Production (Vercel + Neon `main`) |
-| `develop` | Integration branch for staging | `main` (via PR) | Staging (Vercel Preview + Neon `develop`) |
+| `develop` | Integration branch for testing | `main` (via PR) | Develop (Vercel Preview + Neon `develop`) |
 | `claude/opencondo-development-Ch14I` | All Claude development work | `develop` (via PR) | — |
 
 **Workflow:**
@@ -193,26 +212,27 @@ The project runs two live environments backed by separate databases:
 
 | Environment | Git branch | Vercel env | Neon branch | URL |
 |-------------|------------|------------|-------------|-----|
-| Production | `main` | Production | `main` | `opencondo.app` |
-| Staging | `develop` | Preview | `develop` | `staging.opencondo.app` |
+| Production | `main` | Production | `production` | `opencondo.app` |
+| Develop | `develop` | Preview | `develop` | `develop.opencondo.app` |
+| Preview | `claude/*` | Preview | `develop` | `preview.opencondo.app` |
 
 **Neon database branching:**
 - Neon supports git-like DB branching — the `develop` branch is an isolated copy of production
 - Schema migrations run independently on each branch
-- To create the staging DB branch: Neon Console → Branches → "New branch" from `main`, name it `develop`
+- To create the develop DB branch: Neon Console → Branches → "New branch" from `production`, name it `develop`
 
 **Vercel environment variables:**
 - `DATABASE_URL` is set **twice** — once per Vercel environment scope:
-  - **Production** scope → Neon `main` branch connection string
+  - **Production** scope → Neon `production` branch connection string
   - **Preview** scope → Neon `develop` branch connection string
 - All other env vars (`NEXTAUTH_SECRET`, `NEXTAUTH_URL`, etc.) should also be scoped appropriately
-- `NEXTAUTH_URL` for Preview should point to `staging.opencondo.app` (or the preview URL)
+- `NEXTAUTH_URL` for Preview should point to `develop.opencondo.app` (or the preview URL)
 
 **Migration workflow across environments:**
-- Migrations applied to `develop` branch DB when staging deploys
-- Migrations applied to `main` branch DB when production deploys
+- Migrations applied to `develop` branch DB when the develop environment deploys
+- Migrations applied to `production` branch DB when production deploys
 - Vercel runs `prisma migrate deploy` automatically before each build (`vercel.json`)
-- Test migrations on staging first before merging to `main`
+- Test migrations on develop first before merging to `main`
 
 ### Conventional Commits
 

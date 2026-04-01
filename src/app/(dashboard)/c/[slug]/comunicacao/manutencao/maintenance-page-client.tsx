@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import dynamic from "next/dynamic";
 import { Plus } from "lucide-react";
 import { MaintenanceList } from "./maintenance-list";
-import { MaintenanceForm } from "./maintenance-form";
+const MaintenanceForm = dynamic(() => import("./maintenance-form").then(m => m.MaintenanceForm));
 
 export interface MaintenanceData {
   id: string;

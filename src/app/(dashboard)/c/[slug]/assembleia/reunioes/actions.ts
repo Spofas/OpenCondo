@@ -54,7 +54,7 @@ export const createMeeting = withAdmin(async (ctx, input: MeetingInput) => {
     type as "ORDINARIA" | "EXTRAORDINARIA"
   ).catch(() => {});
 
-  revalidatePath("/c/");
+  revalidatePath(`/c/${ctx.slug}`);
   return { success: true };
 });
 
@@ -70,7 +70,7 @@ export const updateMeetingStatus = withAdmin(async (ctx, meetingId: string, stat
     data: { status: status as "AGENDADA" | "REALIZADA" | "CANCELADA" },
   });
 
-  revalidatePath("/c/");
+  revalidatePath(`/c/${ctx.slug}`);
   return { success: true };
 });
 
@@ -85,6 +85,19 @@ export const saveAttendance = withAdmin(async (ctx, meetingId: string, input: At
   });
 
   if (!meeting) return { error: "Assembleia não encontrada" };
+
+  // Validate all attendee userIds are members of this condominium
+  const memberIds = new Set(
+    (await db.membership.findMany({
+      where: { condominiumId: ctx.condominiumId },
+      select: { userId: true },
+    })).map((m) => m.userId)
+  );
+
+  const invalidAttendees = parsed.data.attendees.filter((a) => !memberIds.has(a.userId));
+  if (invalidAttendees.length > 0) {
+    return { error: "Um ou mais participantes não são membros deste condomínio" };
+  }
 
   // Get units to look up permilagem for each attendee
   const units = await db.unit.findMany({
@@ -125,7 +138,7 @@ export const saveAttendance = withAdmin(async (ctx, meetingId: string, input: At
     )
   );
 
-  revalidatePath("/c/");
+  revalidatePath(`/c/${ctx.slug}`);
   return { success: true };
 });
 
@@ -177,7 +190,7 @@ export const recordVotes = withAdmin(async (ctx, meetingId: string, input: VoteI
     )
   );
 
-  revalidatePath("/c/");
+  revalidatePath(`/c/${ctx.slug}`);
   return { success: true };
 });
 
@@ -208,7 +221,7 @@ export const saveAta = withAdmin(async (ctx, meetingId: string, input: AtaInput)
     },
   });
 
-  revalidatePath("/c/");
+  revalidatePath(`/c/${ctx.slug}`);
   return { success: true };
 });
 
@@ -219,8 +232,8 @@ export const deleteMeeting = withAdmin(async (ctx, meetingId: string) => {
 
   if (!meeting) return { error: "Assembleia não encontrada" };
 
-  await db.meeting.delete({ where: { id: meetingId } });
+  await db.meeting.update({ where: { id: meetingId }, data: { deletedAt: new Date() } });
 
-  revalidatePath("/c/");
+  revalidatePath(`/c/${ctx.slug}`);
   return { success: true };
 });

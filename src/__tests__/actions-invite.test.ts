@@ -240,25 +240,25 @@ describe("createInvite", () => {
 
   it("returns error when not authenticated", async () => {
     mockAuth.mockResolvedValue(null);
-    const result = await createInvite({ condominiumId: "c1", role: "OWNER" });
-    expect(result).toEqual({ error: "Não autenticado" });
+    const result = await createInvite("c1", { role: "OWNER" });
+    expect(result).toEqual({ error: "Sem permissão" });
   });
 
   it("returns error when user is not ADMIN", async () => {
     mockAuth.mockResolvedValue({ user: { id: "user-1" } });
-    mockMembershipFindUnique.mockResolvedValue({ role: "OWNER" });
+    mockMembershipFindUnique.mockResolvedValue({ role: "OWNER", condominiumId: "c1", condominium: { slug: "test" } });
 
-    const result = await createInvite({ condominiumId: "c1", role: "OWNER" });
-    expect(result).toEqual({ error: "Apenas administradores podem criar convites" });
+    const result = await createInvite("c1", { role: "OWNER" });
+    expect(result).toEqual({ error: "Sem permissão" });
   });
 
   it("creates invite and returns token", async () => {
     mockAuth.mockResolvedValue({ user: { id: "user-1" } });
-    mockMembershipFindUnique.mockResolvedValue({ role: "ADMIN" });
+    mockMembershipFindUnique.mockResolvedValue({ role: "ADMIN", condominiumId: "c1", condominium: { slug: "test" } });
     mockCondominiumFindUnique.mockResolvedValue({ name: "Edifício Teste" });
     mockInviteCreate.mockResolvedValue({ token: "abc-123" });
 
-    const result = await createInvite({ condominiumId: "c1", role: "OWNER" });
+    const result = await createInvite("c1", { role: "OWNER" });
     expect(result).toEqual({ success: true, token: "abc-123" });
   });
 });
@@ -269,12 +269,12 @@ describe("listInvites", () => {
   it("returns error when not authenticated", async () => {
     mockAuth.mockResolvedValue(null);
     const result = await listInvites("c1");
-    expect(result).toEqual({ error: "Não autenticado" });
+    expect(result).toEqual({ error: "Sem permissão" });
   });
 
   it("returns error when not ADMIN", async () => {
     mockAuth.mockResolvedValue({ user: { id: "user-1" } });
-    mockMembershipFindUnique.mockResolvedValue({ role: "TENANT" });
+    mockMembershipFindUnique.mockResolvedValue({ role: "TENANT", condominiumId: "c1", condominium: { slug: "test" } });
 
     const result = await listInvites("c1");
     expect(result).toEqual({ error: "Sem permissão" });
@@ -282,10 +282,10 @@ describe("listInvites", () => {
 
   it("returns invites list for admin", async () => {
     mockAuth.mockResolvedValue({ user: { id: "user-1" } });
-    mockMembershipFindUnique.mockResolvedValue({ role: "ADMIN" });
+    mockMembershipFindUnique.mockResolvedValue({ role: "ADMIN", condominiumId: "c1", condominium: { slug: "test" } });
     mockInviteFindMany.mockResolvedValue([{ id: "inv-1" }]);
 
     const result = await listInvites("c1");
-    expect(result).toEqual({ invites: [{ id: "inv-1" }] });
+    expect(result).toEqual({ success: true, invites: [{ id: "inv-1" }] });
   });
 });
