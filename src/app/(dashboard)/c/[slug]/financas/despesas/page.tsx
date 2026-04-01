@@ -15,7 +15,7 @@ export default async function ExpensesPage({ params }: { params: Promise<{ slug:
   const isAdmin = true;
 
   const expenses = await db.expense.findMany({
-    where: { condominiumId: membership.condominiumId, deletedAt: null },
+    where: { condominiumId: membership.condominiumId },
     orderBy: { date: "desc" },
   });
 

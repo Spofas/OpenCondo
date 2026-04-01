@@ -171,7 +171,7 @@ async function AdminDashboardContent({
     despesas,
   ] = await Promise.all([
     db.quota.aggregate({
-      where: { condominiumId: condoId, status: "OVERDUE", deletedAt: null },
+      where: { condominiumId: condoId, status: "OVERDUE" },
       _sum: { amount: true },
       _count: true,
     }),
@@ -189,13 +189,13 @@ async function AdminDashboardContent({
       orderBy: { endDate: "asc" },
     }),
     db.unit.count({ where: { condominiumId: condoId } }),
-    db.quota.count({ where: { condominiumId: condoId, period: currentPeriod, deletedAt: null } }),
+    db.quota.count({ where: { condominiumId: condoId, period: currentPeriod } }),
     db.transaction.aggregate({
-      where: { condominiumId: condoId, type: "QUOTA_PAYMENT", deletedAt: null, date: { gte: yearStart } },
+      where: { condominiumId: condoId, type: "QUOTA_PAYMENT", date: { gte: yearStart } },
       _sum: { amount: true },
     }),
     db.transaction.aggregate({
-      where: { condominiumId: condoId, type: "EXPENSE", deletedAt: null, date: { gte: yearStart } },
+      where: { condominiumId: condoId, type: "EXPENSE", date: { gte: yearStart } },
       _sum: { amount: true },
     }),
   ]);
@@ -363,12 +363,12 @@ async function MemberDashboardContent({
 
   const [overdueQuotas, pendingQuotas, nextMeeting, nextDueQuota] = await Promise.all([
     db.quota.aggregate({
-      where: { condominiumId: condoId, unitId: { in: myUnitIds }, status: "OVERDUE", deletedAt: null },
+      where: { condominiumId: condoId, unitId: { in: myUnitIds }, status: "OVERDUE" },
       _sum: { amount: true },
       _count: true,
     }),
     db.quota.aggregate({
-      where: { condominiumId: condoId, unitId: { in: myUnitIds }, status: "PENDING", deletedAt: null },
+      where: { condominiumId: condoId, unitId: { in: myUnitIds }, status: "PENDING" },
       _sum: { amount: true },
       _count: true,
     }),
@@ -378,7 +378,7 @@ async function MemberDashboardContent({
       select: { date: true, type: true },
     }),
     db.quota.findFirst({
-      where: { condominiumId: condoId, unitId: { in: myUnitIds }, status: "PENDING", deletedAt: null },
+      where: { condominiumId: condoId, unitId: { in: myUnitIds }, status: "PENDING" },
       orderBy: { dueDate: "asc" },
       select: { amount: true, dueDate: true },
     }),

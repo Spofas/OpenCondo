@@ -64,7 +64,7 @@ async function QuotasContent({
   const baseWhere = {
     condominiumId: condoId,
     period: { startsWith: `${selectedYear}-` },
-    deletedAt: null,
+
     ...(unitIdFilter ? { unitId: unitIdFilter } : {}),
   };
 
@@ -72,7 +72,7 @@ async function QuotasContent({
   const allPeriods = await db.quota.findMany({
     where: {
       condominiumId: condoId,
-      deletedAt: null,
+  
       ...(unitIdFilter ? { unitId: unitIdFilter } : {}),
     },
     select: { period: true },
@@ -111,7 +111,7 @@ async function QuotasContent({
       where: {
         condominiumId: condoId,
         status: { in: ["PENDING", "OVERDUE"] },
-        deletedAt: null,
+    
       },
       include: {
         unit: {

@@ -294,7 +294,6 @@ export async function sendBulkQuotaReminders(condominiumId: string, daysBeforeDu
     where: {
       condominiumId,
       status: "PENDING",
-      deletedAt: null,
       dueDate: { lte: reminderCutoff, gte: now },
     },
     include: {

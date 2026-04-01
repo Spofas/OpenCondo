@@ -67,7 +67,7 @@ export const deleteContact = withAdmin(async (ctx, contactId: string) => {
   // Check if supplier is linked to contracts or expenses
   const [contractCount, expenseCount] = await Promise.all([
     db.contract.count({ where: { supplierId: contactId } }),
-    db.expense.count({ where: { supplierId: contactId, deletedAt: null } }),
+    db.expense.count({ where: { supplierId: contactId } }),
   ]);
 
   if (contractCount > 0 || expenseCount > 0) {

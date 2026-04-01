@@ -48,7 +48,7 @@ export const updateExpense = withAdmin(async (ctx, expenseId: string, input: Exp
   }
 
   const expense = await db.expense.findFirst({
-    where: { id: expenseId, condominiumId: ctx.condominiumId, deletedAt: null },
+    where: { id: expenseId, condominiumId: ctx.condominiumId },
   });
 
   if (!expense) return { error: "Despesa não encontrada" };
@@ -83,7 +83,7 @@ export const updateExpense = withAdmin(async (ctx, expenseId: string, input: Exp
 
 export const deleteExpense = withAdmin(async (ctx, expenseId: string) => {
   const expense = await db.expense.findFirst({
-    where: { id: expenseId, condominiumId: ctx.condominiumId, deletedAt: null },
+    where: { id: expenseId, condominiumId: ctx.condominiumId },
   });
 
   if (!expense) return { error: "Despesa não encontrada" };

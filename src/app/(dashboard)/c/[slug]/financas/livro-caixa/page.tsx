@@ -56,19 +56,19 @@ async function LivroCaixaContent({
 }) {
   // Current balance (sum of ALL non-deleted transactions)
   const totalAgg = await db.transaction.aggregate({
-    where: { condominiumId, deletedAt: null },
+    where: { condominiumId },
     _sum: { amount: true },
   });
   const currentBalance = Number(totalAgg._sum.amount ?? 0);
 
   // Opening balance for selected period (sum of everything strictly before `from`)
   const openingAgg = await db.transaction.aggregate({
-    where: { condominiumId, date: { lt: from }, deletedAt: null },
+    where: { condominiumId, date: { lt: from } },
     _sum: { amount: true },
   });
   const openingBalance = Number(openingAgg._sum.amount ?? 0);
 
-  const dateFilter = { condominiumId, date: { gte: from, lte: to }, deletedAt: null };
+  const dateFilter = { condominiumId, date: { gte: from, lte: to } };
 
   // Count total entries for pagination
   const totalEntries = await db.transaction.count({ where: dateFilter });
@@ -98,7 +98,7 @@ async function LivroCaixaContent({
 
   // Check if opening balance entry exists (to show "set" vs "edit")
   const hasOpeningBalance = await db.transaction.findFirst({
-    where: { condominiumId, type: "OPENING_BALANCE", deletedAt: null },
+    where: { condominiumId, type: "OPENING_BALANCE" },
     select: { id: true },
   });
 
