@@ -6,6 +6,7 @@ import { updateMaintenanceStatus, deleteMaintenanceRequest } from "./actions";
 import { useCondominium } from "@/lib/condominium-context";
 import { PRIORITY_LABELS, STATUS_LABELS, MAINTENANCE_STATUSES } from "@/lib/validators/maintenance";
 import type { MaintenanceData } from "./maintenance-page-client";
+import { UI } from "@/lib/ui-strings";
 
 const PRIORITY_COLORS: Record<string, string> = {
   BAIXA: "bg-green-100 text-green-700",
@@ -163,14 +164,14 @@ export function MaintenanceList({
                         onClick={() => setConfirmDelete(null)}
                         className="rounded-lg border border-border px-2 py-1 text-xs font-medium text-foreground hover:bg-muted"
                       >
-                        Não
+                        {UI.confirmNo}
                       </button>
                     </div>
                   ) : (
                     <button
                       onClick={() => setConfirmDelete(request.id)}
                       className="rounded-lg p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-                      title="Eliminar"
+                      title={UI.delete}
                     >
                       <Trash2 size={14} />
                     </button>

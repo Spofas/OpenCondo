@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { UI } from "@/lib/ui-strings";
 import {
   openingBalanceSchema,
   adjustmentSchema,
@@ -495,7 +496,7 @@ export function LivroCaixaPageClient({
                   disabled={openingForm.formState.isSubmitting}
                   className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
                 >
-                  {openingForm.formState.isSubmitting ? "A guardar..." : "Guardar"}
+                  {openingForm.formState.isSubmitting ? UI.saving : UI.save}
                 </button>
               </div>
             </form>
@@ -583,7 +584,7 @@ export function LivroCaixaPageClient({
                   disabled={adjForm.formState.isSubmitting}
                   className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
                 >
-                  {adjForm.formState.isSubmitting ? "A guardar..." : "Guardar"}
+                  {adjForm.formState.isSubmitting ? UI.saving : UI.save}
                 </button>
               </div>
             </form>

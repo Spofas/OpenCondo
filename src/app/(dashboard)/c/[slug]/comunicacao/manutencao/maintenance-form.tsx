@@ -12,6 +12,7 @@ import {
 } from "@/lib/validators/maintenance";
 import { createMaintenanceRequest } from "./actions";
 import { useCondominium } from "@/lib/condominium-context";
+import { UI } from "@/lib/ui-strings";
 
 interface MaintenanceFormProps {
   onClose: () => void;
@@ -142,7 +143,7 @@ export function MaintenanceForm({ onClose }: MaintenanceFormProps) {
               onClick={onClose}
               className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
             >
-              Cancelar
+              {UI.cancel}
             </button>
             <button
               type="submit"

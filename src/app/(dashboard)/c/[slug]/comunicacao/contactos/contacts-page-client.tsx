@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { Phone, Plus } from "lucide-react";
 import { ContactList } from "./contact-list";
@@ -19,10 +20,17 @@ export interface ContactInfo {
 export function ContactsPageClient({
   contacts,
   isAdmin,
+  page = 1,
+  totalPages = 1,
+  totalContacts = 0,
 }: {
   contacts: ContactInfo[];
   isAdmin: boolean;
+  page?: number;
+  totalPages?: number;
+  totalContacts?: number;
 }) {
+  const router = useRouter();
   const [showForm, setShowForm] = useState(false);
   const [editingContact, setEditingContact] = useState<ContactInfo | null>(null);
 
@@ -70,6 +78,30 @@ export function ContactsPageClient({
           isAdmin={isAdmin}
           onEdit={handleEdit}
         />
+      )}
+
+      {totalPages > 1 && (
+        <div className="mt-4 flex items-center justify-between rounded-xl border border-border bg-card px-4 py-3">
+          <span className="text-sm text-muted-foreground">
+            {totalContacts} contacto{totalContacts !== 1 ? "s" : ""} · Página {page} de {totalPages}
+          </span>
+          <div className="flex gap-1">
+            <button
+              onClick={() => router.push(`?page=${page - 1}`)}
+              disabled={page <= 1}
+              className="rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-foreground hover:bg-secondary disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              Anterior
+            </button>
+            <button
+              onClick={() => router.push(`?page=${page + 1}`)}
+              disabled={page >= totalPages}
+              className="rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-foreground hover:bg-secondary disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              Seguinte
+            </button>
+          </div>
+        </div>
       )}
 
       {showForm && (

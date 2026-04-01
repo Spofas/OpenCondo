@@ -13,6 +13,7 @@ import { useCondominium } from "@/lib/condominium-context";
 import { useFormAction } from "@/lib/hooks/use-form-action";
 import { ModalForm } from "@/components/ui/modal-form";
 import type { AnnouncementData } from "./announcement-page-client";
+import { UI } from "@/lib/ui-strings";
 
 interface AnnouncementFormProps {
   onClose: () => void;
@@ -62,7 +63,7 @@ export function AnnouncementForm({ onClose, existingAnnouncement }: Announcement
       error={error}
       isSubmitting={isSubmitting}
       submitText={isEditing ? "Guardar alterações" : "Publicar aviso"}
-      loadingText="A guardar..."
+      loadingText={UI.saving}
     >
       {/* Title */}
       <div className="mb-4">

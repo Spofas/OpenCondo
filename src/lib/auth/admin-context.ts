@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import type { ActionReturn } from "@/lib/action-result";
+import { ERRORS } from "@/lib/ui-strings";
 
 export type MemberContext = {
   userId: string;
@@ -78,7 +79,7 @@ export function withAdmin<TArgs extends unknown[]>(
 ): (condominiumId: string, ...args: TArgs) => Promise<ActionReturn> {
   return async (condominiumId: string, ...args: TArgs) => {
     const ctx = await getAdminContext(condominiumId);
-    if (!ctx) return { error: "Sem permissão" };
+    if (!ctx) return { error: ERRORS.noPermission };
     return fn(ctx, ...args);
   };
 }
@@ -92,7 +93,7 @@ export function withMember<TArgs extends unknown[]>(
 ): (condominiumId: string, ...args: TArgs) => Promise<ActionReturn> {
   return async (condominiumId: string, ...args: TArgs) => {
     const ctx = await getMemberContext(condominiumId);
-    if (!ctx) return { error: "Sem permissão" };
+    if (!ctx) return { error: ERRORS.noPermission };
     return fn(ctx, ...args);
   };
 }

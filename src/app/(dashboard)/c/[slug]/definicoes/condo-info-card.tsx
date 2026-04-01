@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Pencil, X, Check } from "lucide-react";
 import { updateCondominium } from "../../../actions";
+import { UI } from "@/lib/ui-strings";
 
 interface CondoData {
   id: string;
@@ -113,7 +114,7 @@ export function CondoInfoCard({ condo }: { condo: CondoData }) {
               className="flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors"
             >
               <Check size={13} />
-              {saving ? "A guardar..." : "Guardar"}
+              {saving ? UI.saving : UI.save}
             </button>
             <button
               onClick={handleCancel}

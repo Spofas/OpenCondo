@@ -17,6 +17,7 @@ import {
 import { createContract, updateContract } from "./actions";
 import { useCondominium } from "@/lib/condominium-context";
 import type { ContractData } from "./contract-page-client";
+import { UI } from "@/lib/ui-strings";
 
 interface ContractFormProps {
   onClose: () => void;
@@ -372,7 +373,7 @@ export function ContractForm({ onClose, existingContract }: ContractFormProps) {
               onClick={onClose}
               className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
             >
-              Cancelar
+              {UI.cancel}
             </button>
             <button
               type="submit"
@@ -380,7 +381,7 @@ export function ContractForm({ onClose, existingContract }: ContractFormProps) {
               className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
             >
               {isSubmitting
-                ? "A guardar..."
+                ? UI.saving
                 : isEditing
                   ? "Guardar alterações"
                   : "Criar contrato"}

@@ -18,6 +18,7 @@ import { useCondominium } from "@/lib/condominium-context";
 import { PaymentModal } from "./payment-modal";
 import type { QuotaData } from "./quota-page-client";
 import { PAYMENT_METHODS } from "@/lib/validators/quota";
+import { UI } from "@/lib/ui-strings";
 
 function formatPeriod(period: string): string {
   const [year, month] = period.split("-");
@@ -411,13 +412,13 @@ export function QuotaList({
                               onClick={() => handleDeletePeriod(period)}
                               className="rounded-lg bg-destructive px-3 py-1.5 text-xs font-medium text-white hover:bg-destructive/90"
                             >
-                              Sim, eliminar
+                              {UI.confirmYes}
                             </button>
                             <button
                               onClick={() => setConfirmDeletePeriod(null)}
                               className="rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted"
                             >
-                              Não
+                              {UI.confirmNo}
                             </button>
                           </div>
                         ) : (

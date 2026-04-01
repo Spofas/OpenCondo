@@ -13,6 +13,7 @@ import { EXPENSE_CATEGORIES } from "@/lib/validators/expense";
 import { createRecurringExpense, updateRecurringExpense } from "./actions";
 import { useCondominium } from "@/lib/condominium-context";
 import type { RecurringExpenseData } from "./recurring-expense-page-client";
+import { UI } from "@/lib/ui-strings";
 
 interface Props {
   onClose: () => void;
@@ -174,14 +175,14 @@ export function RecurringExpenseForm({ onClose, existingTemplate }: Props) {
               onClick={onClose}
               className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
             >
-              Cancelar
+              {UI.cancel}
             </button>
             <button
               type="submit"
               disabled={isSubmitting}
               className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
             >
-              {isSubmitting ? "A guardar..." : isEditing ? "Guardar" : "Criar modelo"}
+              {isSubmitting ? UI.saving : isEditing ? UI.save : "Criar modelo"}
             </button>
           </div>
         </form>

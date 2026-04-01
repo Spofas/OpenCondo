@@ -339,6 +339,9 @@ model Transaction {
 }
 
 // ─── Financial: Recurring Expenses ──────────────────────────────────────────
+// Note: RecurringExpense intentionally has no soft-delete (deletedAt).
+// These are templates for generating future expenses, not ledger entries.
+// Deleting a template is safe — generated Expense records remain in the ledger.
 
 model RecurringExpense {
   id             String           @id @default(cuid())

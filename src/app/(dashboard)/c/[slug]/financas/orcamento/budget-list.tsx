@@ -13,6 +13,7 @@ import {
 import { approveBudget, deleteBudget } from "./actions";
 import { useCondominium } from "@/lib/condominium-context";
 import { BudgetForm } from "./budget-form";
+import { UI } from "@/lib/ui-strings";
 
 interface BudgetItemData {
   id: string;
@@ -294,19 +295,19 @@ export function BudgetList({
                       {confirmDelete === budget.id ? (
                         <div className="flex items-center gap-2">
                           <span className="text-xs text-muted-foreground">
-                            Tem a certeza?
+                            {UI.confirmDelete}
                           </span>
                           <button
                             onClick={() => handleDelete(budget.id)}
                             className="rounded-lg bg-destructive px-3 py-1.5 text-xs font-medium text-white hover:bg-destructive/90"
                           >
-                            Sim, eliminar
+                            {UI.confirmYes}
                           </button>
                           <button
                             onClick={() => setConfirmDelete(null)}
                             className="rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted"
                           >
-                            Não
+                            {UI.confirmNo}
                           </button>
                         </div>
                       ) : (
@@ -315,7 +316,7 @@ export function BudgetList({
                           className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-destructive hover:bg-destructive/10"
                         >
                           <Trash2 size={14} />
-                          Eliminar
+                          {UI.delete}
                         </button>
                       )}
                     </div>

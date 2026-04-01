@@ -6,6 +6,7 @@ import { deleteAnnouncement, togglePin } from "./actions";
 import { useCondominium } from "@/lib/condominium-context";
 import { CATEGORY_LABELS } from "@/lib/validators/announcement";
 import type { AnnouncementData } from "./announcement-page-client";
+import { UI } from "@/lib/ui-strings";
 
 const CATEGORY_COLORS: Record<string, string> = {
   GERAL: "bg-blue-100 text-blue-700",
@@ -167,14 +168,14 @@ export function AnnouncementList({
                         onClick={() => setConfirmDelete(null)}
                         className="rounded-lg border border-border px-2 py-1 text-xs font-medium text-foreground hover:bg-muted"
                       >
-                        Não
+                        {UI.confirmNo}
                       </button>
                     </div>
                   ) : (
                     <button
                       onClick={() => setConfirmDelete(announcement.id)}
                       className="rounded-lg p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-                      title="Eliminar"
+                      title={UI.delete}
                     >
                       <Trash2 size={14} />
                     </button>

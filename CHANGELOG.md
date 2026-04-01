@@ -6,6 +6,28 @@ All notable changes to OpenCondo are recorded here in reverse-chronological orde
 
 ## [Unreleased]
 
+### 2026-04-01 — Audit 4 Medium priority fixes: security, architecture, performance
+
+**Security (X5, X6, X7):**
+- Expired email verification and password reset tokens now cleaned up by nightly cron job
+- Rate limiting (10 req/min per user) added to all 4 PDF endpoints (receipts, atas, budgets, conta-gerência)
+- Year range validation (2000–2100) added to conta-gerência API
+
+**Architecture (A2, A3, A4):**
+- RecurringExpense intentionally has no soft-delete — documented in schema (templates, not ledger entries)
+- Created `src/lib/ui-strings.ts` with shared UI constants (button labels, loading states, error messages)
+- Replaced hardcoded "Guardar", "Cancelar", "Eliminar", "Sem permissão" across 20+ files with constants
+- ModalForm now imports button labels from centralized constants
+
+**Performance (P3, P4, P6–P9):**
+- Announcement list now truncates body to 200-char excerpt (avoids sending full content in list)
+- Quota debtors query capped at 500 records (prevents unbounded fetch in large condos)
+- Atas page: added server-side pagination (20/page) with client-side navigation
+- Contacts page: added server-side pagination (50/page) with client-side navigation
+- Maintenance page: added server-side pagination (20/page) with client-side navigation
+- Cron recurring expense query now uses `select` (7 fields instead of full object)
+- Calendar quota query reviewed — already uses `select: { dueDate, status }`, no change needed (P5)
+
 ### 2026-04-01 — Audit 4 fixes: security, performance, accessibility
 
 **Security hardening:**

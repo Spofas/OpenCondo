@@ -8,6 +8,7 @@ import { contactSchema, type ContactInput, CONTACT_CATEGORIES } from "@/lib/vali
 import { createContact, updateContact } from "./actions";
 import { useCondominium } from "@/lib/condominium-context";
 import type { ContactInfo } from "./contacts-page-client";
+import { UI } from "@/lib/ui-strings";
 
 export function ContactForm({
   contact,
@@ -150,14 +151,14 @@ export function ContactForm({
               onClick={onClose}
               className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted transition-colors"
             >
-              Cancelar
+              {UI.cancel}
             </button>
             <button
               type="submit"
               disabled={saving}
               className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors"
             >
-              {saving ? "A guardar..." : contact ? "Guardar" : "Criar"}
+              {saving ? UI.saving : contact ? UI.save : "Criar"}
             </button>
           </div>
         </form>

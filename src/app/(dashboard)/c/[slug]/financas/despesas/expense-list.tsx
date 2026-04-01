@@ -5,6 +5,7 @@ import { Receipt, Edit2, Trash2 } from "lucide-react";
 import { deleteExpense } from "./actions";
 import { useCondominium } from "@/lib/condominium-context";
 import type { ExpenseData } from "./expense-page-client";
+import { UI } from "@/lib/ui-strings";
 
 function formatCurrency(amount: number): string {
   return `€${amount.toLocaleString("pt-PT", { minimumFractionDigits: 2 })}`;
@@ -151,7 +152,7 @@ export function ExpenseList({
                         onClick={() => setConfirmDelete(null)}
                         className="rounded-lg border border-border px-2 py-1 text-xs font-medium text-foreground hover:bg-muted"
                       >
-                        Não
+                        {UI.confirmNo}
                       </button>
                     </div>
                   ) : (
@@ -229,14 +230,14 @@ export function ExpenseList({
                             onClick={() => setConfirmDelete(null)}
                             className="rounded-lg border border-border px-2 py-1 text-xs font-medium text-foreground hover:bg-muted"
                           >
-                            Não
+                            {UI.confirmNo}
                           </button>
                         </div>
                       ) : (
                         <button
                           onClick={() => setConfirmDelete(expense.id)}
                           className="rounded-lg p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-                          title="Eliminar"
+                          title={UI.delete}
                         >
                           <Trash2 size={14} />
                         </button>

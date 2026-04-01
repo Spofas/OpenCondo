@@ -2,19 +2,38 @@ import { db } from "@/lib/db";
 import { requireMembership } from "@/lib/auth/require-membership";
 import { ContactsPageClient } from "./contacts-page-client";
 
-export default async function ContactsPage({ params }: { params: Promise<{ slug: string }> }) {
+const ITEMS_PER_PAGE = 50;
+
+export default async function ContactsPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ slug: string }>;
+  searchParams: Promise<{ page?: string }>;
+}) {
   const { slug } = await params;
   const { membership } = await requireMembership(slug);
 
   const isAdmin = membership.role === "ADMIN";
+  const searchP = await searchParams;
+  const page = Math.max(1, parseInt(searchP.page ?? "1", 10));
 
-  const contacts = await db.supplier.findMany({
-    where: {
-      condominiumId: membership.condominiumId,
-      ...(isAdmin ? {} : { visibility: "ALL" }),
-    },
-    orderBy: [{ category: "asc" }, { name: "asc" }],
-  });
+  const where = {
+    condominiumId: membership.condominiumId,
+    ...(isAdmin ? {} : { visibility: "ALL" as const }),
+  };
+
+  const [contacts, totalContacts] = await Promise.all([
+    db.supplier.findMany({
+      where,
+      orderBy: [{ category: "asc" }, { name: "asc" }],
+      skip: (page - 1) * ITEMS_PER_PAGE,
+      take: ITEMS_PER_PAGE,
+    }),
+    db.supplier.count({ where }),
+  ]);
+
+  const totalPages = Math.max(1, Math.ceil(totalContacts / ITEMS_PER_PAGE));
 
   const serializedContacts = contacts.map((c) => ({
     id: c.id,
@@ -30,6 +49,9 @@ export default async function ContactsPage({ params }: { params: Promise<{ slug:
     <ContactsPageClient
       contacts={serializedContacts}
       isAdmin={isAdmin}
+      page={page}
+      totalPages={totalPages}
+      totalContacts={totalContacts}
     />
   );
 }

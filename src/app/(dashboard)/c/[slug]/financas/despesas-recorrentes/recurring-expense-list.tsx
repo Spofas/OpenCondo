@@ -6,6 +6,7 @@ import { FREQUENCY_LABELS } from "@/lib/validators/recurring-expense";
 import { toggleRecurringExpense, deleteRecurringExpense } from "./actions";
 import { useCondominium } from "@/lib/condominium-context";
 import type { RecurringExpenseData } from "./recurring-expense-page-client";
+import { UI } from "@/lib/ui-strings";
 
 function formatCurrency(amount: number): string {
   return `€${amount.toLocaleString("pt-PT", { minimumFractionDigits: 2 })}`;
@@ -146,14 +147,14 @@ export function RecurringExpenseList({
                     onClick={() => setConfirmDelete(null)}
                     className="rounded-lg border border-border px-2 py-1 text-xs font-medium text-foreground hover:bg-muted"
                   >
-                    Não
+                    {UI.confirmNo}
                   </button>
                 </div>
               ) : (
                 <button
                   onClick={() => setConfirmDelete(t.id)}
                   className="rounded-lg p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-                  title="Eliminar"
+                  title={UI.delete}
                 >
                   <Trash2 size={14} />
                 </button>
@@ -238,14 +239,14 @@ export function RecurringExpenseList({
                           onClick={() => setConfirmDelete(null)}
                           className="rounded-lg border border-border px-2 py-1 text-xs font-medium text-foreground hover:bg-muted"
                         >
-                          Não
+                          {UI.confirmNo}
                         </button>
                       </div>
                     ) : (
                       <button
                         onClick={() => setConfirmDelete(t.id)}
                         className="rounded-lg p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-                        title="Eliminar"
+                        title={UI.delete}
                       >
                         <Trash2 size={14} />
                       </button>

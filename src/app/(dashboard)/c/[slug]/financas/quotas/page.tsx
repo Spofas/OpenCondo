@@ -111,7 +111,6 @@ async function QuotasContent({
       where: {
         condominiumId: condoId,
         status: { in: ["PENDING", "OVERDUE"] },
-    
       },
       include: {
         unit: {
@@ -124,6 +123,7 @@ async function QuotasContent({
         },
       },
       orderBy: { dueDate: "asc" },
+      take: 500,
     });
 
     const quotasForCalc = unpaidQuotas.map((q) => ({

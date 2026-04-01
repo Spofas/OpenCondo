@@ -50,6 +50,15 @@ export async function GET(request: NextRequest) {
 
   const templates = await db.recurringExpense.findMany({
     where: { isActive: true },
+    select: {
+      id: true,
+      condominiumId: true,
+      description: true,
+      amount: true,
+      category: true,
+      frequency: true,
+      lastGenerated: true,
+    },
   });
 
   let expensesGenerated = 0;
@@ -118,6 +127,27 @@ export async function GET(request: NextRequest) {
     results.emailsFailed = emailResults.failed;
   } catch {
     results.emailQueueError = "Failed to process email queue";
+  }
+
+  // 5. Clean up expired tokens (email verification + password reset)
+  try {
+    const { count: tokensCleared } = await db.user.updateMany({
+      where: {
+        OR: [
+          { emailVerificationExpiresAt: { lt: now }, emailVerificationToken: { not: null } },
+          { passwordResetExpiresAt: { lt: now }, passwordResetToken: { not: null } },
+        ],
+      },
+      data: {
+        emailVerificationToken: null,
+        emailVerificationExpiresAt: null,
+        passwordResetToken: null,
+        passwordResetExpiresAt: null,
+      },
+    });
+    results.tokensCleared = tokensCleared;
+  } catch {
+    results.tokenCleanupError = "Failed to clean up expired tokens";
   }
 
   return NextResponse.json({ success: true, period: currentPeriod, ...results });

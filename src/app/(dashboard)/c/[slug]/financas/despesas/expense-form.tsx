@@ -13,6 +13,7 @@ import {
 import { createExpense, updateExpense } from "./actions";
 import { useCondominium } from "@/lib/condominium-context";
 import type { ExpenseData } from "./expense-page-client";
+import { UI } from "@/lib/ui-strings";
 
 interface ExpenseFormProps {
   onClose: () => void;
@@ -207,7 +208,7 @@ export function ExpenseForm({ onClose, existingExpense }: ExpenseFormProps) {
               onClick={onClose}
               className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
             >
-              Cancelar
+              {UI.cancel}
             </button>
             <button
               type="submit"
@@ -215,7 +216,7 @@ export function ExpenseForm({ onClose, existingExpense }: ExpenseFormProps) {
               className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
             >
               {isSubmitting
-                ? "A guardar..."
+                ? UI.saving
                 : isEditing
                   ? "Guardar alterações"
                   : "Registar despesa"}

@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { put } from "@vercel/blob";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { ERRORS } from "@/lib/ui-strings";
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
 
@@ -41,7 +42,7 @@ export async function POST(request: NextRequest) {
   });
 
   if (!membership) {
-    return NextResponse.json({ error: "Sem permissão" }, { status: 403 });
+    return NextResponse.json({ error: ERRORS.noPermission }, { status: 403 });
   }
 
   const formData = await request.formData();

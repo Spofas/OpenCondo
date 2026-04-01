@@ -16,6 +16,7 @@ import {
 import { createDocument, updateDocument } from "./actions";
 import { useCondominium } from "@/lib/condominium-context";
 import type { DocumentData } from "./document-page-client";
+import { UI } from "@/lib/ui-strings";
 
 interface DocumentFormProps {
   onClose: () => void;
@@ -168,7 +169,7 @@ export function DocumentForm({ onClose, existingDocument }: DocumentFormProps) {
               onClick={onClose}
               className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
             >
-              Cancelar
+              {UI.cancel}
             </button>
             <button
               type="submit"
@@ -176,7 +177,7 @@ export function DocumentForm({ onClose, existingDocument }: DocumentFormProps) {
               className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
             >
               {isSubmitting
-                ? "A guardar..."
+                ? UI.saving
                 : isEditing
                   ? "Guardar alterações"
                   : "Adicionar documento"}

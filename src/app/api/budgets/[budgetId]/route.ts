@@ -2,14 +2,24 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { generateBudgetPdf } from "@/lib/pdf/budget";
+import { checkRateLimit } from "@/lib/rate-limit";
+import { ERRORS } from "@/lib/ui-strings";
 
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ budgetId: string }> }
 ) {
   const session = await auth();
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
+  }
+
+  const { allowed } = checkRateLimit(`pdf:${session.user.id}`, {
+    maxRequests: 10,
+    windowMs: 60 * 1000,
+  });
+  if (!allowed) {
+    return NextResponse.json({ error: "Demasiados pedidos. Tente novamente mais tarde." }, { status: 429 });
   }
 
   const { budgetId } = await params;
@@ -41,7 +51,7 @@ export async function GET(
   });
 
   if (!membership) {
-    return NextResponse.json({ error: "Sem permissão" }, { status: 403 });
+    return NextResponse.json({ error: ERRORS.noPermission }, { status: 403 });
   }
 
   const condo = budget.condominium;

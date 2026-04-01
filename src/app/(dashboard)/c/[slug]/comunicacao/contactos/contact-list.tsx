@@ -6,6 +6,7 @@ import { deleteContact } from "./actions";
 import { useCondominium } from "@/lib/condominium-context";
 import type { ContactInfo } from "./contacts-page-client";
 import { CONTACT_CATEGORIES } from "@/lib/validators/contact";
+import { UI } from "@/lib/ui-strings";
 
 const categoryLabels: Record<string, string> = Object.fromEntries(
   CONTACT_CATEGORIES.map((c) => [c.value, c.label])
@@ -152,7 +153,7 @@ export function ContactList({
                       className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors"
                     >
                       <Pencil size={12} />
-                      Editar
+                      {UI.edit}
                     </button>
                     {confirmDelete === contact.id ? (
                       <div className="flex items-center gap-1 text-xs">
@@ -160,14 +161,14 @@ export function ContactList({
                           onClick={() => handleDelete(contact.id)}
                           className="text-destructive hover:underline"
                         >
-                          Sim, eliminar
+                          {UI.confirmYes}
                         </button>
                         <span className="text-muted-foreground">/</span>
                         <button
                           onClick={() => setConfirmDelete(null)}
                           className="text-muted-foreground hover:underline"
                         >
-                          Não
+                          {UI.confirmNo}
                         </button>
                       </div>
                     ) : (
@@ -176,7 +177,7 @@ export function ContactList({
                         className="flex items-center gap-1 text-xs text-muted-foreground hover:text-destructive transition-colors"
                       >
                         <Trash2 size={12} />
-                        Eliminar
+                        {UI.delete}
                       </button>
                     )}
                   </div>

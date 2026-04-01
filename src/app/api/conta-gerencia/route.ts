@@ -3,6 +3,8 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { buildContaGerencia } from "@/lib/conta-gerencia";
 import { generateContaGerencia } from "@/lib/pdf/conta-gerencia";
+import { checkRateLimit } from "@/lib/rate-limit";
+import { ERRORS } from "@/lib/ui-strings";
 
 export async function GET(request: NextRequest) {
   const session = await auth();
@@ -10,11 +12,22 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
   }
 
+  const { allowed } = checkRateLimit(`pdf:${session.user.id}`, {
+    maxRequests: 10,
+    windowMs: 60 * 1000,
+  });
+  if (!allowed) {
+    return NextResponse.json({ error: "Demasiados pedidos. Tente novamente mais tarde." }, { status: 429 });
+  }
+
   const yearParam = request.nextUrl.searchParams.get("year");
   if (!yearParam) {
     return NextResponse.json({ error: "Ano é obrigatório" }, { status: 400 });
   }
   const year = parseInt(yearParam, 10);
+  if (isNaN(year) || year < 2000 || year > 2100) {
+    return NextResponse.json({ error: "Ano inválido (2000–2100)" }, { status: 400 });
+  }
 
   const condominiumId = request.nextUrl.searchParams.get("condominiumId");
   if (!condominiumId) {
@@ -33,7 +46,7 @@ export async function GET(request: NextRequest) {
   });
 
   if (!membership || membership.role !== "ADMIN") {
-    return NextResponse.json({ error: "Sem permissão" }, { status: 403 });
+    return NextResponse.json({ error: ERRORS.noPermission }, { status: 403 });
   }
 
   const condo = membership.condominium;

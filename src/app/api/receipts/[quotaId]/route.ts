@@ -2,14 +2,24 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { generateReceipt } from "@/lib/pdf/receipt";
+import { checkRateLimit } from "@/lib/rate-limit";
+import { ERRORS } from "@/lib/ui-strings";
 
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ quotaId: string }> }
 ) {
   const session = await auth();
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
+  }
+
+  const { allowed } = checkRateLimit(`pdf:${session.user.id}`, {
+    maxRequests: 10,
+    windowMs: 60 * 1000,
+  });
+  if (!allowed) {
+    return NextResponse.json({ error: "Demasiados pedidos. Tente novamente mais tarde." }, { status: 429 });
   }
 
   const { quotaId } = await params;
@@ -43,7 +53,7 @@ export async function GET(
   });
 
   if (!membership) {
-    return NextResponse.json({ error: "Sem permissão" }, { status: 403 });
+    return NextResponse.json({ error: ERRORS.noPermission }, { status: 403 });
   }
 
   // Non-admin users can only download receipts for their own units
@@ -56,7 +66,7 @@ export async function GET(
       select: { id: true },
     });
     if (!ownUnit) {
-      return NextResponse.json({ error: "Sem permissão" }, { status: 403 });
+      return NextResponse.json({ error: ERRORS.noPermission }, { status: 403 });
     }
   }
 

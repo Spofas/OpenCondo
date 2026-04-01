@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useCallback } from "react";
 import { X } from "lucide-react";
+import { UI } from "@/lib/ui-strings";
 
 interface ModalFormProps {
   onClose: () => void;
@@ -27,7 +28,7 @@ export function ModalForm({
   error,
   isSubmitting = false,
   submitText,
-  loadingText = "A guardar...",
+  loadingText = UI.saving,
   maxWidth = "lg",
   children,
 }: ModalFormProps) {
@@ -104,7 +105,7 @@ export function ModalForm({
               onClick={handleClose}
               className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
             >
-              Cancelar
+              {UI.cancel}
             </button>
             <button
               type="submit"

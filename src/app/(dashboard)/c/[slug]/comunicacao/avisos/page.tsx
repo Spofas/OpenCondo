@@ -41,7 +41,7 @@ export default async function AnnouncementsPage({
   const serializedAnnouncements = announcements.map((a) => ({
     id: a.id,
     title: a.title,
-    body: a.body,
+    body: a.body.length > 200 ? a.body.slice(0, 200) + "…" : a.body,
     category: a.category,
     pinned: a.pinned,
     authorName: a.author.name,
