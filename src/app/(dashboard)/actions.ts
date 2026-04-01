@@ -65,6 +65,24 @@ export const importUnitsFromCsv = withAdmin(async (ctx, csvText: string) => {
     select: { name: true },
   });
 
+  // Batch-fetch existing units and owner emails upfront to avoid N+1 queries
+  const existingUnits = new Set(
+    (await db.unit.findMany({
+      where: { condominiumId: ctx.condominiumId },
+      select: { identifier: true },
+    })).map((u) => u.identifier)
+  );
+
+  const ownerEmails = [...new Set(units.map((u) => u.ownerEmail).filter(Boolean))] as string[];
+  const existingUsers = ownerEmails.length > 0
+    ? new Map(
+        (await db.user.findMany({
+          where: { email: { in: ownerEmails } },
+          select: { id: true, email: true },
+        })).map((u) => [u.email, u.id])
+      )
+    : new Map<string, string>();
+
   let created = 0;
   let skipped = 0;
   let invited = 0;
@@ -72,16 +90,7 @@ export const importUnitsFromCsv = withAdmin(async (ctx, csvText: string) => {
   const invitedEmails = new Set<string>();
 
   for (const unit of units) {
-    const existing = await db.unit.findUnique({
-      where: {
-        condominiumId_identifier: {
-          condominiumId: ctx.condominiumId,
-          identifier: unit.identifier,
-        },
-      },
-    });
-
-    if (existing) {
+    if (existingUnits.has(unit.identifier)) {
       skipped++;
       continue;
     }
@@ -90,11 +99,9 @@ export const importUnitsFromCsv = withAdmin(async (ctx, csvText: string) => {
     let pendingOwnerEmail: string | null = null;
 
     if (unit.ownerEmail) {
-      const owner = await db.user.findUnique({
-        where: { email: unit.ownerEmail },
-      });
-      if (owner) {
-        ownerId = owner.id;
+      const existingUserId = existingUsers.get(unit.ownerEmail);
+      if (existingUserId) {
+        ownerId = existingUserId;
       } else {
         pendingOwnerEmail = unit.ownerEmail;
 
