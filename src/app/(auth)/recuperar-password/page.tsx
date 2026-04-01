@@ -7,7 +7,6 @@ import { requestPasswordReset } from "./actions";
 export default function RecuperarPasswordPage() {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
-  const [devLink, setDevLink] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState("");
 
@@ -20,10 +19,6 @@ export default function RecuperarPasswordPage() {
 
     setLoading(false);
     setSubmitted(true);
-
-    if (result.devToken) {
-      setDevLink(`/recuperar-password/${result.devToken}`);
-    }
   }
 
   return (
@@ -85,25 +80,6 @@ export default function RecuperarPasswordPage() {
                 recuperação em breve.
               </div>
 
-              {devLink && (
-                <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm">
-                  <p className="mb-2 font-semibold text-amber-800">
-                    Modo de desenvolvimento
-                  </p>
-                  <p className="mb-3 text-amber-700">
-                    Em produção, este link seria enviado por email. Use-o
-                    diretamente:
-                  </p>
-                  <Link
-                    href={devLink}
-                    className="block break-all rounded bg-white px-3 py-2 font-mono text-xs text-primary underline hover:no-underline"
-                  >
-                    {typeof window !== "undefined"
-                      ? `${window.location.origin}${devLink}`
-                      : devLink}
-                  </Link>
-                </div>
-              )}
             </div>
           )}
         </div>

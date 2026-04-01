@@ -7,7 +7,12 @@ export default async function ExpensesPage({ params }: { params: Promise<{ slug:
   const { slug } = await params;
   const { membership } = await requireMembership(slug);
 
-  const isAdmin = membership.role === "ADMIN";
+  if (membership.role !== "ADMIN") {
+    const { redirect } = await import("next/navigation");
+    redirect(`/c/${slug}/painel`);
+  }
+
+  const isAdmin = true;
 
   const expenses = await db.expense.findMany({
     where: { condominiumId: membership.condominiumId, deletedAt: null },

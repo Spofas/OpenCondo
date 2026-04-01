@@ -44,17 +44,8 @@ async function QuotasContent({
   selectedYear: number;
   slug: string;
 }) {
-  // Mark overdue quotas before fetching
+  // Overdue marking removed — handled by nightly cron job (api/cron/process)
   const now = new Date();
-  await db.quota.updateMany({
-    where: {
-      condominiumId: condoId,
-      status: "PENDING",
-      dueDate: { lt: now },
-      deletedAt: null,
-    },
-    data: { status: "OVERDUE" },
-  });
 
   // Non-admin: only show quotas for units they own/rent
   let unitIdFilter: { in: string[] } | undefined;

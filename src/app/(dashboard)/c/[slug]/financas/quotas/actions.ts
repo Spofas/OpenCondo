@@ -220,25 +220,4 @@ export const deleteQuotasByPeriod = withAdmin(async (ctx, period: string) => {
   };
 });
 
-/**
- * Mark overdue quotas — called when loading the page.
- * Updates any PENDING quotas past their due date to OVERDUE.
- */
-export const markOverdueQuotas = withAdmin(async (ctx) => {
-  const now = new Date();
-  const result = await db.quota.updateMany({
-    where: {
-      condominiumId: ctx.condominiumId,
-      status: "PENDING",
-      dueDate: { lt: now },
-      deletedAt: null,
-    },
-    data: { status: "OVERDUE" },
-  });
-
-  if (result.count > 0) {
-    revalidatePath("/c/");
-  }
-
-  return { success: true, updated: result.count };
-});
+// markOverdueQuotas removed — overdue marking handled by nightly cron job (api/cron/process)

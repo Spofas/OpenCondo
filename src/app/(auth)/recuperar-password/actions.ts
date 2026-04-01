@@ -43,11 +43,12 @@ export async function requestPasswordReset(email: string) {
 
   if (process.env.NODE_ENV === "production") {
     await sendPasswordResetEmail(user.email, token);
-    return { success: true };
+  } else {
+    // Dev: log token to console instead of sending email.
+    console.log(`[DEV] Password reset token for ${user.email}: ${token}`);
   }
 
-  // Dev: return the token so it can be displayed in the UI without a real email.
-  return { success: true, devToken: token };
+  return { success: true };
 }
 
 /**

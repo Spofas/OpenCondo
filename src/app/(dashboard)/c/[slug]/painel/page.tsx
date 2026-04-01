@@ -158,11 +158,7 @@ async function AdminDashboardContent({
   const currentPeriod = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
   const yearStart = new Date(now.getFullYear(), 0, 1);
 
-  // Mark overdue quotas
-  await db.quota.updateMany({
-    where: { condominiumId: condoId, status: "PENDING", dueDate: { lt: now }, deletedAt: null },
-    data: { status: "OVERDUE" },
-  });
+  // Overdue marking removed — handled by nightly cron job (api/cron/process)
 
   const [
     overdueQuotas,
@@ -354,11 +350,7 @@ async function MemberDashboardContent({
 }) {
   const now = new Date();
 
-  // Mark overdue quotas
-  await db.quota.updateMany({
-    where: { condominiumId: condoId, status: "PENDING", dueDate: { lt: now }, deletedAt: null },
-    data: { status: "OVERDUE" },
-  });
+  // Overdue marking removed — handled by nightly cron job (api/cron/process)
 
   const myUnits = await db.unit.findMany({
     where: {
