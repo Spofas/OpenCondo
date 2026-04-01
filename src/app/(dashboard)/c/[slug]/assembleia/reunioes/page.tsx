@@ -44,9 +44,10 @@ async function MeetingsContent({
         votes: {
           include: { unit: { select: { identifier: true } } },
         },
-        ata: true,
+        ata: { select: { id: true, content: true } },
       },
       orderBy: { date: "desc" },
+      take: 20,
     }),
     db.unit.findMany({
       where: { condominiumId: condoId },
