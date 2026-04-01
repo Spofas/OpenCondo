@@ -7,13 +7,13 @@ export const maintenanceSchema = z.object({
   title: z.string().min(1, "Título é obrigatório"),
   description: z.string().min(1, "Descrição é obrigatória"),
   location: z.string().optional(),
-  priority: z.string().min(1, "Prioridade é obrigatória"),
+  priority: z.enum(MAINTENANCE_PRIORITIES, { message: "Prioridade é obrigatória" }),
 });
 
 export type MaintenanceInput = z.infer<typeof maintenanceSchema>;
 
 export const maintenanceUpdateSchema = z.object({
-  status: z.string().min(1, "Estado é obrigatório"),
+  status: z.enum(MAINTENANCE_STATUSES, { message: "Estado é obrigatório" }),
   note: z.string().optional(),
 });
 

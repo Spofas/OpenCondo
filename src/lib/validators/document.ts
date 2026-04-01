@@ -13,11 +13,11 @@ export const DOCUMENT_VISIBILITY = ["ALL", "ADMIN_ONLY"] as const;
 
 export const documentSchema = z.object({
   name: z.string().min(1, "Nome é obrigatório"),
-  category: z.string().min(1, "Categoria é obrigatória"),
+  category: z.enum(DOCUMENT_CATEGORIES, { message: "Categoria é obrigatória" }),
   fileUrl: z.string().min(1, "URL do ficheiro é obrigatória"),
   fileName: z.string().min(1, "Nome do ficheiro é obrigatório"),
   fileSize: z.number().optional(),
-  visibility: z.string().optional(),
+  visibility: z.enum(DOCUMENT_VISIBILITY).optional(),
 });
 
 export type DocumentInput = z.infer<typeof documentSchema>;

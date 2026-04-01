@@ -35,7 +35,7 @@ export function AnnouncementForm({ onClose, existingAnnouncement }: Announcement
       ? {
           title: existingAnnouncement.title,
           body: existingAnnouncement.body,
-          category: existingAnnouncement.category,
+          category: existingAnnouncement.category as AnnouncementInput["category"],
           pinned: existingAnnouncement.pinned,
         }
       : {

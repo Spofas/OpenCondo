@@ -7,6 +7,7 @@ import { Plus, Trash2, X } from "lucide-react";
 import {
   budgetSchema,
   type BudgetInput,
+  type BudgetItemInput,
   BUDGET_CATEGORIES,
 } from "@/lib/validators/budget";
 import { createBudget, updateBudget } from "./actions";
@@ -42,7 +43,7 @@ export function BudgetForm({ onClose, existingBudget }: BudgetFormProps) {
           reserveFundPercentage: existingBudget.reserveFundPercentage,
           items: existingBudget.items.map((item) => ({
             id: item.id,
-            category: item.category,
+            category: item.category as BudgetItemInput["category"],
             description: item.description || "",
             plannedAmount: item.plannedAmount,
           })),
@@ -50,7 +51,7 @@ export function BudgetForm({ onClose, existingBudget }: BudgetFormProps) {
       : {
           year: new Date().getFullYear(),
           reserveFundPercentage: 10,
-          items: [{ category: "", description: "", plannedAmount: 0 }],
+          items: [{ category: "Outros" as BudgetItemInput["category"], description: "", plannedAmount: 0 }],
         },
   });
 
@@ -151,7 +152,7 @@ export function BudgetForm({ onClose, existingBudget }: BudgetFormProps) {
               <button
                 type="button"
                 onClick={() =>
-                  append({ category: "", description: "", plannedAmount: 0 })
+                  append({ category: "Outros" as BudgetItemInput["category"], description: "", plannedAmount: 0 })
                 }
                 className="flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium text-primary hover:bg-primary/10"
               >

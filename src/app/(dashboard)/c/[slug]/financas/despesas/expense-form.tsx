@@ -40,7 +40,7 @@ export function ExpenseForm({ onClose, existingExpense }: ExpenseFormProps) {
           date: existingExpense.date.split("T")[0],
           description: existingExpense.description,
           amount: existingExpense.amount,
-          category: existingExpense.category,
+          category: existingExpense.category as ExpenseInput["category"],
           notes: existingExpense.notes || "",
           invoiceUrl: existingExpense.invoiceUrl || "",
         }
@@ -48,7 +48,7 @@ export function ExpenseForm({ onClose, existingExpense }: ExpenseFormProps) {
           date: today,
           description: "",
           amount: 0,
-          category: "",
+          category: "Outros" as ExpenseInput["category"],
           notes: "",
           invoiceUrl: "",
         },

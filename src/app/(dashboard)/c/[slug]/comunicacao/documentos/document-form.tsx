@@ -39,11 +39,11 @@ export function DocumentForm({ onClose, existingDocument }: DocumentFormProps) {
     defaultValues: existingDocument
       ? {
           name: existingDocument.name,
-          category: existingDocument.category,
+          category: existingDocument.category as DocumentInput["category"],
           fileUrl: existingDocument.fileUrl,
           fileName: existingDocument.fileName,
           fileSize: existingDocument.fileSize || undefined,
-          visibility: existingDocument.visibility,
+          visibility: existingDocument.visibility as DocumentInput["visibility"],
         }
       : {
           name: "",

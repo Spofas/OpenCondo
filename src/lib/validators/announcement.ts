@@ -11,7 +11,7 @@ export const ANNOUNCEMENT_CATEGORIES = [
 export const announcementSchema = z.object({
   title: z.string().min(1, "Título é obrigatório"),
   body: z.string().min(1, "Conteúdo é obrigatório"),
-  category: z.string().min(1, "Categoria é obrigatória"),
+  category: z.enum(ANNOUNCEMENT_CATEGORIES, { message: "Categoria é obrigatória" }),
   pinned: z.boolean().optional(),
 });
 

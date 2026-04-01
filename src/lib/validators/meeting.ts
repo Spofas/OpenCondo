@@ -9,7 +9,7 @@ export const meetingSchema = z.object({
   date: z.string().min(1, "Data é obrigatória"),
   time: z.string().min(1, "Hora é obrigatória"),
   location: z.string().min(1, "Local é obrigatório"),
-  type: z.string().min(1, "Tipo é obrigatório"),
+  type: z.enum(MEETING_TYPES, { message: "Tipo é obrigatório" }),
   agendaItems: z
     .array(
       z.object({
@@ -26,7 +26,7 @@ export const attendanceSchema = z.object({
   attendees: z.array(
     z.object({
       userId: z.string(),
-      status: z.string(),
+      status: z.enum(ATTENDEE_STATUSES),
       representedBy: z.string().optional(),
     })
   ),
@@ -39,7 +39,7 @@ export const voteSchema = z.object({
   votes: z.array(
     z.object({
       unitId: z.string(),
-      vote: z.string(),
+      vote: z.enum(VOTE_VALUES),
     })
   ),
 });

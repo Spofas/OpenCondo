@@ -23,12 +23,12 @@ export const PAYMENT_FREQUENCIES = [
 
 export const contractSchema = z.object({
   description: z.string().min(1, "Descrição é obrigatória"),
-  type: z.string().min(1, "Tipo é obrigatório"),
+  type: z.enum(CONTRACT_TYPES, { message: "Tipo é obrigatório" }),
   startDate: z.string().min(1, "Data de início é obrigatória"),
   endDate: z.string().optional(),
-  renewalType: z.string().optional(),
+  renewalType: z.enum(RENEWAL_TYPES).optional(),
   annualCost: z.number({ message: "Custo é obrigatório" }).positive("Custo deve ser positivo"),
-  paymentFrequency: z.string().optional(),
+  paymentFrequency: z.enum(PAYMENT_FREQUENCIES).optional(),
   notes: z.string().optional(),
   // Insurance-specific
   policyNumber: z.string().optional(),
