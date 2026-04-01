@@ -86,6 +86,19 @@ export const saveAttendance = withAdmin(async (ctx, meetingId: string, input: At
 
   if (!meeting) return { error: "Assembleia não encontrada" };
 
+  // Validate all attendee userIds are members of this condominium
+  const memberIds = new Set(
+    (await db.membership.findMany({
+      where: { condominiumId: ctx.condominiumId },
+      select: { userId: true },
+    })).map((m) => m.userId)
+  );
+
+  const invalidAttendees = parsed.data.attendees.filter((a) => !memberIds.has(a.userId));
+  if (invalidAttendees.length > 0) {
+    return { error: "Um ou mais participantes não são membros deste condomínio" };
+  }
+
   // Get units to look up permilagem for each attendee
   const units = await db.unit.findMany({
     where: { condominiumId: ctx.condominiumId },
