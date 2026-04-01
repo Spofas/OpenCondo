@@ -91,11 +91,13 @@ export async function GET(request: NextRequest) {
       : null,
 
     quotas: quotas.map((q) => ({
+      unitId: q.unitId,
       unitIdentifier: q.unit.identifier,
       ownerName: q.unit.owner?.name ?? null,
       amount: Number(q.amount),
       status: q.status as "PENDING" | "PAID" | "OVERDUE",
       period: q.period,
+      dueDate: q.dueDate.toISOString(),
     })),
 
     expenses: expenses.map((e) => ({

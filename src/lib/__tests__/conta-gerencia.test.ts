@@ -29,10 +29,10 @@ describe("buildContaGerencia", () => {
     const report = buildContaGerencia(
       makeInput({
         quotas: [
-          { unitIdentifier: "A", ownerName: "Ana", amount: 100, status: "PAID", period: "2025-01" },
-          { unitIdentifier: "A", ownerName: "Ana", amount: 100, status: "PAID", period: "2025-02" },
-          { unitIdentifier: "B", ownerName: "Bruno", amount: 50, status: "PENDING", period: "2025-01" },
-          { unitIdentifier: "B", ownerName: "Bruno", amount: 50, status: "OVERDUE", period: "2025-02" },
+          { unitId: "a", unitIdentifier: "A", ownerName: "Ana", amount: 100, status: "PAID", period: "2025-01", dueDate: "2025-01-08" },
+          { unitId: "a", unitIdentifier: "A", ownerName: "Ana", amount: 100, status: "PAID", period: "2025-02", dueDate: "2025-02-08" },
+          { unitId: "b", unitIdentifier: "B", ownerName: "Bruno", amount: 50, status: "PENDING", period: "2025-01", dueDate: "2099-01-08" },
+          { unitId: "b", unitIdentifier: "B", ownerName: "Bruno", amount: 50, status: "OVERDUE", period: "2025-02", dueDate: "2020-01-08" },
         ],
       })
     );
@@ -49,8 +49,8 @@ describe("buildContaGerencia", () => {
       makeInput({
         year: 2025,
         quotas: [
-          { unitIdentifier: "A", ownerName: "Ana", amount: 100, status: "PAID", period: "2025-01" },
-          { unitIdentifier: "A", ownerName: "Ana", amount: 100, status: "PAID", period: "2024-12" },
+          { unitId: "a", unitIdentifier: "A", ownerName: "Ana", amount: 100, status: "PAID", period: "2025-01", dueDate: "2025-01-08" },
+          { unitId: "a", unitIdentifier: "A", ownerName: "Ana", amount: 100, status: "PAID", period: "2024-12", dueDate: "2024-12-08" },
         ],
         expenses: [
           { category: "Limpeza", amount: 50, date: "2025-03-15" },
@@ -118,7 +118,7 @@ describe("buildContaGerencia", () => {
           items: [],
         },
         quotas: [
-          { unitIdentifier: "A", ownerName: "Ana", amount: 2000, status: "PAID", period: "2025-01" },
+          { unitId: "a", unitIdentifier: "A", ownerName: "Ana", amount: 2000, status: "PAID", period: "2025-01", dueDate: "2025-01-08" },
         ],
       })
     );
@@ -131,10 +131,10 @@ describe("buildContaGerencia", () => {
     const report = buildContaGerencia(
       makeInput({
         quotas: [
-          { unitIdentifier: "A", ownerName: "Ana", amount: 100, status: "OVERDUE", period: "2025-01" },
-          { unitIdentifier: "A", ownerName: "Ana", amount: 100, status: "PENDING", period: "2025-02" },
-          { unitIdentifier: "B", ownerName: "Bruno", amount: 50, status: "OVERDUE", period: "2025-01" },
-          { unitIdentifier: "C", ownerName: "Carlos", amount: 80, status: "PAID", period: "2025-01" },
+          { unitId: "a", unitIdentifier: "A", ownerName: "Ana", amount: 100, status: "OVERDUE", period: "2025-01", dueDate: "2020-01-08" },
+          { unitId: "a", unitIdentifier: "A", ownerName: "Ana", amount: 100, status: "PENDING", period: "2025-02", dueDate: "2099-02-08" },
+          { unitId: "b", unitIdentifier: "B", ownerName: "Bruno", amount: 50, status: "OVERDUE", period: "2025-01", dueDate: "2020-01-08" },
+          { unitId: "c", unitIdentifier: "C", ownerName: "Carlos", amount: 80, status: "PAID", period: "2025-01", dueDate: "2025-01-08" },
         ],
       })
     );
@@ -152,7 +152,7 @@ describe("buildContaGerencia", () => {
     const report = buildContaGerencia(
       makeInput({
         quotas: [
-          { unitIdentifier: "A", ownerName: "Ana", amount: 500, status: "PAID", period: "2025-01" },
+          { unitId: "a", unitIdentifier: "A", ownerName: "Ana", amount: 500, status: "PAID", period: "2025-01", dueDate: "2025-01-08" },
         ],
         expenses: [
           { category: "Limpeza", amount: 300, date: "2025-01-15" },
