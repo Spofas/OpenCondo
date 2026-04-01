@@ -30,6 +30,17 @@ All notable changes to OpenCondo are recorded here in reverse-chronological orde
 - Net reduction of ~131 lines of boilerplate auth code
 - Updated callers (`invite-manager.tsx`, `unit-manager.tsx`) and tests for new signatures
 
+**Architecture — Prisma soft-delete extension (P0 #9):**
+- New `src/lib/db/soft-delete-extension.ts` — Prisma Client Extension that auto-adds `deletedAt: null` to all read queries on soft-delete models
+- Removed 30 manual `deletedAt: null` filters from 11 files
+- Write-side filters (updateMany in soft-delete operations) intentionally preserved
+
+**Data integrity — soft-delete for 4 entities (P0 #8):**
+- Added `deletedAt` column to Announcement, Document, Meeting, and Contract models
+- Converted 4 hard `delete()` calls to `update({ deletedAt: new Date() })`
+- All 7 soft-delete models now registered in the extension (Quota, Expense, Transaction + 4 new)
+- Migration: `20260401000001_add_soft_delete_to_four_entities`
+
 **Documentation:**
 - Added "Documentation updates (on every push)" section to CLAUDE.md
 - Updated CLAUDE.md patterns to reflect HOF usage and slug-based routing

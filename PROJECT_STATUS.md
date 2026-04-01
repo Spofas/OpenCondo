@@ -528,6 +528,7 @@ Applied to 6 pages: quotas, livro-caixa, devedores, conta-gerência, reuniões, 
 | 2026-03-30 | Remove "Lembrar-me" checkbox | JWT sessions last 30 days by default — effectively always "remember me". The checkbox was cosmetic (never wired). Browser credential managers handle the "remember login" UX. |
 | 2026-03-30 | Mobile-first bottom navigation | Role-adaptive bottom nav bar replaces hamburger menu on mobile. Admin gets category-based tabs with sheets; Owner/Tenant gets 5 direct-link tabs. Desktop sidebar unchanged. |
 | 2026-03-25 | Soft deletes on Expense/Quota/Transaction | Recoverable deletions, audit trail, no orphaned financial data; hard deletes permanently destroy payment history |
+| 2026-04-01 | Soft deletes on Announcement/Document/Meeting/Contract | Extended soft-delete to all user-managed entities. Prisma Client Extension auto-filters `deletedAt: null` on reads |
 | 2026-03-25 | URL search param for quota year filter | Avoids loading full quota history on every render; bookmarkable and shareable links |
 | 2026-03-25 | requireMembership() centralized helper | Every server page repeated the same auth+membership boilerplate — extracted to `src/lib/auth/require-membership.ts` |
 | 2026-03-25 | Centralized serializers | Prisma Decimal→number and Date→string conversions scattered across pages; consolidated in `src/lib/serializers.ts` |
@@ -561,7 +562,7 @@ and get back up to speed without needing the conversation history.
 - **Build status:** Passing (`next build` succeeds, all routes compile)
 - **Database:** Prisma Migrate in use (migration history committed). Latest migration: `20260330000002_add_pending_email_queue` (PendingEmail table for email retry queue).
 - **Test suite:** 582 tests passing (34 test files)
-- **Latest changes (2026-04-01):** Security audit fixes (devToken removal, admin-only expense page, devedores redirect, overdue marking cleanup). Scoped `revalidatePath` to condo-level (`/c/${slug}`) across all 14 action files. Migrated `dashboard/actions.ts` (9 actions) to `withAdmin`/`withMember` HOF pattern. Removed dead code (`getNotificationPreferences`, unused `markOverdueQuotas`).
+- **Latest changes (2026-04-01):** Security audit fixes (devToken removal, admin-only expense page, devedores redirect, overdue marking cleanup). Scoped `revalidatePath` to condo-level (`/c/${slug}`) across all 14 action files. Migrated `dashboard/actions.ts` (9 actions) to `withAdmin`/`withMember` HOF pattern. Prisma soft-delete extension auto-filters reads on 7 models. Soft-delete added to Announcement, Document, Meeting, Contract. Latest migration: `20260401000001_add_soft_delete_to_four_entities`.
 - **Note:** `pnpm lint` is broken on Next.js 16.1.7 (`next lint` misparses args). The build catches type errors, so this is non-blocking.
 - **Note:** File uploads require `BLOB_READ_WRITE_TOKEN` env var on Vercel (Storage → Create Blob Store).
 
@@ -593,7 +594,7 @@ and get back up to speed without needing the conversation history.
 - **`db` singleton** in `lib/db/index.ts` with global caching to prevent connection leaks in dev
 - **`requireMembership(slug)`** in `lib/auth/require-membership.ts` — call at the top of every server page; resolves slug → condominium and verifies membership
 - **Serializers** in `lib/serializers.ts` — call `serializeExpense(e)`, `serializeTransaction(t)`, etc. to convert Prisma Decimals and Dates before passing to client components
-- **Soft deletes** — all `Expense`, `Quota`, `Transaction` writes filter `deletedAt: null`; deletions set `deletedAt = now()` instead of removing rows
+- **Soft deletes** — 7 models (Expense, Quota, Transaction, Announcement, Document, Meeting, Contract) use `deletedAt` column; Prisma Client Extension in `src/lib/db/soft-delete-extension.ts` auto-filters reads; deletions set `deletedAt = now()` instead of removing rows
 - **useOptimistic** — 9 list components use `useOptimistic` + `useTransition` for instant delete/toggle feedback
 - **Suspense** — 6 heavy data pages wrapped in `<Suspense>` with skeleton fallbacks
 - **Email queue** — non-urgent notifications queued in `PendingEmail` table; cron processes in batches with retries
@@ -619,9 +620,9 @@ and get back up to speed without needing the conversation history.
 ### Audit backlog (from AUDIT_REPORT_3.md)
 Items remaining from the security/architecture audit:
 
-**P0 — Data integrity:**
-7. **Soft-delete for 4 hard-delete entities** — Announcements, Documents, Contracts, and Meetings use hard `delete()`. Should use soft-delete (`deletedAt`) like Expense/Quota/Transaction already do.
-8. **Prisma middleware for soft-delete auto-filtering** — Add global middleware to auto-exclude `deletedAt IS NOT NULL` rows from queries.
+**P0 — Data integrity:** (completed)
+- ~~Soft-delete for 4 hard-delete entities~~ — Done (2026-04-01)
+- ~~Prisma middleware for soft-delete auto-filtering~~ — Done (2026-04-01)
 
 **Security P1:**
 9. **Hash password reset tokens** — Currently stored in plaintext in `PasswordResetToken` table. Should store a bcrypt/SHA-256 hash and compare on use.
