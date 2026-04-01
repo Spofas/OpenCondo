@@ -39,8 +39,10 @@ OpenCondo is designed with these legal requirements as first-class features.
 
 ### 2.1 Authentication
 
-- Email + password registration
-- Password reset via email
+- Email + password registration with email verification
+- Email verification required before accessing dashboard or onboarding
+- Resend verification email UI for unverified users
+- Password reset via email (tokens hashed with SHA-256 before storage)
 - Invitation-based onboarding (admin invites owners/tenants via email)
 - Session-based auth with secure cookies
 
@@ -177,7 +179,13 @@ OpenCondo is designed with these legal requirements as first-class features.
 - Soft deletes on financial records (no accidental permanent data loss) ✅
 - CSRF protection — handled by NextAuth session cookies (SameSite) ✅
 - Input sanitization via Zod validation on all server actions ✅
-- Rate limiting on auth endpoints — **not yet implemented** (low risk at current scale; add before public launch)
+- Rate limiting on auth endpoints ✅ (registration: 5/15min, password reset: 3/15min)
+- Email verification required on registration ✅ (SHA-256 hashed tokens, 24h expiry)
+- Password reset tokens hashed with SHA-256 before storage ✅
+- Strict enum validation on all category/type/status fields via z.enum() ✅
+- String max length limits on all text input fields ✅
+- Attendance membership validation — attendee userIds verified against condominium members ✅
+- Payment audit trail — recordedBy/recordedAt on quota payments ✅
 - CSV upload file-size and MIME-type validation — **not yet implemented** (upload UI does not exist yet)
 
 ### 4.3 Privacy (GDPR/RGPD)

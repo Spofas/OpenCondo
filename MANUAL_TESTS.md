@@ -271,6 +271,16 @@ To test this properly you need a second user. Use the invite flow from section 1
 - [ ] Try accessing `/definicoes` while logged in as a Proprietário — you're redirected or see an error
 - [ ] Forgot password flow: on the login page, click "Esqueceu a password?", enter your email, check for the reset email, follow the link, set a new password, log in ✅
 
+### 17.1 Email Verification
+
+- [ ] Register a new account — after login, you should be redirected to `/verificar-email` (not dashboard)
+- [ ] The verification pending page shows a "Reenviar email de verificação" button
+- [ ] Click the resend button — in dev mode, check console for the verification token; in production, check email
+- [ ] Try accessing `/painel` or `/onboarding` with an unverified account — you're redirected to `/verificar-email`
+- [ ] Visit `/verificar-email/<token>` with the correct token — shows "Email verificado" success message
+- [ ] After verification, accessing `/painel` works normally (no more redirect)
+- [ ] Visit `/verificar-email/<invalid-token>` — shows "Link inválido ou expirado" error message
+
 ---
 
 ## 18. Finances — Livro de Caixa (Cash Ledger)

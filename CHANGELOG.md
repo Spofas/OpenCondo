@@ -41,6 +41,30 @@ All notable changes to OpenCondo are recorded here in reverse-chronological orde
 - All 7 soft-delete models now registered in the extension (Quota, Expense, Transaction + 4 new)
 - Migration: `20260401000001_add_soft_delete_to_four_entities`
 
+**Security — email verification on registration (P1 #10):**
+- New email verification flow: registration generates SHA-256 hashed token (24h expiry), sends verification email
+- New `/verificar-email` page with resend button for unverified users
+- New `/verificar-email/[token]` server page that verifies token and sets `emailVerified`
+- Dashboard and onboarding layouts redirect unverified users to verification page
+- Migration: `20260401000003_add_email_verification_token`
+
+**Security — hashed password reset tokens (P1 #9):**
+- Password reset tokens now hashed with SHA-256 before storage in the database
+- Raw token sent via email/URL; only the hash is stored and compared on reset
+
+**Security — payment audit trail (P1 #13):**
+- Added `recordedBy` (userId) and `recordedAt` fields to Quota model
+- Both `recordPayment` and `undoPayment` actions populate these audit fields
+- Migration: `20260401000002_add_quota_payment_audit_fields`
+
+**Security — attendance membership validation (P1 #14):**
+- `saveAttendance` action now validates all attendee userIds are members of the condominium
+- Prevents injecting attendance records for arbitrary user IDs
+
+**Input validation — string max length limits (P1 #12):**
+- Added `.max()` constraints to ~49 string fields across 13 Zod validators
+- Limits: titles/names 200, descriptions/notes 2000, body/ata 50000, URLs 2048, dates 20, short fields 30-50, email 254, password 128
+
 **Input validation — strict enum validation (P1 #11):**
 - Replaced `z.string()` with `z.enum()` in 15 category/type/status fields across 9 Zod validators
 - Affected validators: announcement, expense, meeting, document, contract, maintenance, budget, recurring-expense, contact

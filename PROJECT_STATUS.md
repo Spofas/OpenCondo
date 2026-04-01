@@ -624,10 +624,10 @@ Items remaining from the security/architecture audit:
 - ~~Soft-delete for 4 hard-delete entities~~ — Done (2026-04-01)
 - ~~Prisma middleware for soft-delete auto-filtering~~ — Done (2026-04-01)
 
-**Security P1:**
-9. **Hash password reset tokens** — Currently stored in plaintext in `PasswordResetToken` table. Should store a bcrypt/SHA-256 hash and compare on use.
-10. **Email verification** — No email verification on registration. Users can register with any email.
-11. **z.enum validation** — Some Zod schemas accept `z.string()` where `z.enum()` would enforce valid values (e.g., payment method, expense category).
-12. **String max length limits** — Zod validators don't enforce `max()` on text fields, allowing unbounded input.
-13. **Payment audit log** — No audit trail for who recorded/undid payments and when.
-14. **Attendance validation** — Meeting attendance doesn't validate that attendees are actually members of the condominium.
+**Security P1:** (all completed 2026-04-01)
+- ~~Hash password reset tokens~~ — Done (SHA-256 hash stored, raw token sent via email)
+- ~~Email verification~~ — Done (verification flow with token, resend UI, dashboard gate)
+- ~~z.enum validation~~ — Done (15 fields across 9 validators)
+- ~~String max length limits~~ — Done (~49 fields across 13 validators)
+- ~~Payment audit log~~ — Done (recordedBy/recordedAt on Quota)
+- ~~Attendance validation~~ — Done (membership check in saveAttendance)
