@@ -26,7 +26,7 @@ export async function requireMembership(slug: string) {
     },
   });
 
-  if (!membership) redirect("/iniciar");
+  if (!membership || !membership.isActive) redirect("/iniciar");
 
   return { session, membership, condominiumId: condominium.id };
 }
@@ -51,7 +51,7 @@ export async function requireMembershipWithCondo(slug: string) {
     include: { condominium: true },
   });
 
-  if (!membership) redirect("/iniciar");
+  if (!membership || !membership.isActive) redirect("/iniciar");
 
   return { session, membership };
 }

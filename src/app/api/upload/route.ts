@@ -65,8 +65,11 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  // Sanitize filename to prevent path traversal
+  const sanitizedName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+
   // Upload to Vercel Blob
-  const blob = await put(`${condominiumId}/${file.name}`, file, {
+  const blob = await put(`${condominiumId}/${sanitizedName}`, file, {
     access: "public",
   });
 

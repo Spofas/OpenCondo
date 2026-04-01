@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { requireMembershipWithCondo } from "@/lib/auth/require-membership";
 import { buildContaGerencia, type ContaGerenciaReport } from "@/lib/conta-gerencia";
@@ -96,6 +97,8 @@ export default async function ContaGerenciaPage({
   const { slug } = await params;
   const { year } = await searchParams;
   const { membership } = await requireMembershipWithCondo(slug);
+
+  if (membership.role !== "ADMIN") redirect(`/c/${slug}/painel`);
 
   const condoId = membership.condominiumId;
   const condo = membership.condominium;
