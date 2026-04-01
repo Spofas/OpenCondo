@@ -99,15 +99,17 @@ Write notes next to anything that fails so it can be fixed later.
 
 ## 4. Finances — Devedores (Debt Tracker)
 
-- [ ] Go to Finanças → Devedores
-- [ ] The unpaid quotas appear here, grouped by unit or owner
-- [ ] The unit that paid in the previous section does NOT appear here
-- [ ] Total outstanding debt shown matches the sum of unpaid quota amounts
+- [ ] Navigate to Finanças → Devedores — you are **redirected** to Finanças → Quotas (devedores is no longer a standalone page)
+- [ ] Debtor/overdue information is visible within the quotas page
 
 ---
 
 ## 5. Finances — Expenses (Despesas)
 
+### Expense page access control (non-admin)
+- [ ] Log in as a Proprietário — navigate to `/c/{slug}/financas/despesas` — you are **redirected** to `/c/{slug}/painel` (expenses are admin-only)
+
+### Expense CRUD (admin)
 - [ ] Go to Finanças → Despesas
 - [ ] Create a new expense: Limpeza, 100€, today's date, description "Limpeza mensal"
 - [ ] It appears in the list with the correct category and amount

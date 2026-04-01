@@ -12,6 +12,23 @@ At the beginning of every session, read these two files before doing anything el
 - `PROJECT_STATUS.md` — current branch, build state, architecture, key patterns, gotchas, and what still needs building
 - `CHANGELOG.md` — what changed in the most recent sessions (read top-to-bottom, stop after the third entry)
 
+## Documentation updates (on every push)
+
+After every `git push`, update the following documentation files where relevant. Not every file needs updating on every push — use judgement based on what changed:
+
+| File | When to update | What to write |
+|------|----------------|---------------|
+| `CHANGELOG.md` | **Every push** — always add an entry | New entry at the top of `[Unreleased]` with date, summary of changes, and details grouped by category |
+| `PROJECT_STATUS.md` | When architecture, build state, patterns, or module status changes | Update the "Last updated" date, and any sections affected by the changes (e.g., new modules, changed patterns, updated file structure) |
+| `MANUAL_TESTS.md` | When new user-facing flows are added or existing flows change behavior | Add new test items or update existing ones to reflect the new behavior |
+| `PRODUCT_SPEC.md` | When features are added, removed, or significantly redesigned | Update the relevant feature section to match what was actually built |
+
+**Rules:**
+- Keep entries concise — focus on what changed and why, not implementation details
+- CHANGELOG entries use the same date-based format as existing entries
+- Don't rewrite entire files — surgically update the affected sections
+- If a push is purely internal (refactoring, test fixes) with no user-facing or architectural impact, CHANGELOG is still required but the others can be skipped
+
 ## Quick Reference
 
 ```bash
@@ -93,9 +110,11 @@ src/
 ### Key patterns
 
 **Server actions (`actions.ts`):**
-- Every mutation starts with `getAdminContext()` — checks auth, cookie, and ADMIN role
-- Returns `{ error: string }` on failure, `{ success: true, ... }` on success
-- Calls `revalidatePath()` after mutations
+- Admin mutations use `withAdmin(async (ctx, ...args) => { ... })` HOF — checks auth, membership, and ADMIN role automatically
+- Member-level actions use `withMember(async (ctx, ...args) => { ... })` — checks auth and membership (any role)
+- Both HOFs provide `ctx` with `userId`, `condominiumId`, `slug`, and `role`
+- Returns `ActionReturn` type: `{ error: string }` on failure, `{ success: true, ... }` on success
+- Calls `revalidatePath(`/c/${ctx.slug}`)` after mutations (scoped to the active condo)
 - Validates input with Zod before touching the database
 
 **Server pages (`page.tsx`):**
@@ -161,12 +180,12 @@ Three roles: `ADMIN`, `OWNER`, `TENANT`
 | Register expenses | Yes | No | No |
 | Create announcements | Yes | No | No |
 
-Admin checks use `getAdminContext()` in server actions. View-level access is controlled by passing `isAdmin` to client components which conditionally render action buttons.
+Admin checks use `withAdmin` HOF in server actions. View-level access is controlled by passing `isAdmin` to client components which conditionally render action buttons.
 
 ## Common pitfalls
 
 - **Decimal serialization**: Prisma returns `Decimal` objects. Always `Number()` them before passing to client components, or you'll get serialization errors.
-- **Cookie-based condo selection**: The active condominium comes from `activeCondominiumId` cookie. Always read it in server components/actions; never hardcode a condo ID.
+- **Slug-based condo routing**: The active condominium comes from the URL slug (`/c/[slug]/...`). Server pages use `requireMembership(slug)`, actions use `withAdmin(condominiumId, ...)` / `withMember(condominiumId, ...)`. Never hardcode a condo ID.
 - **Date month indexing**: JavaScript `new Date(year, month, day)` uses 0-indexed months. When parsing "2026-01", month is `0`, not `1`.
 - **Rounding**: Money splits may not sum exactly to the total due to rounding. This is expected — the important thing is each unit's amount is individually correct to 2 decimal places.
 

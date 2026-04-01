@@ -6,6 +6,36 @@ All notable changes to OpenCondo are recorded here in reverse-chronological orde
 
 ## [Unreleased]
 
+### 2026-04-01 — Security audit fixes and architecture improvements
+
+**Security fixes (from AUDIT_REPORT_3 findings):**
+- Removed devToken exposure in password reset — reset tokens no longer returned to the client; logged to console in dev mode only
+- Added admin-only redirect on despesas (expenses) page — non-admin members are redirected to painel instead of seeing admin data
+- Removed devedores (debtors) standalone page — redirects to quotas page (debtor info shown there instead)
+
+**Performance — overdue marking cleanup:**
+- Removed 5 `updateMany` calls that ran on every page load (painel admin + member, quotas, devedores, minha-conta)
+- Overdue quota marking now handled solely by the nightly cron job (`/api/cron/process`)
+- Removed unused `markOverdueQuotas` server action from quotas actions
+
+**Architecture — revalidatePath scoping (P0 #6):**
+- All ~48 `revalidatePath("/c/")` calls replaced with `revalidatePath(`/c/${ctx.slug}`)` across 14 files
+- Added `slug` field to `AdminContext` and `MemberContext` types (resolved via Prisma join on membership query)
+- Added `getCondoSlug()` helper for non-HOF actions in `dashboard/actions.ts`
+- Prevents cross-condo cache invalidation — only the active condo's pages are revalidated
+
+**Architecture — HOF migration (P0 #7):**
+- Migrated all 9 actions in `dashboard/actions.ts` from manual auth/membership checks to `withAdmin`/`withMember` HOF pattern
+- Removed dead code: `getNotificationPreferences` (defined but never imported anywhere)
+- Net reduction of ~131 lines of boilerplate auth code
+- Updated callers (`invite-manager.tsx`, `unit-manager.tsx`) and tests for new signatures
+
+**Documentation:**
+- Added "Documentation updates (on every push)" section to CLAUDE.md
+- Updated CLAUDE.md patterns to reflect HOF usage and slug-based routing
+
+---
+
 ### 2026-03-31 — PDF exports, file uploads, and auth fixes
 
 **PDF exports:**
