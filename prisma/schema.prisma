@@ -279,6 +279,7 @@ model Quota {
   @@unique([condominiumId, unitId, period])
   @@index([condominiumId, status])
   @@index([condominiumId, status, dueDate])
+  @@index([condominiumId, deletedAt])
 }
 
 // ─── Financial: Expenses ─────────────────────────────────────────────────────
@@ -305,6 +306,7 @@ model Expense {
   transactions  Transaction[]
 
   @@index([condominiumId, date])
+  @@index([condominiumId, deletedAt])
 }
 
 // ─── Financial: Ledger Transactions ─────────────────────────────────────────
@@ -333,6 +335,7 @@ model Transaction {
   expense     Expense?    @relation(fields: [expenseId], references: [id], onDelete: Cascade)
 
   @@index([condominiumId, date])
+  @@index([condominiumId, deletedAt])
 }
 
 // ─── Financial: Recurring Expenses ──────────────────────────────────────────
@@ -380,6 +383,7 @@ model Announcement {
   attachments  AnnouncementAttachment[]
 
   @@index([condominiumId, createdAt])
+  @@index([condominiumId, deletedAt])
 }
 
 model AnnouncementAttachment {
@@ -492,6 +496,8 @@ model Document {
   deletedAt      DateTime?
 
   condominium Condominium @relation(fields: [condominiumId], references: [id], onDelete: Cascade)
+
+  @@index([condominiumId, deletedAt])
 }
 
 // ─── Meetings (Assembleias) ──────────────────────────────────────────────────
@@ -527,6 +533,7 @@ model Meeting {
 
   @@index([condominiumId, status])
   @@index([condominiumId, date])
+  @@index([condominiumId, deletedAt])
 }
 
 model AgendaItem {
@@ -672,6 +679,7 @@ model Contract {
   supplier    Supplier?   @relation(fields: [supplierId], references: [id], onDelete: SetNull)
 
   @@index([condominiumId])
+  @@index([condominiumId, deletedAt])
 }
 
 // ─── Suppliers (Fornecedores) ────────────────────────────────────────────────
