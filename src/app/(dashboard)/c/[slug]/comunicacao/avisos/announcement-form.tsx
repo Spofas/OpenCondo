@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -11,6 +10,7 @@ import {
 } from "@/lib/validators/announcement";
 import { createAnnouncement, updateAnnouncement } from "./actions";
 import { useCondominium } from "@/lib/condominium-context";
+import { useFormAction } from "@/lib/hooks/use-form-action";
 import { ModalForm } from "@/components/ui/modal-form";
 import type { AnnouncementData } from "./announcement-page-client";
 
@@ -21,8 +21,7 @@ interface AnnouncementFormProps {
 
 export function AnnouncementForm({ onClose, existingAnnouncement }: AnnouncementFormProps) {
   const { condominiumId } = useCondominium();
-  const [error, setError] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { error, isSubmitting, handleAction } = useFormAction();
   const isEditing = !!existingAnnouncement;
 
   const {
@@ -47,20 +46,12 @@ export function AnnouncementForm({ onClose, existingAnnouncement }: Announcement
   });
 
   async function onSubmit(data: AnnouncementInput) {
-    setIsSubmitting(true);
-    setError("");
-
-    const result = isEditing
-      ? await updateAnnouncement(condominiumId, existingAnnouncement.id, data)
-      : await createAnnouncement(condominiumId, data);
-
-    if (result.error) {
-      setError(result.error);
-      setIsSubmitting(false);
-      return;
-    }
-
-    onClose();
+    await handleAction(
+      () => isEditing
+        ? updateAnnouncement(condominiumId, existingAnnouncement.id, data)
+        : createAnnouncement(condominiumId, data),
+      onClose
+    );
   }
 
   return (
