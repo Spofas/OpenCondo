@@ -6,6 +6,29 @@ All notable changes to OpenCondo are recorded here in reverse-chronological orde
 
 ## [Unreleased]
 
+### 2026-04-01 — Performance P1 and UX/Architecture improvements
+
+**Performance — pagination:**
+- Server-side pagination on Expenses (30/page) and Announcements (20/page) pages
+- Anterior/Seguinte navigation with page count display
+
+**Performance — query optimization:**
+- Meetings page limited to 20 results with narrowed ata select (`{ id, content }` only)
+- 9 modal form components converted to `next/dynamic` lazy imports (split into separate chunks)
+- 7 soft-delete composite indexes added (`[condominiumId, deletedAt]`)
+
+**Feature — Budget vs. Actual variance on Orçamento page:**
+- Desktop table shows Previsto/Gasto/Desvio columns per budget category
+- Mobile cards show spending and variance inline when expenses exist
+- Totals section displays aggregate variance (Total gasto / Desvio total)
+- Expense data fetched server-side per budget year
+
+**Refactoring:**
+- Simplified `buildContaGerencia()` debtor logic with status-based map grouping
+- Added `unitId` and `dueDate` to `ContaGerenciaInput` type
+- Extracted `useFormAction()` hook for common form submission pattern (error/submitting state)
+- Converted `announcement-form.tsx` as first consumer of the hook
+
 ### 2026-04-01 — Security audit fixes and architecture improvements
 
 **Security fixes (from AUDIT_REPORT_3 findings):**

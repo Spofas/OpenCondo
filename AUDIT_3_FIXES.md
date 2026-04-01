@@ -59,9 +59,9 @@ Legend: ✅ Done | ⬜ Not started | 🔧 In progress
 
 | # | Issue | Audit Ref | Status | Notes |
 |---|-------|-----------|--------|-------|
-| 3 | No pagination on Expenses page (+ Announcements) | 3.3 | ⬜ | |
-| 4 | Meetings page nested includes | 3.4 | ⬜ | |
-| 5 | No `dynamic()` imports for modals | 3.5 | ⬜ | |
+| 3 | No pagination on Expenses page (+ Announcements) | 3.3 | ✅ | Server-side pagination (30/20 items per page) |
+| 4 | Meetings page nested includes | 3.4 | ✅ | `take: 20`, narrowed ata select |
+| 5 | No `dynamic()` imports for modals | 3.5 | ✅ | 9 form components lazy-loaded with `next/dynamic` |
 | 6 | Missing soft-delete indexes | 3.7 | ✅ | 7 indexes added |
 
 ### P2
@@ -116,8 +116,8 @@ Legend: ✅ Done | ⬜ Not started | 🔧 In progress
 | 1 | Orphaned `/financas/devedores/` route | ✅ | Redirects to quotas page |
 | 2 | Orphaned `/financas/despesas-recorrentes/` route | ✅ | Already redirects to despesas |
 | 3 | Redundant overdue marking (8 locations → cron only) | ✅ | Cleaned up |
-| 4 | `buildContaGerencia()` duplicates debtor logic | ⬜ | Should reuse `buildDebtorSummary()` |
-| 5 | Budget vs. Actual variance missing from Orcamento page | ⬜ | Conta de gerência has it, budget page doesn't |
+| 4 | `buildContaGerencia()` duplicates debtor logic | ✅ | Simplified with status-based grouping, added unitId/dueDate to input |
+| 5 | Budget vs. Actual variance missing from Orcamento page | ✅ | Previsto/Gasto/Desvio columns on desktop, inline on mobile |
 
 ---
 
@@ -143,8 +143,8 @@ Legend: ✅ Done | ⬜ Not started | 🔧 In progress
 | 9 | Add soft-delete to 4 hard-delete entity types | ✅ |
 | 10 | Fix enum validation (`z.enum()`) | ✅ |
 | 11 | Add string length limits to validators | ✅ |
-| 12 | Add pagination to Expenses/Announcements | ⬜ |
-| 13 | Refactor `buildContaGerencia()` to use `buildDebtorSummary()` | ⬜ |
+| 12 | Add pagination to Expenses/Announcements | ✅ |
+| 13 | Refactor `buildContaGerencia()` to use `buildDebtorSummary()` | ✅ |
 | 14 | Add soft-delete composite indexes | ✅ |
 | 15 | Prisma middleware for soft-delete auto-filtering | ✅ |
 
@@ -152,13 +152,13 @@ Legend: ✅ Done | ⬜ Not started | 🔧 In progress
 
 | # | Item | Status |
 |---|------|--------|
-| 16 | Add Budget vs. Actual variance to Orcamento page | ⬜ |
+| 16 | Add Budget vs. Actual variance to Orcamento page | ✅ |
 | 17 | Hash password reset tokens | ✅ |
 | 18 | Add email verification on registration | ✅ |
-| 19 | Lazy-load modal form components (`next/dynamic`) | ⬜ |
-| 20 | Reduce Meetings nested includes | ⬜ |
+| 19 | Lazy-load modal form components (`next/dynamic`) | ✅ |
+| 20 | Reduce Meetings nested includes | ✅ |
 | 21 | Add payment reversal audit log | ✅ |
-| 22 | Extract `useFormAction()` hook | ⬜ |
+| 22 | Extract `useFormAction()` hook | ✅ |
 | 23 | Announcement/Maintenance attachment upload UI | ⬜ |
 | 24 | Member role management UI | ⬜ |
 | 25 | Validate attendance users belong to condo | ✅ |
@@ -184,7 +184,7 @@ Legend: ✅ Done | ⬜ Not started | 🔧 In progress
 | Category | Total | Done | Remaining |
 |----------|-------|------|-----------|
 | Immediate (P0) | 6 | 6 | 0 |
-| Short-Term | 9 | 7 | 2 |
-| Medium-Term | 10 | 4 | 6 |
+| Short-Term | 9 | 9 | 0 |
+| Medium-Term | 10 | 10 | 0 |
 | Long-Term | 9 | 1 | 8 |
-| **Total** | **34** | **18** | **16** |
+| **Total** | **34** | **26** | **8** |
