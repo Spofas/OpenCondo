@@ -2,11 +2,12 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
 import { Plus, RefreshCw } from "lucide-react";
 import { ExpenseList } from "./expense-list";
-import { ExpenseForm } from "./expense-form";
+const ExpenseForm = dynamic(() => import("./expense-form").then(m => m.ExpenseForm));
 import { RecurringExpenseList } from "../despesas-recorrentes/recurring-expense-list";
-import { RecurringExpenseForm } from "../despesas-recorrentes/recurring-expense-form";
+const RecurringExpenseForm = dynamic(() => import("../despesas-recorrentes/recurring-expense-form").then(m => m.RecurringExpenseForm));
 import { generateRecurringExpenses } from "../despesas-recorrentes/actions";
 import { useCondominium } from "@/lib/condominium-context";
 import type { RecurringExpenseData } from "../despesas-recorrentes/recurring-expense-page-client";

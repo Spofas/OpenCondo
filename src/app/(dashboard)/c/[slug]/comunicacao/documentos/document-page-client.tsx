@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import dynamic from "next/dynamic";
 import { Upload } from "lucide-react";
 import { DocumentList } from "./document-list";
-import { DocumentForm } from "./document-form";
+const DocumentForm = dynamic(() => import("./document-form").then(m => m.DocumentForm));
 
 export interface DocumentData {
   id: string;

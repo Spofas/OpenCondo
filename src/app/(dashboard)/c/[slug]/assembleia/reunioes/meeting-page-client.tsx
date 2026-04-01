@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import dynamic from "next/dynamic";
 import { Plus } from "lucide-react";
 import { MeetingList } from "./meeting-list";
-import { MeetingForm } from "./meeting-form";
+const MeetingForm = dynamic(() => import("./meeting-form").then(m => m.MeetingForm));
 
 export interface AgendaItemData {
   id: string;

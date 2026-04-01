@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import dynamic from "next/dynamic";
 import { Phone, Plus } from "lucide-react";
 import { ContactList } from "./contact-list";
-import { ContactForm } from "./contact-form";
+const ContactForm = dynamic(() => import("./contact-form").then(m => m.ContactForm));
 
 export interface ContactInfo {
   id: string;

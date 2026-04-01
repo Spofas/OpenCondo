@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
 import { Plus } from "lucide-react";
 import { AnnouncementList } from "./announcement-list";
-import { AnnouncementForm } from "./announcement-form";
+const AnnouncementForm = dynamic(() => import("./announcement-form").then(m => m.AnnouncementForm));
 
 export interface AnnouncementData {
   id: string;
