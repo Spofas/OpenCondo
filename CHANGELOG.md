@@ -6,6 +6,13 @@ All notable changes to OpenCondo are recorded here in reverse-chronological orde
 
 ## [Unreleased]
 
+### 2026-04-03 — Accessibility: form label associations (Audit 4 U2)
+
+**Accessibility:**
+- Added `htmlFor`/`id` attribute pairs to ~60 form labels across 11 form components
+- Affected forms: meeting, announcement, contact, document, maintenance, contract, recurring expense, expense, budget, quota generation, payment modal
+- Screen readers can now properly associate labels with inputs; clicking labels focuses the correct field
+
 ### 2026-04-01 — Audit 4 Medium priority fixes: security, architecture, performance
 
 **Security (X5, X6, X7):**
