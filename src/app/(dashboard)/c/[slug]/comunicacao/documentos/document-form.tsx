@@ -96,10 +96,11 @@ export function DocumentForm({ onClose, existingDocument }: DocumentFormProps) {
 
           {/* Name */}
           <div className="mb-4">
-            <label className="mb-1 block text-sm font-medium text-foreground">
+            <label htmlFor="name" className="mb-1 block text-sm font-medium text-foreground">
               Nome do documento
             </label>
             <input
+              id="name"
               type="text"
               placeholder="Ex: Ata da assembleia de março 2026"
               {...register("name")}
@@ -113,10 +114,11 @@ export function DocumentForm({ onClose, existingDocument }: DocumentFormProps) {
           {/* Category & Visibility */}
           <div className="mb-4 grid grid-cols-2 gap-4">
             <div>
-              <label className="mb-1 block text-sm font-medium text-foreground">
+              <label htmlFor="category" className="mb-1 block text-sm font-medium text-foreground">
                 Categoria
               </label>
               <select
+                id="category"
                 {...register("category")}
                 className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary"
               >
@@ -128,10 +130,11 @@ export function DocumentForm({ onClose, existingDocument }: DocumentFormProps) {
               </select>
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium text-foreground">
+              <label htmlFor="visibility" className="mb-1 block text-sm font-medium text-foreground">
                 Visibilidade
               </label>
               <select
+                id="visibility"
                 {...register("visibility")}
                 className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary"
               >

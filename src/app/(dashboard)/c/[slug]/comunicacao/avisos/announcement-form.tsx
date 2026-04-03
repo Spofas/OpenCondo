@@ -67,10 +67,11 @@ export function AnnouncementForm({ onClose, existingAnnouncement }: Announcement
     >
       {/* Title */}
       <div className="mb-4">
-        <label className="mb-1 block text-sm font-medium text-foreground">
+        <label htmlFor="title" className="mb-1 block text-sm font-medium text-foreground">
           Título
         </label>
         <input
+          id="title"
           type="text"
           placeholder="Ex: Aviso de obras no piso 2"
           {...register("title")}
@@ -84,10 +85,11 @@ export function AnnouncementForm({ onClose, existingAnnouncement }: Announcement
       {/* Category & Pinned */}
       <div className="mb-4 grid grid-cols-2 gap-4">
         <div>
-          <label className="mb-1 block text-sm font-medium text-foreground">
+          <label htmlFor="category" className="mb-1 block text-sm font-medium text-foreground">
             Categoria
           </label>
           <select
+            id="category"
             {...register("category")}
             className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary"
           >
@@ -102,8 +104,9 @@ export function AnnouncementForm({ onClose, existingAnnouncement }: Announcement
           )}
         </div>
         <div className="flex items-end pb-1">
-          <label className="flex items-center gap-2 text-sm text-foreground cursor-pointer">
+          <label htmlFor="pinned" className="flex items-center gap-2 text-sm text-foreground cursor-pointer">
             <input
+              id="pinned"
               type="checkbox"
               {...register("pinned")}
               className="h-4 w-4 rounded border-input text-primary focus:ring-primary"
@@ -115,10 +118,11 @@ export function AnnouncementForm({ onClose, existingAnnouncement }: Announcement
 
       {/* Body */}
       <div className="mb-6">
-        <label className="mb-1 block text-sm font-medium text-foreground">
+        <label htmlFor="body" className="mb-1 block text-sm font-medium text-foreground">
           Conteúdo
         </label>
         <textarea
+          id="body"
           rows={6}
           placeholder="Escreva o conteúdo do aviso..."
           {...register("body")}

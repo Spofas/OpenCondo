@@ -121,10 +121,11 @@ export function ContractForm({ onClose, existingContract }: ContractFormProps) {
           {/* Type & Description */}
           <div className="mb-4 grid grid-cols-2 gap-4">
             <div>
-              <label className="mb-1 block text-sm font-medium text-foreground">
+              <label htmlFor="type" className="mb-1 block text-sm font-medium text-foreground">
                 Tipo
               </label>
               <select
+                id="type"
                 {...register("type")}
                 className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary"
               >
@@ -140,7 +141,7 @@ export function ContractForm({ onClose, existingContract }: ContractFormProps) {
               )}
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium text-foreground">
+              <label htmlFor="annualCost" className="mb-1 block text-sm font-medium text-foreground">
                 Custo anual
               </label>
               <div className="relative">
@@ -148,6 +149,7 @@ export function ContractForm({ onClose, existingContract }: ContractFormProps) {
                   €
                 </span>
                 <input
+                  id="annualCost"
                   type="number"
                   step="0.01"
                   {...register("annualCost", { valueAsNumber: true })}
@@ -164,10 +166,11 @@ export function ContractForm({ onClose, existingContract }: ContractFormProps) {
 
           {/* Description */}
           <div className="mb-4">
-            <label className="mb-1 block text-sm font-medium text-foreground">
+            <label htmlFor="description" className="mb-1 block text-sm font-medium text-foreground">
               Descrição
             </label>
             <input
+              id="description"
               type="text"
               placeholder="Ex: Contrato de manutenção do elevador"
               {...register("description")}
@@ -183,10 +186,11 @@ export function ContractForm({ onClose, existingContract }: ContractFormProps) {
           {/* Dates */}
           <div className="mb-4 grid grid-cols-2 gap-4">
             <div>
-              <label className="mb-1 block text-sm font-medium text-foreground">
+              <label htmlFor="startDate" className="mb-1 block text-sm font-medium text-foreground">
                 Data de início
               </label>
               <input
+                id="startDate"
                 type="date"
                 {...register("startDate")}
                 className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary"
@@ -198,10 +202,11 @@ export function ContractForm({ onClose, existingContract }: ContractFormProps) {
               )}
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium text-foreground">
+              <label htmlFor="endDate" className="mb-1 block text-sm font-medium text-foreground">
                 Data de fim (opcional)
               </label>
               <input
+                id="endDate"
                 type="date"
                 {...register("endDate")}
                 className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary"
@@ -212,10 +217,11 @@ export function ContractForm({ onClose, existingContract }: ContractFormProps) {
           {/* Renewal & Payment */}
           <div className="mb-4 grid grid-cols-2 gap-4">
             <div>
-              <label className="mb-1 block text-sm font-medium text-foreground">
+              <label htmlFor="renewalType" className="mb-1 block text-sm font-medium text-foreground">
                 Renovação
               </label>
               <select
+                id="renewalType"
                 {...register("renewalType")}
                 className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary"
               >
@@ -227,10 +233,11 @@ export function ContractForm({ onClose, existingContract }: ContractFormProps) {
               </select>
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium text-foreground">
+              <label htmlFor="paymentFrequency" className="mb-1 block text-sm font-medium text-foreground">
                 Frequência de pagamento
               </label>
               <select
+                id="paymentFrequency"
                 {...register("paymentFrequency")}
                 className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary"
               >
@@ -251,17 +258,18 @@ export function ContractForm({ onClose, existingContract }: ContractFormProps) {
               </h3>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="mb-1 block text-xs font-medium text-foreground">
+                  <label htmlFor="policyNumber" className="mb-1 block text-xs font-medium text-foreground">
                     N.º da apólice
                   </label>
                   <input
+                    id="policyNumber"
                     type="text"
                     {...register("policyNumber")}
                     className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary"
                   />
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs font-medium text-foreground">
+                  <label htmlFor="insuredValue" className="mb-1 block text-xs font-medium text-foreground">
                     Valor segurado
                   </label>
                   <div className="relative">
@@ -269,6 +277,7 @@ export function ContractForm({ onClose, existingContract }: ContractFormProps) {
                       €
                     </span>
                     <input
+                      id="insuredValue"
                       type="number"
                       step="0.01"
                       {...register("insuredValue", { valueAsNumber: true })}
@@ -278,10 +287,11 @@ export function ContractForm({ onClose, existingContract }: ContractFormProps) {
                 </div>
               </div>
               <div className="mt-3">
-                <label className="mb-1 block text-xs font-medium text-foreground">
+                <label htmlFor="coverageType" className="mb-1 block text-xs font-medium text-foreground">
                   Tipo de cobertura
                 </label>
                 <input
+                  id="coverageType"
                   type="text"
                   placeholder="Ex: Multirriscos"
                   {...register("coverageType")}
@@ -299,40 +309,44 @@ export function ContractForm({ onClose, existingContract }: ContractFormProps) {
               </h3>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="mb-1 block text-xs font-medium text-foreground">
+                  <label htmlFor="supplierName" className="mb-1 block text-xs font-medium text-foreground">
                     Nome
                   </label>
                   <input
+                    id="supplierName"
                     type="text"
                     {...register("supplierName")}
                     className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary"
                   />
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs font-medium text-foreground">
+                  <label htmlFor="supplierNif" className="mb-1 block text-xs font-medium text-foreground">
                     NIF
                   </label>
                   <input
+                    id="supplierNif"
                     type="text"
                     {...register("supplierNif")}
                     className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary"
                   />
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs font-medium text-foreground">
+                  <label htmlFor="supplierPhone" className="mb-1 block text-xs font-medium text-foreground">
                     Telefone
                   </label>
                   <input
+                    id="supplierPhone"
                     type="text"
                     {...register("supplierPhone")}
                     className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary"
                   />
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs font-medium text-foreground">
+                  <label htmlFor="supplierEmail" className="mb-1 block text-xs font-medium text-foreground">
                     Email
                   </label>
                   <input
+                    id="supplierEmail"
                     type="email"
                     {...register("supplierEmail")}
                     className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary"
@@ -356,10 +370,11 @@ export function ContractForm({ onClose, existingContract }: ContractFormProps) {
 
           {/* Notes */}
           <div className="mb-6">
-            <label className="mb-1 block text-sm font-medium text-foreground">
+            <label htmlFor="notes" className="mb-1 block text-sm font-medium text-foreground">
               Notas (opcional)
             </label>
             <input
+              id="notes"
               type="text"
               {...register("notes")}
               className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary"

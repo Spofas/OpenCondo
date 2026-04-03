@@ -97,10 +97,11 @@ export function ExpenseForm({ onClose, existingExpense }: ExpenseFormProps) {
           {/* Date & Category */}
           <div className="mb-4 grid grid-cols-2 gap-4">
             <div>
-              <label className="mb-1 block text-sm font-medium text-foreground">
+              <label htmlFor="date" className="mb-1 block text-sm font-medium text-foreground">
                 Data
               </label>
               <input
+                id="date"
                 type="date"
                 {...register("date")}
                 className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary"
@@ -112,10 +113,11 @@ export function ExpenseForm({ onClose, existingExpense }: ExpenseFormProps) {
               )}
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium text-foreground">
+              <label htmlFor="category" className="mb-1 block text-sm font-medium text-foreground">
                 Categoria
               </label>
               <select
+                id="category"
                 {...register("category")}
                 className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary"
               >
@@ -136,10 +138,11 @@ export function ExpenseForm({ onClose, existingExpense }: ExpenseFormProps) {
 
           {/* Description */}
           <div className="mb-4">
-            <label className="mb-1 block text-sm font-medium text-foreground">
+            <label htmlFor="description" className="mb-1 block text-sm font-medium text-foreground">
               Descrição
             </label>
             <input
+              id="description"
               type="text"
               placeholder="Ex: Fatura limpeza escadas"
               {...register("description")}
@@ -154,7 +157,7 @@ export function ExpenseForm({ onClose, existingExpense }: ExpenseFormProps) {
 
           {/* Amount */}
           <div className="mb-4">
-            <label className="mb-1 block text-sm font-medium text-foreground">
+            <label htmlFor="amount" className="mb-1 block text-sm font-medium text-foreground">
               Valor
             </label>
             <div className="relative">
@@ -162,6 +165,7 @@ export function ExpenseForm({ onClose, existingExpense }: ExpenseFormProps) {
                 €
               </span>
               <input
+                id="amount"
                 type="number"
                 step="0.01"
                 placeholder="0,00"
@@ -178,10 +182,11 @@ export function ExpenseForm({ onClose, existingExpense }: ExpenseFormProps) {
 
           {/* Notes */}
           <div className="mb-4">
-            <label className="mb-1 block text-sm font-medium text-foreground">
+            <label htmlFor="notes" className="mb-1 block text-sm font-medium text-foreground">
               Notas (opcional)
             </label>
             <input
+              id="notes"
               type="text"
               placeholder="Ex: Fatura n.º 12345"
               {...register("notes")}

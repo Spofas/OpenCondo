@@ -102,10 +102,11 @@ export function PaymentModal({ quota, onClose }: PaymentModalProps) {
 
           {/* Payment date */}
           <div className="mb-4">
-            <label className="mb-1 block text-sm font-medium text-foreground">
+            <label htmlFor="paymentDate" className="mb-1 block text-sm font-medium text-foreground">
               Data de pagamento
             </label>
             <input
+              id="paymentDate"
               type="date"
               {...register("paymentDate")}
               className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary"
@@ -119,10 +120,11 @@ export function PaymentModal({ quota, onClose }: PaymentModalProps) {
 
           {/* Payment method */}
           <div className="mb-4">
-            <label className="mb-1 block text-sm font-medium text-foreground">
+            <label htmlFor="paymentMethod" className="mb-1 block text-sm font-medium text-foreground">
               Método de pagamento
             </label>
             <select
+              id="paymentMethod"
               {...register("paymentMethod")}
               className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary"
             >
@@ -141,10 +143,11 @@ export function PaymentModal({ quota, onClose }: PaymentModalProps) {
 
           {/* Notes */}
           <div className="mb-6">
-            <label className="mb-1 block text-sm font-medium text-foreground">
+            <label htmlFor="paymentNotes" className="mb-1 block text-sm font-medium text-foreground">
               Notas (opcional)
             </label>
             <input
+              id="paymentNotes"
               type="text"
               placeholder="Ex: Ref. MB 123456789"
               {...register("paymentNotes")}

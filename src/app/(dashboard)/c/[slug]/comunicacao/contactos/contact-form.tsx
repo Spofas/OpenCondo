@@ -75,8 +75,9 @@ export function ContactForm({
 
           {/* Name */}
           <div>
-            <label className="mb-1 block text-xs font-medium text-foreground">Nome *</label>
+            <label htmlFor="name" className="mb-1 block text-xs font-medium text-foreground">Nome *</label>
             <input
+              id="name"
               {...register("name")}
               className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary"
               placeholder="Ex: Bombeiros Voluntários"
@@ -86,8 +87,9 @@ export function ContactForm({
 
           {/* Phone */}
           <div>
-            <label className="mb-1 block text-xs font-medium text-foreground">Telefone</label>
+            <label htmlFor="phone" className="mb-1 block text-xs font-medium text-foreground">Telefone</label>
             <input
+              id="phone"
               {...register("phone")}
               type="tel"
               className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary"
@@ -97,8 +99,9 @@ export function ContactForm({
 
           {/* Email */}
           <div>
-            <label className="mb-1 block text-xs font-medium text-foreground">Email</label>
+            <label htmlFor="email" className="mb-1 block text-xs font-medium text-foreground">Email</label>
             <input
+              id="email"
               {...register("email")}
               type="email"
               className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary"
@@ -109,8 +112,9 @@ export function ContactForm({
 
           {/* Category */}
           <div>
-            <label className="mb-1 block text-xs font-medium text-foreground">Categoria *</label>
+            <label htmlFor="category" className="mb-1 block text-xs font-medium text-foreground">Categoria *</label>
             <select
+              id="category"
               {...register("category")}
               className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary"
             >
@@ -123,8 +127,9 @@ export function ContactForm({
 
           {/* Notes */}
           <div>
-            <label className="mb-1 block text-xs font-medium text-foreground">Notas</label>
+            <label htmlFor="notes" className="mb-1 block text-xs font-medium text-foreground">Notas</label>
             <textarea
+              id="notes"
               {...register("notes")}
               rows={2}
               className="w-full resize-none rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary"
@@ -134,8 +139,9 @@ export function ContactForm({
 
           {/* Visibility */}
           <div>
-            <label className="mb-1 block text-xs font-medium text-foreground">Visibilidade</label>
+            <label htmlFor="visibility" className="mb-1 block text-xs font-medium text-foreground">Visibilidade</label>
             <select
+              id="visibility"
               {...register("visibility")}
               className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary"
             >

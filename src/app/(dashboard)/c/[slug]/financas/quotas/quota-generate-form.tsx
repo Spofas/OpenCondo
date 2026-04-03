@@ -119,10 +119,11 @@ export function QuotaGenerateForm({
           {/* Period range */}
           <div className="mb-6 grid grid-cols-2 gap-4">
             <div>
-              <label className="mb-1 block text-sm font-medium text-foreground">
+              <label htmlFor="startMonth" className="mb-1 block text-sm font-medium text-foreground">
                 Mês inicial
               </label>
               <input
+                id="startMonth"
                 type="month"
                 {...register("startMonth")}
                 className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary"
@@ -134,10 +135,11 @@ export function QuotaGenerateForm({
               )}
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium text-foreground">
+              <label htmlFor="endMonth" className="mb-1 block text-sm font-medium text-foreground">
                 Mês final
               </label>
               <input
+                id="endMonth"
                 type="month"
                 {...register("endMonth")}
                 className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary"
@@ -153,7 +155,7 @@ export function QuotaGenerateForm({
           {/* Amount, split method, due day */}
           <div className="mb-6 grid grid-cols-3 gap-4">
             <div>
-              <label className="mb-1 block text-sm font-medium text-foreground">
+              <label htmlFor="totalMonthlyAmount" className="mb-1 block text-sm font-medium text-foreground">
                 Valor mensal total (€)
               </label>
               <div className="relative">
@@ -161,6 +163,7 @@ export function QuotaGenerateForm({
                   €
                 </span>
                 <input
+                  id="totalMonthlyAmount"
                   type="number"
                   step="0.01"
                   placeholder="0,00"
@@ -175,10 +178,11 @@ export function QuotaGenerateForm({
               )}
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium text-foreground">
+              <label htmlFor="splitMethod" className="mb-1 block text-sm font-medium text-foreground">
                 Divisão
               </label>
               <select
+                id="splitMethod"
                 {...register("splitMethod")}
                 className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary"
               >
@@ -187,10 +191,11 @@ export function QuotaGenerateForm({
               </select>
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium text-foreground">
+              <label htmlFor="dueDay" className="mb-1 block text-sm font-medium text-foreground">
                 Dia de vencimento
               </label>
               <input
+                id="dueDay"
                 type="number"
                 min={1}
                 max={28}

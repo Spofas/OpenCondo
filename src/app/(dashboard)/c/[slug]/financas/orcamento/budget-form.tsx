@@ -111,10 +111,11 @@ export function BudgetForm({ onClose, existingBudget }: BudgetFormProps) {
           {/* Year & Reserve Fund */}
           <div className="mb-6 grid grid-cols-2 gap-4">
             <div>
-              <label className="mb-1 block text-sm font-medium text-foreground">
+              <label htmlFor="year" className="mb-1 block text-sm font-medium text-foreground">
                 Ano
               </label>
               <input
+                id="year"
                 type="number"
                 {...register("year", { valueAsNumber: true })}
                 className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary"
@@ -126,10 +127,11 @@ export function BudgetForm({ onClose, existingBudget }: BudgetFormProps) {
               )}
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium text-foreground">
+              <label htmlFor="reserveFundPercentage" className="mb-1 block text-sm font-medium text-foreground">
                 Fundo de reserva (%)
               </label>
               <input
+                id="reserveFundPercentage"
                 type="number"
                 step="0.1"
                 {...register("reserveFundPercentage", { valueAsNumber: true })}

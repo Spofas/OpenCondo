@@ -83,10 +83,11 @@ export function MeetingForm({ onClose }: MeetingFormProps) {
           {/* Date, Time & Type */}
           <div className="mb-4 grid grid-cols-3 gap-4">
             <div>
-              <label className="mb-1 block text-sm font-medium text-foreground">
+              <label htmlFor="date" className="mb-1 block text-sm font-medium text-foreground">
                 Data
               </label>
               <input
+                id="date"
                 type="date"
                 {...register("date")}
                 className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary"
@@ -96,10 +97,11 @@ export function MeetingForm({ onClose }: MeetingFormProps) {
               )}
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium text-foreground">
+              <label htmlFor="time" className="mb-1 block text-sm font-medium text-foreground">
                 Hora
               </label>
               <input
+                id="time"
                 type="time"
                 {...register("time")}
                 className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary"
@@ -109,10 +111,11 @@ export function MeetingForm({ onClose }: MeetingFormProps) {
               )}
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium text-foreground">
+              <label htmlFor="type" className="mb-1 block text-sm font-medium text-foreground">
                 Tipo
               </label>
               <select
+                id="type"
                 {...register("type")}
                 className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary"
               >
@@ -127,10 +130,11 @@ export function MeetingForm({ onClose }: MeetingFormProps) {
 
           {/* Location */}
           <div className="mb-4">
-            <label className="mb-1 block text-sm font-medium text-foreground">
+            <label htmlFor="location" className="mb-1 block text-sm font-medium text-foreground">
               Local
             </label>
             <input
+              id="location"
               type="text"
               placeholder="Ex: Sala de condomínio, Rés-do-chão"
               {...register("location")}

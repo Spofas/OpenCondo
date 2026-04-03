@@ -76,10 +76,11 @@ export function MaintenanceForm({ onClose }: MaintenanceFormProps) {
 
           {/* Title */}
           <div className="mb-4">
-            <label className="mb-1 block text-sm font-medium text-foreground">
+            <label htmlFor="title" className="mb-1 block text-sm font-medium text-foreground">
               Título
             </label>
             <input
+              id="title"
               type="text"
               placeholder="Ex: Elevador avariado"
               {...register("title")}
@@ -93,10 +94,11 @@ export function MaintenanceForm({ onClose }: MaintenanceFormProps) {
           {/* Location & Priority */}
           <div className="mb-4 grid grid-cols-2 gap-4">
             <div>
-              <label className="mb-1 block text-sm font-medium text-foreground">
+              <label htmlFor="location" className="mb-1 block text-sm font-medium text-foreground">
                 Localização (opcional)
               </label>
               <input
+                id="location"
                 type="text"
                 placeholder="Ex: Hall de entrada"
                 {...register("location")}
@@ -104,10 +106,11 @@ export function MaintenanceForm({ onClose }: MaintenanceFormProps) {
               />
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium text-foreground">
+              <label htmlFor="priority" className="mb-1 block text-sm font-medium text-foreground">
                 Prioridade
               </label>
               <select
+                id="priority"
                 {...register("priority")}
                 className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary"
               >
@@ -122,10 +125,11 @@ export function MaintenanceForm({ onClose }: MaintenanceFormProps) {
 
           {/* Description */}
           <div className="mb-6">
-            <label className="mb-1 block text-sm font-medium text-foreground">
+            <label htmlFor="description" className="mb-1 block text-sm font-medium text-foreground">
               Descrição
             </label>
             <textarea
+              id="description"
               rows={4}
               placeholder="Descreva o problema em detalhe..."
               {...register("description")}
